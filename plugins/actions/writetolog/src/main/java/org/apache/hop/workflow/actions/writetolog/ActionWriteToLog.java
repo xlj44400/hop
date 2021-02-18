@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.writetolog;
 
@@ -32,11 +27,12 @@ import org.apache.hop.core.logging.LogLevel;
 import org.apache.hop.core.logging.ILoggingObject;
 import org.apache.hop.core.logging.LoggingObjectType;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.xml.XmlHandler;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.workflow.action.ActionBase;
 import org.apache.hop.workflow.action.IAction;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.w3c.dom.Node;
 
 import java.util.Date;
@@ -50,14 +46,14 @@ import java.util.Date;
 
 @Action(
   id = "WRITE_TO_LOG",
-  i18nPackageName = "org.apache.hop.workflow.actions.writetolog",
-  name = "ActionWriteToLog.Name",
-  description = "ActionWriteToLog.Description",
+  name = "i18n::ActionWriteToLog.Name",
+  description = "i18n::ActionWriteToLog.Description",
   image = "WriteToLog.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Utility"
+  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Utility",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/writetolog.html"
 )
 public class ActionWriteToLog extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionWriteToLog.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionWriteToLog.class; // For Translator
 
   /**
    * The log level with which the message should be logged.
@@ -101,7 +97,7 @@ public class ActionWriteToLog extends ActionBase implements Cloneable, IAction {
 
   @Override
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
       logmessage = XmlHandler.getTagValue( entrynode, "logmessage" );
@@ -173,7 +169,7 @@ public class ActionWriteToLog extends ActionBase implements Cloneable, IAction {
      * @return the execution container object id
      */
     @Override
-    public String getContainerObjectId() {
+    public String getContainerId() {
       return containerObjectId;
     }
 
@@ -262,13 +258,13 @@ public class ActionWriteToLog extends ActionBase implements Cloneable, IAction {
    * Execute this action and return the result. In this case it means, just set the result boolean in the Result
    * class.
    *
-   * @param prev_result The result of the previous execution
+   * @param prevResult The result of the previous execution
    * @return The Result of the execution.
    */
   @Override
-  public Result execute( Result prev_result, int nr ) {
-    prev_result.setResult( evaluate( prev_result ) );
-    return prev_result;
+  public Result execute( Result prevResult, int nr ) {
+    prevResult.setResult( evaluate( prevResult ) );
+    return prevResult;
   }
 
   @Override
@@ -279,7 +275,7 @@ public class ActionWriteToLog extends ActionBase implements Cloneable, IAction {
   }
 
   @Override
-  public boolean evaluates() {
+  public boolean isEvaluation() {
     return true;
   }
 
@@ -289,12 +285,12 @@ public class ActionWriteToLog extends ActionBase implements Cloneable, IAction {
   }
 
   public String getRealLogMessage() {
-    return Const.NVL( environmentSubstitute( getLogMessage() ), "" );
+    return Const.NVL( resolve( getLogMessage() ), "" );
 
   }
 
   public String getRealLogSubject() {
-    return Const.NVL( environmentSubstitute( getLogSubject() ), "" );
+    return Const.NVL( resolve( getLogSubject() ), "" );
   }
 
   public String getLogMessage() {

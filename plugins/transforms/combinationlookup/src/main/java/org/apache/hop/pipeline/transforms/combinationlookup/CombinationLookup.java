@@ -1,29 +1,23 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.combinationlookup;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.Counters;
 import org.apache.hop.core.RowMetaAndData;
 import org.apache.hop.core.database.Database;
 import org.apache.hop.core.database.DatabaseMeta;
@@ -43,8 +37,6 @@ import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransform;
 import org.apache.hop.pipeline.transform.ITransform;
-import org.apache.hop.pipeline.transform.ITransformData;
-import org.apache.hop.pipeline.transform.ITransformMeta;
 import org.apache.hop.pipeline.transform.TransformMeta;
 
 import java.sql.ResultSet;
@@ -75,7 +67,7 @@ import java.util.List;
  */
 public class CombinationLookup extends BaseTransform<CombinationLookupMeta, CombinationLookupData> implements ITransform<CombinationLookupMeta, CombinationLookupData> {
 
-  private static final Class<?> PKG = CombinationLookupMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = CombinationLookupMeta.class; // For Translator
 
   private static final int CREATION_METHOD_AUTOINC = 1;
   private static final int CREATION_METHOD_SEQUENCE = 2;
@@ -158,9 +150,9 @@ public class CombinationLookup extends BaseTransform<CombinationLookupMeta, Comb
       //
       // Perhaps we should get 20% random values and delete everything below the lowest but one TK.
       //
-      List<RowMetaAndData> keys = new ArrayList<RowMetaAndData>( data.cache.keySet() );
+      List<RowMetaAndData> keys = new ArrayList<>( data.cache.keySet() );
       int sizeBefore = keys.size();
-      List<Long> samples = new ArrayList<Long>();
+      List<Long> samples = new ArrayList<>();
 
       // Take 10 sample technical keys....
       int transformsize = keys.size() / 5;
@@ -214,7 +206,7 @@ public class CombinationLookup extends BaseTransform<CombinationLookupMeta, Comb
 
   @SuppressWarnings( "deprecation" )
   private Object[] lookupValues( IRowMeta rowMeta, Object[] row ) throws HopException {
-    Long val_key = null;
+    Long valKey = null;
     Long val_hash = null;
     Object[] hashRow = null;
 
@@ -254,8 +246,8 @@ public class CombinationLookup extends BaseTransform<CombinationLookupMeta, Comb
     }
 
     // Before doing the actual lookup in the database, see if it's not in the cache...
-    val_key = lookupInCache( data.hashRowMeta, hashRow );
-    if ( val_key == null ) {
+    valKey = lookupInCache( data.hashRowMeta, hashRow );
+    if ( valKey == null ) {
       data.db.setValues( data.lookupRowMeta, lookupRow, data.prepStatementLookup );
       Object[] add = data.db.getLookup( data.prepStatementLookup );
       incrementLinesInput();
@@ -265,39 +257,39 @@ public class CombinationLookup extends BaseTransform<CombinationLookupMeta, Comb
         switch ( getTechKeyCreation() ) {
           case CREATION_METHOD_TABLEMAX:
             // Use our own counter: what's the next value for the technical key?
-            val_key = data.db.getNextValue( Counters.getInstance().getCounterMap(), data.realSchemaName, data.realTableName,
+            valKey = data.db.getNextValue( data.realSchemaName, data.realTableName,
               meta.getTechnicalKeyField() );
             break;
           case CREATION_METHOD_AUTOINC:
-            val_key = new Long( 0 ); // value to accept new key...
+            valKey = new Long( 0 ); // value to accept new key...
             break;
           case CREATION_METHOD_SEQUENCE:
-            val_key =
+            valKey =
               data.db.getNextSequenceValue( data.realSchemaName, meta.getSequenceFrom(), meta
                 .getTechnicalKeyField() );
-            if ( val_key != null && isRowLevel() ) {
+            if ( valKey != null && isRowLevel() ) {
               logRowlevel( BaseMessages.getString( PKG, "CombinationLookup.Log.FoundNextSequenceValue" )
-                + val_key.toString() );
+                + valKey.toString() );
             }
             break;
           default:
             break;
         }
 
-        val_key = combiInsert( rowMeta, row, val_key, val_hash );
+        valKey = combiInsert( rowMeta, row, valKey, val_hash );
         incrementLinesOutput();
 
         if ( isRowLevel() ) {
-          logRowlevel( BaseMessages.getString( PKG, "CombinationLookup.Log.AddedDimensionEntry" ) + val_key );
+          logRowlevel( BaseMessages.getString( PKG, "CombinationLookup.Log.AddedDimensionEntry" ) + valKey );
         }
 
         // Also store it in our Hashtable...
-        addToCache( data.hashRowMeta, hashRow, val_key );
+        addToCache( data.hashRowMeta, hashRow, valKey );
       } else {
         // Entry already exists...
         //
-        val_key = data.db.getReturnRowMeta().getInteger( add, 0 ); // Sometimes it's not an integer, believe it or not.
-        addToCache( data.hashRowMeta, hashRow, val_key );
+        valKey = data.db.getReturnRowMeta().getInteger( add, 0 ); // Sometimes it's not an integer, believe it or not.
+        addToCache( data.hashRowMeta, hashRow, valKey );
       }
     }
 
@@ -320,7 +312,7 @@ public class CombinationLookup extends BaseTransform<CombinationLookupMeta, Comb
     }
 
     // Add the technical key...
-    outputRow[ outputIndex ] = val_key;
+    outputRow[ outputIndex ] = valKey;
 
     return outputRow;
   }
@@ -338,10 +330,10 @@ public class CombinationLookup extends BaseTransform<CombinationLookupMeta, Comb
       first = false;
 
       data.outputRowMeta = getInputRowMeta().clone();
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
       data.schemaTable =
-        meta.getDatabaseMeta().getQuotedSchemaTableCombination( data.realSchemaName, data.realTableName );
+        meta.getDatabaseMeta().getQuotedSchemaTableCombination( this, data.realSchemaName, data.realTableName );
 
       determineTechKeyCreation();
 
@@ -481,7 +473,7 @@ public class CombinationLookup extends BaseTransform<CombinationLookupMeta, Comb
   /**
    * This inserts new record into a junk dimension
    */
-  public Long combiInsert( IRowMeta rowMeta, Object[] row, Long val_key, Long val_crc )
+  public Long combiInsert( IRowMeta rowMeta, Object[] row, Long valKey, Long valCrc )
     throws HopDatabaseException {
     String debug = "Combination insert";
     DatabaseMeta databaseMeta = meta.getDatabaseMeta();
@@ -601,11 +593,11 @@ public class CombinationLookup extends BaseTransform<CombinationLookupMeta, Comb
       int insertIndex = 0;
 
       if ( !isAutoIncrement() ) {
-        insertRow[ insertIndex ] = val_key;
+        insertRow[ insertIndex ] = valKey;
         insertIndex++;
       }
       if ( meta.useHash() ) {
-        insertRow[ insertIndex ] = val_crc;
+        insertRow[ insertIndex ] = valCrc;
         insertIndex++;
       }
       if ( !Utils.isEmpty( meta.getLastUpdateField() ) ) {
@@ -634,7 +626,7 @@ public class CombinationLookup extends BaseTransform<CombinationLookupMeta, Comb
         try {
           keys = data.prepStatementInsert.getGeneratedKeys(); // 1 key
           if ( keys.next() ) {
-            val_key = new Long( keys.getLong( 1 ) );
+            valKey = new Long( keys.getLong( 1 ) );
           } else {
             throw new HopDatabaseException( "Unable to retrieve auto-increment of combi insert key : "
               + meta.getTechnicalKeyField() + ", no fields in resultset" );
@@ -659,7 +651,7 @@ public class CombinationLookup extends BaseTransform<CombinationLookupMeta, Comb
         + debug + "] : " + e.toString(), e );
     }
 
-    return val_key;
+    return valKey;
   }
 
   @Override
@@ -670,20 +662,19 @@ public class CombinationLookup extends BaseTransform<CombinationLookupMeta, Comb
   @Override
   public boolean init() {
     if ( super.init() ) {
-      data.realSchemaName = environmentSubstitute( meta.getSchemaName() );
-      data.realTableName = environmentSubstitute( meta.getTableName() );
+      data.realSchemaName = resolve( meta.getSchemaName() );
+      data.realTableName = resolve( meta.getTableName() );
 
       if ( meta.getCacheSize() > 0 ) {
-        data.cache = new HashMap<RowMetaAndData, Long>( (int) ( meta.getCacheSize() * 1.5 ) );
+        data.cache = new HashMap<>( (int) ( meta.getCacheSize() * 1.5 ) );
       } else {
-        data.cache = new HashMap<RowMetaAndData, Long>();
+        data.cache = new HashMap<>();
       }
       if ( meta.getDatabaseMeta() == null ) {
         logError( BaseMessages.getString( PKG, "CombinationLookup.Init.ConnectionMissing", getTransformName() ) );
         return false;
       }
-      data.db = new Database( this, meta.getDatabaseMeta() );
-      data.db.shareVariablesWith( this );
+      data.db = new Database( this, this, meta.getDatabaseMeta() );
       try {
         data.db.connect( getPartitionId() );
 

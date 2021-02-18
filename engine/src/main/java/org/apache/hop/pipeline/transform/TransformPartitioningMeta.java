@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transform;
 
@@ -31,9 +26,11 @@ import org.apache.hop.core.plugins.IPlugin;
 import org.apache.hop.core.plugins.PluginRegistry;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.xml.XmlHandler;
 import org.apache.hop.core.xml.IXml;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
+import org.apache.hop.metadata.api.IHopMetadataSerializer;
 import org.apache.hop.partition.PartitionSchema;
 import org.apache.hop.pipeline.IPartitioner;
 import org.w3c.dom.Node;
@@ -168,7 +165,7 @@ public class TransformPartitioningMeta implements IXml, Cloneable {
     return xml.toString();
   }
 
-  public TransformPartitioningMeta( Node partitioningMethodNode, IMetaStore metaStore ) throws HopException {
+  public TransformPartitioningMeta( Node partitioningMethodNode, IHopMetadataProvider metadataProvider ) throws HopException {
     this();
     setMethod( getMethod( XmlHandler.getTagValue( partitioningMethodNode, "method" ) ) );
     String partitionSchemaName = XmlHandler.getTagValue( partitioningMethodNode, "schema_name" );
@@ -176,7 +173,8 @@ public class TransformPartitioningMeta implements IXml, Cloneable {
       partitionSchema = new PartitionSchema(  );
     } else {
       try {
-        partitionSchema = PartitionSchema.createFactory( metaStore ).loadElement( partitionSchemaName );
+        IHopMetadataSerializer<PartitionSchema> serializer = metadataProvider.getSerializer( PartitionSchema.class );
+        partitionSchema = serializer.load( partitionSchemaName );
       } catch(Exception e) {
         throw new HopException( "Unable to load partition schema with name '"+partitionSchemaName+"'", e );
       }
@@ -303,9 +301,9 @@ public class TransformPartitioningMeta implements IXml, Cloneable {
     return methodType == PARTITIONING_METHOD_MIRROR;
   }
 
-  public int getPartition( IRowMeta rowMeta, Object[] row ) throws HopException {
+  public int getPartition( IVariables variables, IRowMeta rowMeta, Object[] row ) throws HopException {
     if ( partitioner != null ) {
-      return partitioner.getPartition( rowMeta, row );
+      return partitioner.getPartition( variables, rowMeta, row );
     }
     return 0;
   }

@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.databaselookup;
 
@@ -30,6 +25,8 @@ import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.row.RowMeta;
 import org.apache.hop.core.row.value.ValueMetaString;
+import org.apache.hop.core.variables.IVariables;
+import org.apache.hop.core.variables.Variables;
 import org.apache.hop.junit.rules.RestoreHopEngineEnvironment;
 import org.apache.hop.pipeline.transform.ITransformMeta;
 import org.apache.hop.pipeline.transforms.loadsave.LoadSaveTester;
@@ -59,13 +56,15 @@ public class DatabaseLookupMetaTest implements IInitializer<ITransformMeta> {
   LoadSaveTester loadSaveTester;
   Class<DatabaseLookupMeta> testMetaClass = DatabaseLookupMeta.class;
   @ClassRule public static RestoreHopEngineEnvironment env = new RestoreHopEngineEnvironment();
+  private IVariables variables;
 
   @Before
   public void setUpLoadSave() throws Exception {
     HopEnvironment.init();
     PluginRegistry.init( false );
+    variables = new Variables();
     List<String> attributes =
-      Arrays.asList( "schemaName", "tablename", "databaseMeta", "orderByClause", "cached",
+      Arrays.asList( "schemaName", "tableName", "databaseMeta", "orderByClause", "cached",
         "cacheSize", "loadingAllDataInCache", "failingOnMultipleResults", "eatingRowOnLookupFailure",
         "streamKeyField1", "streamKeyField2", "keyCondition", "tableKeyField", "returnValueField",
         "returnValueNewName", "returnValueDefault", "returnValueDefaultType" );
@@ -74,9 +73,9 @@ public class DatabaseLookupMetaTest implements IInitializer<ITransformMeta> {
     Map<String, String> setterMap = new HashMap<>();
 
     IFieldLoadSaveValidator<String[]> stringArrayLoadSaveValidator =
-      new ArrayLoadSaveValidator<String>( new StringLoadSaveValidator(), 5 );
+      new ArrayLoadSaveValidator<>( new StringLoadSaveValidator(), 5 );
 
-    Map<String, IFieldLoadSaveValidator<?>> attrValidatorMap = new HashMap<String, IFieldLoadSaveValidator<?>>();
+    Map<String, IFieldLoadSaveValidator<?>> attrValidatorMap = new HashMap<>();
     attrValidatorMap.put( "streamKeyField1", stringArrayLoadSaveValidator );
     attrValidatorMap.put( "streamKeyField2", stringArrayLoadSaveValidator );
     attrValidatorMap.put( "keyCondition", stringArrayLoadSaveValidator );
@@ -89,7 +88,7 @@ public class DatabaseLookupMetaTest implements IInitializer<ITransformMeta> {
 
     attrValidatorMap.put( "databaseMeta", new DatabaseMetaLoadSaveValidator() );
 
-    Map<String, IFieldLoadSaveValidator<?>> typeValidatorMap = new HashMap<String, IFieldLoadSaveValidator<?>>();
+    Map<String, IFieldLoadSaveValidator<?>> typeValidatorMap = new HashMap<>();
 
     loadSaveTester =
       new LoadSaveTester( testMetaClass, attributes, new ArrayList<>(),
@@ -125,7 +124,7 @@ public class DatabaseLookupMetaTest implements IInitializer<ITransformMeta> {
 
     IValueMeta r1 = new ValueMetaString( "value" );
     IRowMeta row = new RowMeta();
-    row.setValueMetaList( new ArrayList<IValueMeta>( Arrays.asList( r1 ) ) );
+    row.setValueMetaList( new ArrayList<>( Arrays.asList( r1 ) ) );
 
     databaseLookupMeta.getFields( row, "", info, null, null, null );
 
@@ -146,7 +145,7 @@ public class DatabaseLookupMetaTest implements IInitializer<ITransformMeta> {
 
     DatabaseLookupData databaseLookupData = new DatabaseLookupData();
     databaseLookupData.returnMeta = Mockito.mock( RowMeta.class );
-    assertEquals( databaseLookupData.returnMeta, databaseLookupMeta.getRowMeta( databaseLookupData ) );
+    assertEquals( databaseLookupData.returnMeta, databaseLookupMeta.getRowMeta( variables, databaseLookupData ) );
     assertEquals( 3, databaseLookupMeta.getDatabaseFields().size() );
     assertEquals( "f1", databaseLookupMeta.getDatabaseFields().get( 0 ) );
     assertEquals( "f2", databaseLookupMeta.getDatabaseFields().get( 1 ) );

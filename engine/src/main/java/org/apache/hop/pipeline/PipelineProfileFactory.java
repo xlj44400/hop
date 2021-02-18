@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline;
 
@@ -31,21 +26,23 @@ import org.apache.hop.core.plugins.PluginRegistry;
 import org.apache.hop.core.plugins.TransformPluginType;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.IValueMeta;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.pipeline.transform.TransformMeta;
 import org.apache.hop.pipeline.transforms.dummy.DummyMeta;
+import org.apache.hop.pipeline.transforms.groupby.Aggregation;
 import org.apache.hop.pipeline.transforms.groupby.GroupByMeta;
 import org.apache.hop.pipeline.transforms.tableinput.TableInputMeta;
 
 /**
  * Helper class to generate profiling pipelines...
  *
- * @author Matt Casters (mcasters@pentaho.org)
  */
 public class PipelineProfileFactory {
   public static final String RESULT_TRANSFORM_NAME = "calc stats";
 
-  private DatabaseMeta databaseMeta;
-  private String schemaTable;
+  private final IVariables variables;
+  private final DatabaseMeta databaseMeta;
+  private final String schemaTable;
 
   private IRowMeta tableLayout;
 
@@ -53,7 +50,8 @@ public class PipelineProfileFactory {
    * @param databaseMeta
    * @param schemaTable  the properly quoted schema-table combination
    */
-  public PipelineProfileFactory( DatabaseMeta databaseMeta, String schemaTable ) {
+  public PipelineProfileFactory( IVariables variables, DatabaseMeta databaseMeta, String schemaTable ) {
+    this.variables = variables;
     this.databaseMeta = databaseMeta;
     this.schemaTable = schemaTable;
   }
@@ -67,7 +65,7 @@ public class PipelineProfileFactory {
 
     // Now start building the pipeline...
     //
-    PipelineMeta pipelineMeta = new PipelineMeta( databaseMeta );
+    PipelineMeta pipelineMeta = new PipelineMeta();
 
     // Create a transform to read the content of the table
     // Read the data from the database table...
@@ -124,38 +122,30 @@ public class PipelineProfileFactory {
         nrBooleans++;
       }
     }
-    int nrCalculations =
-      nrNumeric
-        * numericCalculations.length + nrDates * dateCalculations.length + nrStrings
-        * stringCalculations.length + nrBooleans * booleanCalculations.length;
 
-    statsMeta.allocate( 0, nrCalculations );
+    statsMeta.allocate( 0 );
     int calcIndex = 0;
     for ( int i = 0; i < tableLayout.size(); i++ ) {
       IValueMeta valueMeta = tableLayout.getValueMeta( i );
       // Numeric data...
       //
       if ( valueMeta.isNumeric() ) {
-        //CHECKSTYLE:Indentation:OFF
-        //CHECKSTYLE:LineLength:OFF
         for ( int c = 0; c < numericCalculations.length; c++ ) {
-          statsMeta.getAggregateField()[ calcIndex ] = valueMeta.getName() + "(" + GroupByMeta.getTypeDesc( numericCalculations[ c ] ) + ")";
-          statsMeta.getSubjectField()[ calcIndex ] = valueMeta.getName();
-          statsMeta.getAggregateType()[ calcIndex ] = numericCalculations[ c ];
-          calcIndex++;
+          String aggField =  valueMeta.getName() + "(" + GroupByMeta.getTypeDesc( numericCalculations[ c ] ) + ")";
+          String aggSubject = valueMeta.getName();
+          int aggType = numericCalculations[ c ];
+          statsMeta.getAggregations().add(new Aggregation(aggField, aggSubject, aggType, null) );
         }
       }
 
       // String data
       //
       if ( valueMeta.isString() ) {
-        //CHECKSTYLE:Indentation:OFF
-        //CHECKSTYLE:LineLength:OFF
         for ( int c = 0; c < stringCalculations.length; c++ ) {
-          statsMeta.getAggregateField()[ calcIndex ] = valueMeta.getName() + "(" + GroupByMeta.getTypeDesc( stringCalculations[ c ] ) + ")";
-          statsMeta.getSubjectField()[ calcIndex ] = valueMeta.getName();
-          statsMeta.getAggregateType()[ calcIndex ] = stringCalculations[ c ];
-          calcIndex++;
+          String aggField = valueMeta.getName() + "(" + GroupByMeta.getTypeDesc( stringCalculations[ c ] ) + ")";
+          String aggSubject = valueMeta.getName();
+          int aggType = stringCalculations[ c ];
+          statsMeta.getAggregations().add(new Aggregation(aggField, aggSubject, aggType, null) );
         }
       }
 
@@ -163,11 +153,10 @@ public class PipelineProfileFactory {
       //
       if ( valueMeta.isDate() ) {
         for ( int c = 0; c < dateCalculations.length; c++ ) {
-          statsMeta.getAggregateField()[ calcIndex ] =
-            valueMeta.getName() + "(" + GroupByMeta.getTypeDesc( dateCalculations[ c ] ) + ")";
-          statsMeta.getSubjectField()[ calcIndex ] = valueMeta.getName();
-          statsMeta.getAggregateType()[ calcIndex ] = dateCalculations[ c ];
-          calcIndex++;
+          String aggField = valueMeta.getName() + "(" + GroupByMeta.getTypeDesc( dateCalculations[ c ] ) + ")";
+          String aggSubject = valueMeta.getName();
+          int aggType = dateCalculations[ c ];
+          statsMeta.getAggregations().add(new Aggregation(aggField, aggSubject, aggType, null) );
         }
       }
 
@@ -175,11 +164,10 @@ public class PipelineProfileFactory {
       //
       if ( valueMeta.isBoolean() ) {
         for ( int c = 0; c < booleanCalculations.length; c++ ) {
-          statsMeta.getAggregateField()[ calcIndex ] =
-            valueMeta.getName() + "(" + GroupByMeta.getTypeDesc( booleanCalculations[ c ] ) + ")";
-          statsMeta.getSubjectField()[ calcIndex ] = valueMeta.getName();
-          statsMeta.getAggregateType()[ calcIndex ] = booleanCalculations[ c ];
-          calcIndex++;
+          String aggField = valueMeta.getName() + "(" + GroupByMeta.getTypeDesc( booleanCalculations[ c ] ) + ")";
+          String aggSubject = valueMeta.getName();
+          int aggType = booleanCalculations[ c ];
+          statsMeta.getAggregations().add(new Aggregation(aggField, aggSubject, aggType, null) );
         }
       }
     }
@@ -203,7 +191,7 @@ public class PipelineProfileFactory {
   }
 
   private IRowMeta getTableFields( ILoggingObject parentLoggingObject ) throws HopDatabaseException {
-    Database database = new Database( parentLoggingObject, databaseMeta );
+    Database database = new Database( parentLoggingObject, variables, databaseMeta );
     try {
       database.connect();
       return database.getTableFields( schemaTable );

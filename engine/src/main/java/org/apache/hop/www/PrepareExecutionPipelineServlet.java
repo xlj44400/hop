@@ -1,28 +1,24 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.www;
 
 import org.apache.hop.core.Const;
+import org.apache.hop.core.annotations.HopServerServlet;
 import org.apache.hop.core.logging.HopLogStore;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.xml.XmlHandler;
@@ -41,9 +37,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URLEncoder;
 
-
+@HopServerServlet(id="prepareExec", name = "Prepare the execution of a pipeline")
 public class PrepareExecutionPipelineServlet extends BaseHttpServlet implements IHopServerPlugin {
-  private static Class<?> PKG = PrepareExecutionPipelineServlet.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = PrepareExecutionPipelineServlet.class; // For Translator
 
   private static final long serialVersionUID = 3634806745372015720L;
   public static final String CONTEXT_PATH = "/hop/prepareExec";
@@ -121,7 +117,7 @@ public class PrepareExecutionPipelineServlet extends BaseHttpServlet implements 
         PipelineExecutionConfiguration executionConfiguration = pipelineConfiguration.getPipelineExecutionConfiguration();
         // Set the appropriate logging, variables, arguments, replay date, ...
         // etc.
-        pipeline.injectVariables( executionConfiguration.getVariablesMap() );
+        pipeline.setVariables( executionConfiguration.getVariablesMap() );
         pipeline.setPreviousResult( executionConfiguration.getPreviousResult() );
 
         try {
@@ -143,7 +139,7 @@ public class PrepareExecutionPipelineServlet extends BaseHttpServlet implements 
           if ( useXML ) {
             out.println( new WebResult( WebResult.STRING_ERROR,
               BaseMessages.getString( PKG, "PrepareExecutionPipelineServlet.Error.PipelineInitFailed", Const.CR  +
-                logText + Const.CR + Const.getStackTracker( e ) ) )
+                logText + Const.CR + Const.getSimpleStackTrace( e ) + Const.CR + Const.getStackTracker( e ) ) )
             );
           } else {
             out.println( "<H1>" + Encode.forHtml( BaseMessages.getString( PKG, "PrepareExecutionPipelineServlet.Log.PipelineNotInit", pipelineName ) ) + "</H1>" );

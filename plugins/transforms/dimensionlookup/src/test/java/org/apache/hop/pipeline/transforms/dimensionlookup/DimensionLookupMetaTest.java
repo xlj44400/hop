@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.dimensionlookup;
 
@@ -34,6 +29,8 @@ import org.apache.hop.core.logging.ILoggingObject;
 import org.apache.hop.core.row.RowMeta;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.value.ValueMetaString;
+import org.apache.hop.core.variables.IVariables;
+import org.apache.hop.core.variables.Variables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.junit.rules.RestoreHopEngineEnvironment;
 import org.apache.hop.pipeline.transform.ITransformMeta;
@@ -73,8 +70,9 @@ import static org.mockito.Mockito.when;
 public class DimensionLookupMetaTest implements IInitializer<ITransformMeta> {
   LoadSaveTester loadSaveTester;
   Class<DimensionLookupMeta> testMetaClass = DimensionLookupMeta.class;
-  private ThreadLocal<DimensionLookupMeta> holdTestingMeta = new ThreadLocal<DimensionLookupMeta>();
+  private ThreadLocal<DimensionLookupMeta> holdTestingMeta = new ThreadLocal<>();
   @ClassRule public static RestoreHopEngineEnvironment env = new RestoreHopEngineEnvironment();
+  private IVariables variables;
 
   @BeforeClass
   public static void setupClass() throws HopException {
@@ -83,6 +81,7 @@ public class DimensionLookupMetaTest implements IInitializer<ITransformMeta> {
 
   @Before
   public void setUpLoadSave() throws Exception {
+    variables = new Variables();
     List<String> attributes =
       Arrays.asList( "schemaName", "tableName", "update", "dateField", "dateFrom", "dateTo", "keyField", "keyRename",
         "autoIncrement", "versionField", "commitSize", "useBatchUpdate", "minYear", "maxYear", "techKeyCreation",
@@ -97,9 +96,9 @@ public class DimensionLookupMetaTest implements IInitializer<ITransformMeta> {
     Map<String, String> setterMap = new HashMap<>();
 
     IFieldLoadSaveValidator<String[]> stringArrayLoadSaveValidator =
-      new ArrayLoadSaveValidator<String>( new StringLoadSaveValidator(), 5 );
+      new ArrayLoadSaveValidator<>( new StringLoadSaveValidator(), 5 );
 
-    Map<String, IFieldLoadSaveValidator<?>> attrValidatorMap = new HashMap<String, IFieldLoadSaveValidator<?>>();
+    Map<String, IFieldLoadSaveValidator<?>> attrValidatorMap = new HashMap<>();
     attrValidatorMap.put( "keyStream", stringArrayLoadSaveValidator );
     attrValidatorMap.put( "keyLookup", stringArrayLoadSaveValidator );
     attrValidatorMap.put( "fieldStream", stringArrayLoadSaveValidator );
@@ -115,7 +114,7 @@ public class DimensionLookupMetaTest implements IInitializer<ITransformMeta> {
     attrValidatorMap.put( "startDateAlternative", new IntLoadSaveValidator( DimensionLookupMeta.getStartDateAlternativeCodes().length ) );
     attrValidatorMap.put( "sequenceName", new SequenceNameLoadSaveValidator() );
 
-    Map<String, IFieldLoadSaveValidator<?>> typeValidatorMap = new HashMap<String, IFieldLoadSaveValidator<?>>();
+    Map<String, IFieldLoadSaveValidator<?>> typeValidatorMap = new HashMap<>();
 
     loadSaveTester = new LoadSaveTester( testMetaClass, attributes, new ArrayList<>(),
         getterMap, setterMap, attrValidatorMap, typeValidatorMap, this );
@@ -184,7 +183,7 @@ public class DimensionLookupMetaTest implements IInitializer<ITransformMeta> {
 
     final RowMeta rowMeta = Mockito.mock( RowMeta.class );
     final DimensionLookupMeta dimensionLookupMeta = new DimensionLookupMeta() {
-      @Override Database createDatabaseObject() {
+      @Override Database createDatabaseObject(IVariables variables) {
         return mock( Database.class );
       }
 
@@ -203,7 +202,7 @@ public class DimensionLookupMetaTest implements IInitializer<ITransformMeta> {
     dimensionLookupMeta.setTableName( "aDimTable" );
 
     final DimensionLookupData dimensionLookupData = new DimensionLookupData();
-    assertEquals( rowMeta, dimensionLookupMeta.getRowMeta( dimensionLookupData ) );
+    assertEquals( rowMeta, dimensionLookupMeta.getRowMeta( variables, dimensionLookupData ) );
     assertEquals( 4, dimensionLookupMeta.getDatabaseFields().size() );
     assertEquals( "f1", dimensionLookupMeta.getDatabaseFields().get( 0 ) );
     assertEquals( "f2", dimensionLookupMeta.getDatabaseFields().get( 1 ) );

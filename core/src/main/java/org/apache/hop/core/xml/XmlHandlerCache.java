@@ -1,30 +1,26 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.xml;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Singleton to help speed up lookups in an XML DOM tree.<br>
@@ -50,16 +46,16 @@ public class XmlHandlerCache {
 
   Map<XMlHandlerCacheEntry, Integer> cache;
 
-  private volatile int cacheHits;
+  private AtomicInteger cacheHits;
 
   private XmlHandlerCache() {
-    cache = Collections.synchronizedMap( new WeakHashMap<XMlHandlerCacheEntry, Integer>() );
-    cacheHits = 0;
+    cache = Collections.synchronizedMap( new WeakHashMap<>() );
+    cacheHits = new AtomicInteger();
   }
 
   public static synchronized XmlHandlerCache getInstance() {
     if ( instance == null ) {
-      return instance = new XmlHandlerCache();
+      instance = new XmlHandlerCache();
     }
     return instance;
   }
@@ -82,7 +78,7 @@ public class XmlHandlerCache {
   public int getLastChildNr( XMlHandlerCacheEntry entry ) {
     Integer lastChildNr = cache.get( entry );
     if ( lastChildNr != null ) {
-      cacheHits++;
+      cacheHits.incrementAndGet();
       return lastChildNr;
     }
     return -1;
@@ -92,7 +88,7 @@ public class XmlHandlerCache {
    * @return the number of cache hits for your statistical pleasure.
    */
   public int getCacheHits() {
-    return cacheHits;
+    return cacheHits.get();
   }
 
   /**
@@ -101,7 +97,7 @@ public class XmlHandlerCache {
    * @param cacheHits the number of cache hits.
    */
   public void setCacheHits( int cacheHits ) {
-    this.cacheHits = cacheHits;
+    this.cacheHits.set(cacheHits);
   }
 
   /**

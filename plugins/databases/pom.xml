@@ -1,11 +1,29 @@
 <?xml version="1.0"?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~       http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~
+  -->
+
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.hop</groupId>
+  <groupId>org.apache.hop</groupId>
   <artifactId>hop-plugins-databases</artifactId>
-  <version>0.20-SNAPSHOT</version>
+  <version>0.70-SNAPSHOT</version>
     <modules>
     </modules>
     <packaging>pom</packaging>
@@ -13,9 +31,9 @@
   <name>Hop Plugins Databases</name>
 
   <parent>
-    <groupId>org.hop</groupId>
+    <groupId>org.apache.hop</groupId>
     <artifactId>hop-plugins</artifactId>
-    <version>0.20-SNAPSHOT</version>
+    <version>0.70-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -65,7 +83,6 @@
         <module>derby</module>
         <module>monetdb</module>
         <module>cache</module>
-        <module>dbase</module>
         <module>exasol4</module>
         <module>sqlbase</module>
         <module>h2</module>
@@ -73,18 +90,17 @@
         <module>informix</module>
         <module>interbase</module>
         <module>kingbasees</module>
-        <module>msaccess</module>
         <module>mssqlnative</module>
         <module>mssql</module>
         <module>mysql</module>
         <module>netezza</module>
         <module>oracle</module>        
         <module>oraclerdb</module>
-        <module>remedy-ar-system</module>
         <module>sapdb</module>
         <module>sqlite</module>
         <module>googlebigquery</module>
 		<module>snowflake</module>        
+		<module>clickhouse</module>
       </modules>
     </profile>
 
@@ -92,7 +108,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.hop</groupId>
+      <groupId>org.apache.hop</groupId>
       <artifactId>hop-core</artifactId>
       <scope>compile</scope>
     </dependency>
@@ -103,20 +119,20 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.hop</groupId>
-      <artifactId>hop-ui-swt</artifactId>
-      <version>0.20-SNAPSHOT</version>
+      <groupId>org.apache.hop</groupId>
+      <artifactId>hop-ui</artifactId>
+      <version>0.70-SNAPSHOT</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>org.hop</groupId>
+      <groupId>org.apache.hop</groupId>
       <artifactId>hop-engine</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.hop</groupId>
+      <groupId>org.apache.hop</groupId>
       <artifactId>hop-core</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
@@ -139,7 +155,7 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.hop</groupId>
+        <groupId>org.apache.hop</groupId>
         <artifactId>hop-core</artifactId>
         <version>${project.version}</version>
         <scope>provided</scope>
@@ -154,7 +170,7 @@
       </dependency>
 
       <dependency>
-        <groupId>org.hop</groupId>
+        <groupId>org.apache.hop</groupId>
         <artifactId>hop-core</artifactId>
         <version>${project.version}</version>
         <classifier>test</classifier>
@@ -162,14 +178,14 @@
       </dependency>
 
       <dependency>
-        <groupId>org.hop</groupId>
+        <groupId>org.apache.hop</groupId>
         <artifactId>hop-engine</artifactId>
         <version>${project.version}</version>
         <type>test-jar</type>
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>org.hop</groupId>
+        <groupId>org.apache.hop</groupId>
         <artifactId>hop-core</artifactId>
         <version>${project.version}</version>
         <type>test-jar</type>

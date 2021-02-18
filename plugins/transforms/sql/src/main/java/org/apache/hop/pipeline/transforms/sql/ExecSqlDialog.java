@@ -1,30 +1,24 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.sql;
 
 import org.apache.hop.core.Const;
 import org.apache.hop.core.Props;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.database.DatabaseMeta;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.row.IRowMeta;
@@ -41,120 +35,62 @@ import org.apache.hop.ui.core.widget.StyledTextComp;
 import org.apache.hop.ui.core.widget.TableView;
 import org.apache.hop.ui.hopgui.file.workflow.HopGuiWorkflowGraph;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
-import org.apache.hop.ui.pipeline.transforms.tableinput.SqlValuesHighlight;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.FocusAdapter;
-import org.eclipse.swt.events.FocusEvent;
-import org.eclipse.swt.events.KeyAdapter;
-import org.eclipse.swt.events.KeyEvent;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.MouseAdapter;
-import org.eclipse.swt.events.MouseEvent;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.MessageBox;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import org.apache.hop.core.variables.IVariables;
 
-@PluginDialog(
-        id = "ExecSql",
-        image = "SQL.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = "http://www.project-hop.org/manual/latest/plugins/transforms/sql.html"
-)
 public class ExecSqlDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = ExecSqlMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ExecSqlMeta.class; // For Translator
 
   private MetaSelectionLine<DatabaseMeta> wConnection;
 
-  private Label wlSql;
-
   private StyledTextComp wSql;
 
-  private FormData fdlSql, fdSql;
-
-  private Label wlEachRow;
   private Button wEachRow;
 
   private Label wlSetParams;
   private Button wSetParams;
-  private FormData fdlSetParams;
-  private FormData fdSetParams;
 
-  private Label wlSingleStatement;
   private Button wSingleStatement;
-
-  private Label wlInsertField;
 
   private Text wInsertField;
 
-  private FormData fdlInsertField, fdInsertField;
-
-  private Label wlUpdateField;
-
   private Text wUpdateField;
-
-  private FormData fdlUpdateField, fdUpdateField;
-
-  private Label wlDeleteField;
 
   private Text wDeleteField;
 
-  private FormData fdlDeleteField, fdDeleteField;
-
-  private Label wlReadField;
-
   private Text wReadField;
-
-  private FormData fdlReadField, fdReadField;
 
   private Label wlFields;
 
   private TableView wFields;
 
-  private FormData fdlFields, fdFields;
-
-  private Label wlVariables;
   private Button wVariables;
-  private FormData fdlVariables, fdVariables;
 
   private Label wlQuoteString;
   private Button wQuoteString;
-  private FormData fdlQuoteString, fdQuoteString;
 
-  private ExecSqlMeta input;
+  private final ExecSqlMeta input;
   private boolean changedInDialog;
 
   private Label wlPosition;
-  private FormData fdlPosition;
 
-  private Map<String, Integer> inputFields;
+  private final Map<String, Integer> inputFields;
 
   private ColumnInfo[] colinf;
 
-  public ExecSqlDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public ExecSqlDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (ExecSqlMeta) in;
-    inputFields = new HashMap<String, Integer>();
+    inputFields = new HashMap<>();
   }
 
   public String open() {
@@ -165,11 +101,9 @@ public class ExecSqlDialog extends BaseTransformDialog implements ITransformDial
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        changedInDialog = true;
-        input.setChanged();
-      }
+    ModifyListener lsMod = e -> {
+      changedInDialog = true;
+      input.setChanged();
     };
 
     SelectionAdapter lsSel = new SelectionAdapter() {
@@ -213,24 +147,19 @@ public class ExecSqlDialog extends BaseTransformDialog implements ITransformDial
     wConnection = addConnectionLine( shell, wTransformName, input.getDatabaseMeta(), lsMod );
 
     // Table line...
-    wlSql = new Label( shell, SWT.LEFT );
+    Label wlSql = new Label(shell, SWT.LEFT);
     wlSql.setText( BaseMessages.getString( PKG, "ExecSqlDialog.SQL.Label" ) );
     props.setLook(wlSql);
-    fdlSql = new FormData();
+    FormData fdlSql = new FormData();
     fdlSql.left = new FormAttachment( 0, 0 );
     fdlSql.top = new FormAttachment( wConnection, margin * 2 );
     wlSql.setLayoutData(fdlSql);
 
     wSql =
-      new StyledTextComp( pipelineMeta, shell, SWT.MULTI | SWT.LEFT | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL, "" );
+      new StyledTextComp( variables, shell, SWT.MULTI | SWT.LEFT | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL );
     props.setLook( wSql, Props.WIDGET_STYLE_FIXED );
     wSql.addModifyListener( lsMod );
-    wSql.addModifyListener( new ModifyListener() {
-      public void modifyText( ModifyEvent arg0 ) {
-        setPosition();
-      }
-
-    } );
+    wSql.addModifyListener( arg0 -> setPosition() );
 
     wSql.addKeyListener( new KeyAdapter() {
       public void keyPressed( KeyEvent e ) {
@@ -264,137 +193,134 @@ public class ExecSqlDialog extends BaseTransformDialog implements ITransformDial
       }
     } );
 
-    // Text Higlighting
-    wSql.addLineStyleListener( new SqlValuesHighlight() );
-
     // Some buttons
     //
     wOk = new Button( shell, SWT.PUSH );
     wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
+    wOk.addListener( SWT.Selection, e -> ok() );
     wGet = new Button( shell, SWT.PUSH );
     wGet.setText( BaseMessages.getString( PKG, "ExecSqlDialog.GetFields.Button" ) );
+    wGet.addListener( SWT.Selection, e -> get() );
     wCancel = new Button( shell, SWT.PUSH );
     wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
-    setButtonPositions( new Button[] { wOk, wCancel, wGet }, margin, null );
+    wCancel.addListener( SWT.Selection, e -> cancel() );
+    setButtonPositions( new Button[] { wOk, wGet, wCancel }, margin, null );
 
     // Build it up from the bottom up...
     // Read field
     //
-    wlReadField = new Label( shell, SWT.RIGHT );
+    Label wlReadField = new Label(shell, SWT.RIGHT);
     wlReadField.setText( BaseMessages.getString( PKG, "ExecSqlDialog.ReadField.Label" ) );
-    props.setLook( wlReadField );
-    fdlReadField = new FormData();
+    props.setLook(wlReadField);
+    FormData fdlReadField = new FormData();
     fdlReadField.left = new FormAttachment( middle, margin );
     fdlReadField.right = new FormAttachment( middle * 2, -margin );
     fdlReadField.bottom = new FormAttachment( wOk, -3 * margin );
-    wlReadField.setLayoutData( fdlReadField );
+    wlReadField.setLayoutData(fdlReadField);
     wReadField = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wReadField );
     wReadField.addModifyListener( lsMod );
-    fdReadField = new FormData();
+    FormData fdReadField = new FormData();
     fdReadField.left = new FormAttachment( middle * 2, 0 );
     fdReadField.bottom = new FormAttachment( wOk, -3 * margin );
     fdReadField.right = new FormAttachment( 100, 0 );
-    wReadField.setLayoutData( fdReadField );
+    wReadField.setLayoutData(fdReadField);
 
     // Delete field
     //
-    wlDeleteField = new Label( shell, SWT.RIGHT );
+    Label wlDeleteField = new Label(shell, SWT.RIGHT);
     wlDeleteField.setText( BaseMessages.getString( PKG, "ExecSqlDialog.DeleteField.Label" ) );
-    props.setLook( wlDeleteField );
-    fdlDeleteField = new FormData();
+    props.setLook(wlDeleteField);
+    FormData fdlDeleteField = new FormData();
     fdlDeleteField.left = new FormAttachment( middle, margin );
     fdlDeleteField.right = new FormAttachment( middle * 2, -margin );
     fdlDeleteField.bottom = new FormAttachment( wReadField, -margin );
-    wlDeleteField.setLayoutData( fdlDeleteField );
+    wlDeleteField.setLayoutData(fdlDeleteField);
     wDeleteField = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wDeleteField );
     wDeleteField.addModifyListener( lsMod );
-    fdDeleteField = new FormData();
+    FormData fdDeleteField = new FormData();
     fdDeleteField.left = new FormAttachment( middle * 2, 0 );
     fdDeleteField.bottom = new FormAttachment( wReadField, -margin );
     fdDeleteField.right = new FormAttachment( 100, 0 );
-    wDeleteField.setLayoutData( fdDeleteField );
+    wDeleteField.setLayoutData(fdDeleteField);
 
     // Update field
     //
-    wlUpdateField = new Label( shell, SWT.RIGHT );
+    Label wlUpdateField = new Label(shell, SWT.RIGHT);
     wlUpdateField.setText( BaseMessages.getString( PKG, "ExecSqlDialog.UpdateField.Label" ) );
-    props.setLook( wlUpdateField );
-    fdlUpdateField = new FormData();
+    props.setLook(wlUpdateField);
+    FormData fdlUpdateField = new FormData();
     fdlUpdateField.left = new FormAttachment( middle, margin );
     fdlUpdateField.right = new FormAttachment( middle * 2, -margin );
     fdlUpdateField.bottom = new FormAttachment( wDeleteField, -margin );
-    wlUpdateField.setLayoutData( fdlUpdateField );
+    wlUpdateField.setLayoutData(fdlUpdateField);
     wUpdateField = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wUpdateField );
     wUpdateField.addModifyListener( lsMod );
-    fdUpdateField = new FormData();
+    FormData fdUpdateField = new FormData();
     fdUpdateField.left = new FormAttachment( middle * 2, 0 );
     fdUpdateField.bottom = new FormAttachment( wDeleteField, -margin );
     fdUpdateField.right = new FormAttachment( 100, 0 );
-    wUpdateField.setLayoutData( fdUpdateField );
+    wUpdateField.setLayoutData(fdUpdateField);
 
     // insert field
     //
-    wlInsertField = new Label( shell, SWT.RIGHT );
+    Label wlInsertField = new Label(shell, SWT.RIGHT);
     wlInsertField.setText( BaseMessages.getString( PKG, "ExecSqlDialog.InsertField.Label" ) );
-    props.setLook( wlInsertField );
-    fdlInsertField = new FormData();
+    props.setLook(wlInsertField);
+    FormData fdlInsertField = new FormData();
     fdlInsertField.left = new FormAttachment( middle, margin );
     fdlInsertField.right = new FormAttachment( middle * 2, -margin );
     fdlInsertField.bottom = new FormAttachment( wUpdateField, -margin );
-    wlInsertField.setLayoutData( fdlInsertField );
+    wlInsertField.setLayoutData(fdlInsertField);
     wInsertField = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wInsertField );
     wInsertField.addModifyListener( lsMod );
-    fdInsertField = new FormData();
+    FormData fdInsertField = new FormData();
     fdInsertField.left = new FormAttachment( middle * 2, 0 );
     fdInsertField.bottom = new FormAttachment( wUpdateField, -margin );
     fdInsertField.right = new FormAttachment( 100, 0 );
-    wInsertField.setLayoutData( fdInsertField );
+    wInsertField.setLayoutData(fdInsertField);
 
     // Setup the "Parameters" label
     //
     wlFields = new Label( shell, SWT.NONE );
     wlFields.setText( BaseMessages.getString( PKG, "ExecSqlDialog.Fields.Label" ) );
     props.setLook( wlFields );
-    fdlFields = new FormData();
+    FormData fdlFields = new FormData();
     fdlFields.left = new FormAttachment( 0, 0 );
     fdlFields.right = new FormAttachment( middle, 0 );
     fdlFields.bottom = new FormAttachment( wInsertField, -25 );
-    wlFields.setLayoutData( fdlFields );
+    wlFields.setLayoutData(fdlFields);
 
     // Parameter fields...
     //
     final int FieldsRows = input.getArguments().length;
 
-    colinf =
-      new ColumnInfo[] { new ColumnInfo(
+    colinf = new ColumnInfo[] { new ColumnInfo(
         BaseMessages.getString( PKG, "ExecSqlDialog.ColumnInfo.ArgumentFieldname" ),
         ColumnInfo.COLUMN_TYPE_CCOMBO, new String[] { "" }, false ), };
 
-    wFields =
-      new TableView(
-        pipelineMeta, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
-    fdFields = new FormData();
+    wFields = new TableView( variables, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
+    FormData fdFields = new FormData();
     fdFields.left = new FormAttachment( 0, 0 );
     fdFields.top = new FormAttachment( wlFields, margin );
     fdFields.right = new FormAttachment( middle, 0 );
     fdFields.bottom = new FormAttachment( wOk, -3 * margin );
-    wFields.setLayoutData( fdFields );
+    wFields.setLayoutData(fdFields);
 
     // For the "execute for each row" and "variable substitution" labels,
     // find their maximum width
     // and use that in the alignment
     //
-    wlEachRow = new Label( shell, SWT.RIGHT );
+    Label wlEachRow = new Label(shell, SWT.RIGHT);
     wlEachRow.setText( BaseMessages.getString( PKG, "ExecSqlDialog.EachRow.Label" ) );
     wlEachRow.pack();
-    wlSingleStatement = new Label( shell, SWT.RIGHT );
+    Label wlSingleStatement = new Label(shell, SWT.RIGHT);
     wlSingleStatement.setText( BaseMessages.getString( PKG, "ExecSqlDialog.SingleStatement.Label" ) );
     wlSingleStatement.pack();
-    wlVariables = new Label( shell, SWT.RIGHT );
+    Label wlVariables = new Label(shell, SWT.RIGHT);
     wlVariables.setText( BaseMessages.getString( PKG, "ExecSqlDialog.ReplaceVariables" ) );
     wlVariables.pack();
     wlQuoteString = new Label( shell, SWT.RIGHT );
@@ -411,19 +337,19 @@ public class ExecSqlDialog extends BaseTransformDialog implements ITransformDial
     // Setup the "Quote String" label and checkbox
     //
     props.setLook( wlQuoteString );
-    fdlQuoteString = new FormData();
+    FormData fdlQuoteString = new FormData();
     fdlQuoteString.left = new FormAttachment( 0, margin );
     fdlQuoteString.right = new FormAttachment( 0, width );
     fdlQuoteString.bottom = new FormAttachment( wlFields, -2 * margin );
-    wlQuoteString.setLayoutData( fdlQuoteString );
+    wlQuoteString.setLayoutData(fdlQuoteString);
     wQuoteString = new Button( shell, SWT.CHECK );
     props.setLook( wQuoteString );
     wQuoteString.setToolTipText( BaseMessages.getString( PKG, "ExecSqlDialog.QuoteString.Tooltip" ) );
-    fdQuoteString = new FormData();
+    FormData fdQuoteString = new FormData();
     fdQuoteString.left = new FormAttachment( wlQuoteString, margin );
-    fdQuoteString.bottom = new FormAttachment( wlFields, -2 * margin );
+    fdQuoteString.top = new FormAttachment( wlQuoteString, 0, SWT.CENTER );
     fdQuoteString.right = new FormAttachment( middle, 0 );
-    wQuoteString.setLayoutData( fdQuoteString );
+    wQuoteString.setLayoutData(fdQuoteString);
     wQuoteString.addSelectionListener( lsSel );
 
     // Setup the "Bind parameters" label and checkbox
@@ -431,19 +357,19 @@ public class ExecSqlDialog extends BaseTransformDialog implements ITransformDial
     wlSetParams = new Label( this.shell, SWT.RIGHT );
     wlSetParams.setText( BaseMessages.getString( PKG, "ExecSqlDialog.SetParams.Label" ) );
     props.setLook( this.wlSetParams );
-    fdlSetParams = new FormData();
+    FormData fdlSetParams = new FormData();
     fdlSetParams.left = new FormAttachment( 0, margin );
     fdlSetParams.bottom = new FormAttachment( wQuoteString, -margin );
     fdlSetParams.right = new FormAttachment( 0, width );
-    wlSetParams.setLayoutData( this.fdlSetParams );
+    wlSetParams.setLayoutData(fdlSetParams);
     wSetParams = new Button( shell, SWT.CHECK );
     props.setLook( this.wSetParams );
     wSetParams.setToolTipText( BaseMessages.getString( PKG, "ExecSqlDialog.SetParams.Tooltip" ) );
-    fdSetParams = new FormData();
+    FormData fdSetParams = new FormData();
     fdSetParams.left = new FormAttachment( wlSetParams, margin );
-    fdSetParams.bottom = new FormAttachment( wQuoteString, -margin );
+    fdSetParams.top = new FormAttachment( wlSetParams, 0, SWT.CENTER );
     fdSetParams.right = new FormAttachment( middle, 0 );
-    wSetParams.setLayoutData( fdSetParams );
+    wSetParams.setLayoutData(fdSetParams);
     wSetParams.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         setExecutedSetParams();
@@ -453,24 +379,24 @@ public class ExecSqlDialog extends BaseTransformDialog implements ITransformDial
 
     // Setup the "variable substitution" label and checkbox
     //
-    props.setLook( wlVariables );
-    fdlVariables = new FormData();
+    props.setLook(wlVariables);
+    FormData fdlVariables = new FormData();
     fdlVariables.left = new FormAttachment( 0, margin );
     fdlVariables.right = new FormAttachment( 0, width );
     fdlVariables.bottom = new FormAttachment( wSetParams, -margin );
-    wlVariables.setLayoutData( fdlVariables );
+    wlVariables.setLayoutData(fdlVariables);
     wVariables = new Button( shell, SWT.CHECK );
     props.setLook( wVariables );
-    fdVariables = new FormData();
-    fdVariables.left = new FormAttachment( wlVariables, margin );
-    fdVariables.bottom = new FormAttachment( wSetParams, -margin );
+    FormData fdVariables = new FormData();
+    fdVariables.left = new FormAttachment(wlVariables, margin );
+    fdVariables.top = new FormAttachment( wlVariables, 0, SWT.CENTER );
     fdVariables.right = new FormAttachment( middle, 0 );
-    wVariables.setLayoutData( fdVariables );
+    wVariables.setLayoutData(fdVariables);
     wVariables.addSelectionListener( lsSel );
 
     // Setup the "Single statement" label and checkbox
     //
-    props.setLook( wlSingleStatement );
+    props.setLook(wlSingleStatement);
     FormData fdlSingleStatement = new FormData();
     fdlSingleStatement.left = new FormAttachment( 0, margin );
     fdlSingleStatement.right = new FormAttachment( 0, width );
@@ -479,15 +405,15 @@ public class ExecSqlDialog extends BaseTransformDialog implements ITransformDial
     wSingleStatement = new Button( shell, SWT.CHECK );
     props.setLook( wSingleStatement );
     FormData fdSingleStatement = new FormData();
-    fdSingleStatement.left = new FormAttachment( wlEachRow, margin );
-    fdSingleStatement.bottom = new FormAttachment( wVariables, -margin );
+    fdSingleStatement.left = new FormAttachment(wlEachRow, margin );
+    fdSingleStatement.top = new FormAttachment( wlSingleStatement, 0, SWT.CENTER );
     fdSingleStatement.right = new FormAttachment( middle, 0 );
     wSingleStatement.setLayoutData( fdSingleStatement );
     wSingleStatement.addSelectionListener( lsSel );
 
     // Setup the "execute for each row" label and checkbox
     //
-    props.setLook( wlEachRow );
+    props.setLook(wlEachRow);
     FormData fdlEachRow = new FormData();
     fdlEachRow.left = new FormAttachment( 0, margin );
     fdlEachRow.right = new FormAttachment( 0, width );
@@ -496,8 +422,8 @@ public class ExecSqlDialog extends BaseTransformDialog implements ITransformDial
     wEachRow = new Button( shell, SWT.CHECK );
     props.setLook( wEachRow );
     FormData fdEachRow = new FormData();
-    fdEachRow.left = new FormAttachment( wlEachRow, margin );
-    fdEachRow.bottom = new FormAttachment( wSingleStatement, -margin );
+    fdEachRow.left = new FormAttachment(wlEachRow, margin );
+    fdEachRow.top = new FormAttachment( wlEachRow, 0, SWT.CENTER );
     fdEachRow.right = new FormAttachment( middle, 0 );
     wEachRow.setLayoutData( fdEachRow );
     wEachRow.addSelectionListener( lsSel );
@@ -506,16 +432,16 @@ public class ExecSqlDialog extends BaseTransformDialog implements ITransformDial
     //
     wlPosition = new Label( shell, SWT.NONE );
     props.setLook( wlPosition );
-    fdlPosition = new FormData();
+    FormData fdlPosition = new FormData();
     fdlPosition.left = new FormAttachment( 0, 0 );
     fdlPosition.right = new FormAttachment( 100, 0 );
     fdlPosition.bottom = new FormAttachment( wEachRow, -2 * margin ); // 2 times since we deal with bottom instead of
     // top
-    wlPosition.setLayoutData( fdlPosition );
+    wlPosition.setLayoutData(fdlPosition);
 
-    // Finally, the SQL editor takes up all other space between the position and the SQL label
+    // Finally, the SQL editor takes up all other variables between the position and the SQL label
     //
-    fdSql = new FormData();
+    FormData fdSql = new FormData();
     fdSql.left = new FormAttachment( 0, 0 );
     fdSql.top = new FormAttachment(wlSql, margin );
     fdSql.right = new FormAttachment( 100, -2 * margin );
@@ -524,21 +450,19 @@ public class ExecSqlDialog extends BaseTransformDialog implements ITransformDial
 
     // Search the fields in the background
     //
-    final Runnable runnable = new Runnable() {
-      public void run() {
-        TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
-        if ( transformMeta != null ) {
-          try {
-            IRowMeta row = pipelineMeta.getPrevTransformFields( transformMeta );
+    final Runnable runnable = () -> {
+      TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
+      if ( transformMeta != null ) {
+        try {
+          IRowMeta row = pipelineMeta.getPrevTransformFields( variables, transformMeta );
 
-            // Remember these fields...
-            for ( int i = 0; i < row.size(); i++ ) {
-              inputFields.put( row.getValueMeta( i ).getName(), Integer.valueOf( i ) );
-            }
-            setComboBoxes();
-          } catch ( HopException e ) {
-            logError( BaseMessages.getString( PKG, "System.Dialog.GetFieldsFailed.Message" ) );
+          // Remember these fields...
+          for ( int i = 0; i < row.size(); i++ ) {
+            inputFields.put( row.getValueMeta( i ).getName(), i);
           }
+          setComboBoxes();
+        } catch ( HopException e ) {
+          logError( BaseMessages.getString( PKG, "System.Dialog.GetFieldsFailed.Message" ) );
         }
       }
     };
@@ -546,26 +470,6 @@ public class ExecSqlDialog extends BaseTransformDialog implements ITransformDial
 
     // Add listeners
     //
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-    lsGet = new Listener() {
-      public void handleEvent( Event e ) {
-        get();
-      }
-    };
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
-
-    wCancel.addListener( SWT.Selection, lsCancel );
-    wGet.addListener( SWT.Selection, lsGet );
-    wOk.addListener( SWT.Selection, lsOk );
-
     lsDef = new SelectionAdapter() {
       public void widgetDefaultSelected( SelectionEvent e ) {
         ok();
@@ -632,25 +536,15 @@ public class ExecSqlDialog extends BaseTransformDialog implements ITransformDial
   }
 
   public void setPosition() {
-
-    String scr = wSql.getText();
-    int linenr = wSql.getLineAtOffset( wSql.getCaretOffset() ) + 1;
-    int posnr = wSql.getCaretOffset();
-
-    // Go back from position to last CR: how many positions?
-    int colnr = 0;
-    while ( posnr > 0 && scr.charAt( posnr - 1 ) != '\n' && scr.charAt( posnr - 1 ) != '\r' ) {
-      posnr--;
-      colnr++;
-    }
-    wlPosition.setText( BaseMessages.getString( PKG, "ExecSqlDialog.Position.Label", "" + linenr, "" + colnr ) );
-
+    int lineNumber = wSql.getLineNumber();
+    int columnNumber = wSql.getColumnNumber();
+    wlPosition.setText( BaseMessages.getString( PKG, "ExecSqlDialog.Position.Label", "" + lineNumber, "" + columnNumber ) );
   }
 
   protected void setComboBoxes() {
     // Something was changed in the row.
     //
-    final Map<String, Integer> fields = new HashMap<String, Integer>();
+    final Map<String, Integer> fields = new HashMap<>();
 
     // Add the currentMeta fields...
     fields.putAll( inputFields );
@@ -767,7 +661,7 @@ public class ExecSqlDialog extends BaseTransformDialog implements ITransformDial
 
   private void get() {
     try {
-      IRowMeta r = pipelineMeta.getPrevTransformFields( transformName );
+      IRowMeta r = pipelineMeta.getPrevTransformFields( variables, transformName );
       if ( r != null ) {
         BaseTransformDialog.getFieldsFromPrevious( r, wFields, 1, new int[] { 1 }, new int[] {}, -1, -1, null );
       }

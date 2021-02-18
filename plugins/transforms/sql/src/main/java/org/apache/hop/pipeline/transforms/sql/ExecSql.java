@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.sql;
 
@@ -49,7 +44,7 @@ import java.util.ArrayList;
  */
 public class ExecSql extends BaseTransform<ExecSqlMeta, ExecSqlData> implements ITransform<ExecSqlMeta, ExecSqlData> {
 
-  private static Class<?> PKG = ExecSqlMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ExecSqlMeta.class; // For Translator
 
   public ExecSql( TransformMeta transformMeta, ExecSqlMeta meta, ExecSqlData data, int copyNr, PipelineMeta pipelineMeta,
                   Pipeline pipeline ) {
@@ -110,7 +105,7 @@ public class ExecSql extends BaseTransform<ExecSqlMeta, ExecSqlData> implements 
       first = false;
 
       data.outputRowMeta = getInputRowMeta().clone();
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
       // Find the indexes of the arguments
       data.argumentIndexes = new int[ meta.getArguments().length ];
@@ -136,7 +131,7 @@ public class ExecSql extends BaseTransform<ExecSqlMeta, ExecSqlData> implements 
         // Find the locations of the question marks in the String...
         // We replace the question marks with the values...
         // We ignore quotes etc. to make inserts easier...
-        data.markerPositions = new ArrayList<Integer>();
+        data.markerPositions = new ArrayList<>();
         int len = data.sql.length();
         int pos = len - 1;
         while ( pos >= 0 ) {
@@ -273,8 +268,7 @@ public class ExecSql extends BaseTransform<ExecSqlMeta, ExecSqlData> implements 
         logError( BaseMessages.getString( PKG, "ExecSql.Init.ConnectionMissing", getTransformName() ) );
         return false;
       }
-      data.db = new Database( this, meta.getDatabaseMeta() );
-      data.db.shareVariablesWith( this );
+      data.db = new Database( this, this, meta.getDatabaseMeta() );
 
       // Connect to the database
       try {
@@ -285,7 +279,7 @@ public class ExecSql extends BaseTransform<ExecSqlMeta, ExecSqlData> implements 
         }
 
         if ( meta.isReplaceVariables() ) {
-          data.sql = environmentSubstitute( meta.getSql() );
+          data.sql = resolve( meta.getSql() );
         } else {
           data.sql = meta.getSql();
         }

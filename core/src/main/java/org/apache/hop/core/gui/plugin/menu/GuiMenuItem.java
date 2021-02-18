@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.gui.plugin.menu;
 
@@ -41,8 +36,6 @@ public class GuiMenuItem extends BaseGuiElements implements Comparable<GuiMenuIt
   private String label;
 
   private String toolTip;
-
-  private String i18nPackage;
 
   private GuiMenuElementType type;
 
@@ -71,14 +64,13 @@ public class GuiMenuItem extends BaseGuiElements implements Comparable<GuiMenuIt
     this.type = guiElement.type();
     this.parentId = guiElement.parentId();
     this.image = guiElement.image();
-    this.i18nPackage = calculateI18nPackage( guiElement.i18nPackageClass(), guiElement.i18nPackage() );
     this.ignored = guiElement.ignored();
     this.addingSeparator = guiElement.separator();
     this.listenerMethod = guiPluginMethod.getName();
     this.listenerClassName = guiPluginClassName; // Ask the classloader for the class
     this.singleTon = true; // Always a singleton for now
-    this.label = calculateI18n( i18nPackage, guiElement.label() );
-    this.toolTip = calculateI18n( i18nPackage, guiElement.toolTip() );
+    this.label = getTranslation(guiElement.label(), guiPluginMethod.getDeclaringClass().getPackage().getName(), guiPluginMethod.getDeclaringClass() );
+    this.toolTip = getTranslation(guiElement.toolTip(), guiPluginMethod.getDeclaringClass().getPackage().getName(), guiPluginMethod.getDeclaringClass() );
     this.classLoader = classLoader;
   }
 
@@ -185,22 +177,6 @@ public class GuiMenuItem extends BaseGuiElements implements Comparable<GuiMenuIt
    */
   public void setToolTip( String toolTip ) {
     this.toolTip = toolTip;
-  }
-
-  /**
-   * Gets i18nPackage
-   *
-   * @return value of i18nPackage
-   */
-  public String getI18nPackage() {
-    return i18nPackage;
-  }
-
-  /**
-   * @param i18nPackage The i18nPackage to set
-   */
-  public void setI18nPackage( String i18nPackage ) {
-    this.i18nPackage = i18nPackage;
   }
 
   /**

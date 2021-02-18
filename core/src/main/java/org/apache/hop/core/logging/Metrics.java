@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.logging;
 
@@ -94,19 +89,6 @@ public class Metrics implements IMetrics {
   public static Metrics METRIC_DATABASE_GET_ROW_MAX_TIME = new Metrics(
     MetricsSnapshotType.MAX, "METRIC_DATABASE_GET_ROW_MAX_TIME", "Get row from DB (max time)" );
 
-  // Plugin registry...
-  //
-  public static Metrics METRIC_PLUGIN_REGISTRY_PLUGIN_REGISTRATION_START = new Metrics(
-    MetricsSnapshotType.START, "METRIC_PLUGIN_REGISTRY_PLUGIN_REGISTRATION", "Register plugins" );
-  public static Metrics METRIC_PLUGIN_REGISTRY_PLUGIN_REGISTRATION_STOP = new Metrics(
-    MetricsSnapshotType.STOP, "METRIC_PLUGIN_REGISTRY_PLUGIN_REGISTRATION", "Register plugins" );
-  public static Metrics METRIC_PLUGIN_REGISTRY_PLUGIN_TYPE_REGISTRATION_START = new Metrics(
-    MetricsSnapshotType.START, "METRIC_PLUGIN_REGISTRY_PLUGIN_TYPE_REGISTRATION",
-    "Register plugins of a certain type" );
-  public static Metrics METRIC_PLUGIN_REGISTRY_PLUGIN_TYPE_REGISTRATION_STOP = new Metrics(
-    MetricsSnapshotType.STOP, "METRIC_PLUGIN_REGISTRY_PLUGIN_TYPE_REGISTRATION",
-    "Register plugins of a certain type" );
-
   // Pipeline
   //
   public static Metrics METRIC_PIPELINE_EXECUTION_START = new Metrics(
@@ -147,15 +129,17 @@ public class Metrics implements IMetrics {
     MetricsSnapshotType.COUNT, "METRIC_LOGGING_REGISTRY_GET_CHILDREN_COUNT",
     "Number of times retrieved log registry children" );
 
-  // Job
+  // Workflow
   //
-  public static Metrics METRIC_JOB_START = new Metrics(
+  public static Metrics METRIC_WORKFLOW_START = new Metrics(
     MetricsSnapshotType.START, "METRIC_JOB_EXECUTION", "Execute a workflow" );
-  public static Metrics METRIC_JOB_STOP = new Metrics(
+  public static Metrics METRIC_WORKFLOW_STOP = new Metrics(
     MetricsSnapshotType.STOP, "METRIC_JOB_EXECUTION", "Execute a workflow" );
-  public static Metrics METRIC_JOBENTRY_START = new Metrics(
+  public static Metrics METRIC_ACTION_START = new Metrics(
+  // TODO: Rename METRIC_JOBENTRY_EXECUTION to METRIC_ACTION_EXECUTION
     MetricsSnapshotType.START, "METRIC_JOBENTRY_EXECUTION", "Execute a action" );
-  public static Metrics METRIC_JOBENTRY_STOP = new Metrics(
+  // TODO: Rename METRIC_JOBENTRY_STOP to METRIC_ACTION_STOP
+  public static Metrics METRIC_ACTION_STOP = new Metrics(
     MetricsSnapshotType.STOP, "METRIC_JOBENTRY_EXECUTION", "Execute a action" );
 
   private String code;
@@ -196,7 +180,7 @@ public class Metrics implements IMetrics {
   }
 
   public static List<IMetrics> getDefaultMetrics() {
-    List<IMetrics> metrics = new ArrayList<IMetrics>();
+    List<IMetrics> metrics = new ArrayList<>();
 
     for ( Field field : Metrics.class.getDeclaredFields() ) {
       if ( field.getType().equals( Metrics.class ) && field.getName().startsWith( "METRIC_" ) ) {

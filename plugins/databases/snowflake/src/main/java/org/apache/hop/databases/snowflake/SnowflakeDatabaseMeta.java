@@ -27,7 +27,7 @@ import org.apache.hop.core.gui.plugin.GuiPlugin;
 import org.apache.hop.core.gui.plugin.GuiWidgetElement;
 import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.util.Utils;
-import org.apache.hop.metastore.persist.MetaStoreAttribute;
+import org.apache.hop.metadata.api.HopMetadataProperty;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -42,10 +42,16 @@ import java.util.Map;
 @GuiPlugin(id = "GUI-SnowflakeDatabaseMeta")
 public class SnowflakeDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
 
-	// TODO: Manage all attributes in plugin when HOP-67 is fixed
-	@MetaStoreAttribute
-	@GuiWidgetElement(id =  "warehouse", order = "02B", i18nPackage = "org.apache.hop.ui.core.database", label = "DatabaseDialog.label.Warehouse", type = GuiElementType.TEXT, variables = true, parentId = DatabaseMeta.GUI_PLUGIN_ELEMENT_PARENT_ID)
-	private String warehouse;
+  // TODO: Manage all attributes in plugin when HOP-67 is fixed
+  @HopMetadataProperty
+  @GuiWidgetElement(
+      id = "warehouse",
+      order = "02B",
+      label = "i18n:org.apache.hop.ui.core.database:DatabaseDialog.label.Warehouse",
+      type = GuiElementType.TEXT,
+      variables = true,
+      parentId = DatabaseMeta.GUI_PLUGIN_ELEMENT_PARENT_ID)
+  private String warehouse;
 
 	public String getWarehouse() {
 		return warehouse;
@@ -57,7 +63,7 @@ public class SnowflakeDatabaseMeta extends BaseDatabaseMeta implements IDatabase
 
 	@Override
 	public int[] getAccessTypeList() {
-		return new int[] { DatabaseMeta.TYPE_ACCESS_NATIVE, DatabaseMeta.TYPE_ACCESS_ODBC };
+		return new int[] { DatabaseMeta.TYPE_ACCESS_NATIVE};
 	}
 
 	@Override
@@ -89,10 +95,6 @@ public class SnowflakeDatabaseMeta extends BaseDatabaseMeta implements IDatabase
 	@Override
 	public String getURL(String hostName, String port, String databaseName) {
 
-		if (getAccessType() == DatabaseMeta.TYPE_ACCESS_ODBC) {
-			return "jdbc:odbc:" + this.odbcDsn;
-		}
-
 		Validate.notEmpty(hostName, "Host name is empty");
 
 		String url = "jdbc:snowflake://" + hostName.toLowerCase();
@@ -121,15 +123,15 @@ public class SnowflakeDatabaseMeta extends BaseDatabaseMeta implements IDatabase
 	}
 
 	@Override
-	public String getAddColumnStatement( String tablename, IValueMeta v, String tk, boolean useAutoinc,
+	public String getAddColumnStatement( String tableName, IValueMeta v, String tk, boolean useAutoinc,
                                        String pk, boolean semicolon) {
-		return "ALTER TABLE " + tablename + " ADD COLUMN " + getFieldDefinition(v, tk, pk, useAutoinc, true, false);
+		return "ALTER TABLE " + tableName + " ADD COLUMN " + getFieldDefinition(v, tk, pk, useAutoinc, true, false);
 	}
 
 	@Override
-	public String getDropColumnStatement( String tablename, IValueMeta v, String tk, boolean useAutoinc,
+	public String getDropColumnStatement( String tableName, IValueMeta v, String tk, boolean useAutoinc,
                                         String pk, boolean semicolon) {
-		return "ALTER TABLE " + tablename + " DROP COLUMN " + v.getName() + Const.CR;
+		return "ALTER TABLE " + tableName + " DROP COLUMN " + v.getName() + Const.CR;
 	}
 
 	@Override
@@ -271,13 +273,13 @@ public class SnowflakeDatabaseMeta extends BaseDatabaseMeta implements IDatabase
 	}
 
 	@Override
-	public String getSqlTableExists(String tablename) {
-		return getSqlQueryFields(tablename);
+	public String getSqlTableExists(String tableName) {
+		return getSqlQueryFields(tableName);
 	}
 
 	@Override
-	public String getSqlColumnExists(String columnname, String tablename) {
-		return getSqlQueryColumnFields(columnname, tablename);
+	public String getSqlColumnExists(String columnname, String tableName) {
+		return getSqlQueryColumnFields(columnname, tableName);
 	}
 
 	public String getSqlQueryColumnFields(String columnname, String tableName) {

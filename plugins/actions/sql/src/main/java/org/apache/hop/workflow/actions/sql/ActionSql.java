@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.sql;
 
@@ -42,7 +37,7 @@ import org.apache.hop.workflow.action.ActionBase;
 import org.apache.hop.workflow.action.IAction;
 import org.apache.hop.workflow.action.validator.ActionValidatorUtils;
 import org.apache.hop.workflow.action.validator.AndValidator;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.resource.ResourceEntry;
 import org.apache.hop.resource.ResourceEntry.ResourceType;
 import org.apache.hop.resource.ResourceReference;
@@ -63,14 +58,14 @@ import java.util.List;
 
 @Action(
   id = "SQL",
-  i18nPackageName = "org.apache.hop.workflow.actions.sql",
-  name = "ActionSQL.Name",
-  description = "ActionSQL.Description",
-  image = "SQL.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Scripting"
+  name = "i18n::ActionSQL.Name",
+  description = "i18n::ActionSQL.Description",
+  image = "sql.svg",
+  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Scripting",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/sql.html"
 )
 public class ActionSql extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionSql.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionSql.class; // For Translator
 
   private String sql;
   private DatabaseMeta connection;
@@ -113,7 +108,7 @@ public class ActionSql extends ActionBase implements Cloneable, IAction {
   }
 
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
       sql = XmlHandler.getTagValue( entrynode, "sql" );
@@ -123,7 +118,7 @@ public class ActionSql extends ActionBase implements Cloneable, IAction {
       if ( sSubs != null && sSubs.equalsIgnoreCase( "T" ) ) {
         useVariableSubstitution = true;
       }
-      connection = DatabaseMeta.loadDatabase( metaStore, dbname );
+      connection = DatabaseMeta.loadDatabase( metadataProvider, dbname );
 
       String ssql = XmlHandler.getTagValue( entrynode, "sqlfromfile" );
       if ( ssql != null && ssql.equalsIgnoreCase( "T" ) ) {
@@ -194,9 +189,8 @@ public class ActionSql extends ActionBase implements Cloneable, IAction {
     Result result = previousResult;
 
     if ( connection != null ) {
-      Database db = new Database( this, connection );
+      Database db = new Database( this, this, connection );
       FileObject sqlFile = null;
-      db.shareVariablesWith( this );
       try {
         String theSql = null;
         db.connect();
@@ -207,8 +201,8 @@ public class ActionSql extends ActionBase implements Cloneable, IAction {
           }
 
           try {
-            String realfilename = environmentSubstitute( sqlfilename );
-            sqlFile = HopVfs.getFileObject( realfilename, this );
+            String realfilename = resolve( sqlfilename );
+            sqlFile = HopVfs.getFileObject( realfilename );
             if ( !sqlFile.exists() ) {
               logError( BaseMessages.getString( PKG, "JobSQL.SQLFileNotExist", realfilename ) );
               throw new HopDatabaseException( BaseMessages.getString(
@@ -248,7 +242,7 @@ public class ActionSql extends ActionBase implements Cloneable, IAction {
         if ( !Utils.isEmpty( theSql ) ) {
           // let it run
           if ( useVariableSubstitution ) {
-            theSql = environmentSubstitute( theSql );
+            theSql = resolve( theSql );
           }
           if ( isDetailed() ) {
             logDetailed( BaseMessages.getString( PKG, "JobSQL.Log.SQlStatement", theSql ) );
@@ -286,7 +280,7 @@ public class ActionSql extends ActionBase implements Cloneable, IAction {
     return result;
   }
 
-  public boolean evaluates() {
+  @Override public boolean isEvaluation() {
     return true;
   }
 
@@ -298,8 +292,8 @@ public class ActionSql extends ActionBase implements Cloneable, IAction {
     return new DatabaseMeta[] { connection, };
   }
 
-  public List<ResourceReference> getResourceDependencies( WorkflowMeta workflowMeta ) {
-    List<ResourceReference> references = super.getResourceDependencies( workflowMeta );
+  public List<ResourceReference> getResourceDependencies( IVariables variables, WorkflowMeta workflowMeta ) {
+    List<ResourceReference> references = super.getResourceDependencies( variables, workflowMeta );
     if ( connection != null ) {
       ResourceReference reference = new ResourceReference( this );
       reference.getEntries().add( new ResourceEntry( connection.getHostname(), ResourceType.SERVER ) );
@@ -311,7 +305,7 @@ public class ActionSql extends ActionBase implements Cloneable, IAction {
 
   @Override
   public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     ActionValidatorUtils.andValidator().validate( this, "SQL", remarks,
       AndValidator.putValidators( ActionValidatorUtils.notBlankValidator() ) );
   }

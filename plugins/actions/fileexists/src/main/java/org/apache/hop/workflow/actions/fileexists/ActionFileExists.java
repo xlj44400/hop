@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.fileexists;
 
@@ -38,7 +33,7 @@ import org.apache.hop.workflow.action.ActionBase;
 import org.apache.hop.workflow.action.IAction;
 import org.apache.hop.workflow.action.validator.ActionValidatorUtils;
 import org.apache.hop.workflow.action.validator.AndValidator;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.resource.ResourceDefinition;
 import org.apache.hop.resource.ResourceEntry;
 import org.apache.hop.resource.ResourceEntry.ResourceType;
@@ -58,14 +53,14 @@ import java.util.Map;
 
 @Action(
   id = "FILE_EXISTS",
-  i18nPackageName = "org.apache.hop.workflow.actions.fileexists",
-  name = "ActionFileExists.Name",
-  description = "ActionFileExists.Description",
+  name = "i18n::ActionFileExists.Name",
+  description = "i18n::ActionFileExists.Description",
   image = "FileExists.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Conditions"
+  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Conditions",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/fileexists.html"
 )
 public class ActionFileExists extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionFileExists.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionFileExists.class; // For Translator
 
   private String filename;
 
@@ -93,7 +88,7 @@ public class ActionFileExists extends ActionBase implements Cloneable, IAction {
   }
 
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
       filename = XmlHandler.getTagValue( entrynode, "filename" );
@@ -112,7 +107,7 @@ public class ActionFileExists extends ActionBase implements Cloneable, IAction {
   }
 
   public String getRealFilename() {
-    return environmentSubstitute( getFilename() );
+    return resolve( getFilename() );
   }
 
   public Result execute( Result previousResult, int nr ) {
@@ -124,7 +119,7 @@ public class ActionFileExists extends ActionBase implements Cloneable, IAction {
 
       String realFilename = getRealFilename();
       try {
-        FileObject file = HopVfs.getFileObject( realFilename, this );
+        FileObject file = HopVfs.getFileObject( realFilename );
         if ( file.exists() && file.isReadable() ) {
           logDetailed( BaseMessages.getString( PKG, "ActionFileExists.File_Exists", realFilename ) );
           result.setResult( true );
@@ -143,14 +138,14 @@ public class ActionFileExists extends ActionBase implements Cloneable, IAction {
     return result;
   }
 
-  public boolean evaluates() {
+  @Override public boolean isEvaluation() {
     return true;
   }
 
-  public List<ResourceReference> getResourceDependencies( WorkflowMeta workflowMeta ) {
-    List<ResourceReference> references = super.getResourceDependencies( workflowMeta );
+  public List<ResourceReference> getResourceDependencies( IVariables variables, WorkflowMeta workflowMeta ) {
+    List<ResourceReference> references = super.getResourceDependencies( variables, workflowMeta );
     if ( !Utils.isEmpty( filename ) ) {
-      String realFileName = workflowMeta.environmentSubstitute( filename );
+      String realFileName = resolve( filename );
       ResourceReference reference = new ResourceReference( this );
       reference.getEntries().add( new ResourceEntry( realFileName, ResourceType.FILE ) );
       references.add( reference );
@@ -160,7 +155,7 @@ public class ActionFileExists extends ActionBase implements Cloneable, IAction {
 
   @Override
   public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     ActionValidatorUtils.andValidator().validate( this, "filename", remarks,
       AndValidator.putValidators( ActionValidatorUtils.notBlankValidator() ) );
   }
@@ -170,15 +165,15 @@ public class ActionFileExists extends ActionBase implements Cloneable, IAction {
    * resource naming interface allows the object to name appropriately without worrying about those parts of the
    * implementation specific details.
    *
-   * @param variables           The variable space to resolve (environment) variables with.
+   * @param variables           The variable variables to resolve (environment) variables with.
    * @param definitions     The map containing the filenames and content
    * @param namingInterface The resource naming interface allows the object to be named appropriately
-   * @param metaStore       the metaStore to load external metadata from
+   * @param metadataProvider       the metadataProvider to load external metadata from
    * @return The filename for this object. (also contained in the definitions map)
    * @throws HopException in case something goes wrong during the export
    */
   public String exportResources( IVariables variables, Map<String, ResourceDefinition> definitions,
-                                 IResourceNaming namingInterface, IMetaStore metaStore ) throws HopException {
+                                 IResourceNaming namingInterface, IHopMetadataProvider metadataProvider ) throws HopException {
     try {
       // The object that we're modifying here is a copy of the original!
       // So let's change the filename from relative to absolute by grabbing the file object...
@@ -188,7 +183,7 @@ public class ActionFileExists extends ActionBase implements Cloneable, IAction {
         // From : ${FOLDER}/../foo/bar.csv
         // To : /home/matt/test/files/foo/bar.csv
         //
-        FileObject fileObject = HopVfs.getFileObject( variables.environmentSubstitute( filename ), variables );
+        FileObject fileObject = HopVfs.getFileObject( variables.resolve( filename ) );
 
         // If the file doesn't exist, forget about this effort too!
         //

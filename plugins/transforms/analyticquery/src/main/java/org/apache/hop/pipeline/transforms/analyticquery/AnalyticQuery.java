@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.analyticquery;
 
@@ -27,12 +22,10 @@ import org.apache.hop.core.exception.HopTransformException;
 import org.apache.hop.core.exception.HopValueException;
 import org.apache.hop.core.row.RowDataUtil;
 import org.apache.hop.i18n.BaseMessages;
-import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.Pipeline;
+import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransform;
 import org.apache.hop.pipeline.transform.ITransform;
-import org.apache.hop.pipeline.transform.ITransformData;
-import org.apache.hop.pipeline.transform.ITransformMeta;
 import org.apache.hop.pipeline.transform.TransformMeta;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -45,7 +38,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class AnalyticQuery extends BaseTransform<AnalyticQueryMeta, AnalyticQueryData> implements ITransform<AnalyticQueryMeta, AnalyticQueryData> {
 
-  private static Class<?> PKG = AnalyticQuery.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = AnalyticQuery.class; // For Translator
 
   public AnalyticQuery( TransformMeta transformMeta, AnalyticQueryMeta meta, AnalyticQueryData data, int copyNr, PipelineMeta pipelineMeta,
                         Pipeline pipeline ) {
@@ -68,11 +61,11 @@ public class AnalyticQuery extends BaseTransform<AnalyticQueryMeta, AnalyticQuer
       // So we need to calculated based on the metadata...
       //
       if ( data.inputRowMeta == null ) {
-        data.inputRowMeta = getPipelineMeta().getPrevTransformFields( getTransformMeta() );
+        data.inputRowMeta = getPipelineMeta().getPrevTransformFields( this, getTransformMeta() );
       }
 
       data.outputRowMeta = data.inputRowMeta.clone();
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
       data.groupnrs = new int[ meta.getGroupField().length ];
       for ( int i = 0; i < meta.getGroupField().length; i++ ) {
@@ -87,14 +80,14 @@ public class AnalyticQuery extends BaseTransform<AnalyticQueryMeta, AnalyticQuer
       }
 
       // Setup of "window size" and "queue_size"
-      int max_offset = 0;
+      int maxOffset = 0;
       for ( int i = 0; i < meta.getNumberOfFields(); i++ ) {
-        if ( meta.getValueField()[ i ] > max_offset ) {
-          max_offset = meta.getValueField()[ i ];
+        if ( meta.getValueField()[ i ] > maxOffset ) {
+          maxOffset = meta.getValueField()[ i ];
         }
       }
-      data.window_size = max_offset;
-      data.queue_size = ( max_offset * 2 ) + 1;
+      data.window_size = maxOffset;
+      data.queue_size = ( maxOffset * 2 ) + 1;
 
       // After we've processed the metadata we're all set
       first = false;
@@ -153,9 +146,9 @@ public class AnalyticQuery extends BaseTransform<AnalyticQueryMeta, AnalyticQuer
       return;
     }
 
-    int number_of_rows = data.data.size();
+    int numberOfRows = data.data.size();
 
-    for ( int i = data.queue_cursor; i < number_of_rows; i++ ) {
+    for ( int i = data.queue_cursor; i < numberOfRows; i++ ) {
       processQueueObjectAt( i + 1 );
     }
 
@@ -170,22 +163,22 @@ public class AnalyticQuery extends BaseTransform<AnalyticQueryMeta, AnalyticQuer
       // field_index is the location inside a row of the subject of this
       // ie, ORDERTOTAL might be the subject ofthis field lag or lead
       // so we determine that ORDERTOTAL's index in the row
-      int field_index = data.inputRowMeta.indexOfValue( meta.getSubjectField()[ j ] );
-      int row_index = 0;
+      int fieldIndex = data.inputRowMeta.indexOfValue( meta.getSubjectField()[ j ] );
+      int rowIndex = 0;
       switch ( meta.getAggregateType()[ j ] ) {
         case AnalyticQueryMeta.TYPE_FUNCT_LAG:
-          row_index = index - meta.getValueField()[ j ];
+          rowIndex = index - meta.getValueField()[ j ];
           break;
         case AnalyticQueryMeta.TYPE_FUNCT_LEAD:
-          row_index = index + meta.getValueField()[ j ];
+          rowIndex = index + meta.getValueField()[ j ];
           break;
         default:
           break;
       }
-      if ( row_index < rows.length && row_index >= 0 ) {
-        Object[] singleRow = (Object[]) rows[ row_index ];
-        if ( singleRow != null && singleRow[ field_index ] != null ) {
-          fields[ j ] = ( (Object[]) rows[ row_index ] )[ field_index ];
+      if ( rowIndex < rows.length && rowIndex >= 0 ) {
+        Object[] singleRow = (Object[]) rows[ rowIndex ];
+        if ( singleRow != null && singleRow[ fieldIndex ] != null ) {
+          fields[ j ] = ( (Object[]) rows[ rowIndex ] )[ fieldIndex ];
         } else {
           // set default
           fields[ j ] = null;
@@ -203,7 +196,7 @@ public class AnalyticQuery extends BaseTransform<AnalyticQueryMeta, AnalyticQuer
   }
 
   public void resetGroup() {
-    data.data = new ConcurrentLinkedQueue<Object[]>();
+    data.data = new ConcurrentLinkedQueue<>();
     data.queue_cursor = 0;
   }
 

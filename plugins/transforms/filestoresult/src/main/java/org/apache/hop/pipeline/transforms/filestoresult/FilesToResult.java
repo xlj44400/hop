@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.filestoresult;
 
@@ -40,7 +35,7 @@ import org.apache.hop.pipeline.transform.TransformMeta;
  */
 public class FilesToResult extends BaseTransform<FilesToResultMeta, FilesToResultData> implements ITransform<FilesToResultMeta, FilesToResultData> {
 
-  private static Class<?> PKG = FilesToResultMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = FilesToResultMeta.class; // For Translator
 
   public FilesToResult( TransformMeta transformMeta, FilesToResultMeta meta, FilesToResultData data, int copyNr, PipelineMeta pipelineMeta,
                         Pipeline pipeline ) {
@@ -79,7 +74,7 @@ public class FilesToResult extends BaseTransform<FilesToResultMeta, FilesToResul
 
     try {
       ResultFile resultFile =
-        new ResultFile( meta.getFileType(), HopVfs.getFileObject( filename, getPipelineMeta() ), getPipeline().getPipelineMeta().getName(), getTransformName() );
+        new ResultFile( meta.getFileType(), HopVfs.getFileObject( filename ), getPipeline().getPipelineMeta().getName(), getTransformName() );
 
       // Add all rows to rows buffer...
       data.filenames.add( resultFile );
@@ -89,7 +84,7 @@ public class FilesToResult extends BaseTransform<FilesToResultMeta, FilesToResul
 
     // Copy to any possible next transforms...
     data.outputRowMeta = getInputRowMeta().clone();
-    meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+    meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
     putRow( data.outputRowMeta, r ); // copy row to possible alternate
     // rowset(s).
 

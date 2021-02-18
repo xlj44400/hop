@@ -1,28 +1,22 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.switchcase;
 
-import org.apache.commons.vfs2.VFS;
 import org.apache.hop.core.IRowSet;
 import org.apache.hop.core.QueueRowSet;
 import org.apache.hop.core.database.DatabaseMeta;
@@ -32,9 +26,8 @@ import org.apache.hop.core.exception.HopValueException;
 import org.apache.hop.core.logging.ILoggingObject;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.IValueMeta;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.pipeline.transform.TransformMeta;
-import org.apache.hop.pipeline.transform.ITransform;
 import org.apache.hop.pipeline.transforms.dummy.DummyMeta;
 import org.apache.hop.pipeline.transforms.mock.TransformMockHelper;
 import org.junit.After;
@@ -42,8 +35,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -82,10 +73,10 @@ public class SwitchCaseTest {
   @Before
   public void setUp() throws Exception {
     mockHelper =
-      new TransformMockHelper<SwitchCaseMeta, SwitchCaseData>(
+      new TransformMockHelper<>(
         "Switch Case", SwitchCaseMeta.class, SwitchCaseData.class );
     when( mockHelper.logChannelFactory.create( any(), any( ILoggingObject.class ) ) ).thenReturn(
-      mockHelper.logChannelInterface );
+      mockHelper.iLogChannel );
     when( mockHelper.pipeline.isRunning() ).thenReturn( true );
   }
 
@@ -162,9 +153,9 @@ public class SwitchCaseTest {
   private boolean isRowSetContainsValue( IRowSet rowSet, Object[] allowed, Object[] illegal ) {
     boolean ok = true;
 
-    Set<Object> yes = new HashSet<Object>();
+    Set<Object> yes = new HashSet<>();
     yes.addAll( Arrays.asList( allowed ) );
-    Set<Object> no = new HashSet<Object>();
+    Set<Object> no = new HashSet<>();
     no.addAll( Arrays.asList( illegal ) );
 
     for ( int i = 0; i < rowSet.size(); i++ ) {
@@ -195,11 +186,11 @@ public class SwitchCaseTest {
     SwitchCaseCustom krasavez = new SwitchCaseCustom( mockHelper );
 
     // load transform info value-case mapping from xml.
-    List<DatabaseMeta> emptyList = new ArrayList<DatabaseMeta>();
-    krasavez.meta.loadXml( loadTransformXmlMetadata( "SwitchCaseTest.xml" ), mock( IMetaStore.class ) );
+    List<DatabaseMeta> emptyList = new ArrayList<>();
+    krasavez.meta.loadXml( loadTransformXmlMetadata( "SwitchCaseTest.xml" ), mock( IHopMetadataProvider.class ) );
 
     KeyToRowSetMap expectedNN = new KeyToRowSetMap();
-    Set<IRowSet> nulls = new HashSet<IRowSet>();
+    Set<IRowSet> nulls = new HashSet<>();
 
     // create real transforms for all targets
     List<SwitchCaseTarget> list = krasavez.meta.getCaseTargets();
@@ -264,11 +255,11 @@ public class SwitchCaseTest {
     SwitchCaseCustom krasavez = new SwitchCaseCustom( mockHelper );
 
     // load transform info value-case mapping from xml.
-    List<DatabaseMeta> emptyList = new ArrayList<DatabaseMeta>();
-    krasavez.meta.loadXml( loadTransformXmlMetadata( "SwitchCaseBinaryTest.xml" ), mock( IMetaStore.class ) );
+    List<DatabaseMeta> emptyList = new ArrayList<>();
+    krasavez.meta.loadXml( loadTransformXmlMetadata( "SwitchCaseBinaryTest.xml" ), mock( IHopMetadataProvider.class ) );
 
     KeyToRowSetMap expectedNN = new KeyToRowSetMap();
-    Set<IRowSet> nulls = new HashSet<IRowSet>();
+    Set<IRowSet> nulls = new HashSet<>();
 
     // create real transforms for all targets
     List<SwitchCaseTarget> list = krasavez.meta.getCaseTargets();
@@ -353,9 +344,9 @@ public class SwitchCaseTest {
   @Ignore
   public void processRow_NullsArePutIntoDefaultWhenNotSpecified() throws Exception {
     SwitchCaseCustom transform = new SwitchCaseCustom( mockHelper );
-    transform.meta.loadXml( loadTransformXmlMetadata( "SwitchCaseTest_PDI-12671.xml" ), mock( IMetaStore.class ) );
+    transform.meta.loadXml( loadTransformXmlMetadata( "SwitchCaseTest_PDI-12671.xml" ), mock( IHopMetadataProvider.class ) );
 
-    List<IRowSet> outputRowSets = new LinkedList<IRowSet>();
+    List<IRowSet> outputRowSets = new LinkedList<>();
     for ( SwitchCaseTarget item : transform.meta.getCaseTargets() ) {
       DummyMeta smInt = new DummyMeta();
       item.caseTargetTransform = new TransformMeta( item.caseTargetTransformName, smInt );
@@ -421,14 +412,14 @@ public class SwitchCaseTest {
    */
   private static class SwitchCaseCustom extends SwitchCase {
 
-    Queue<Object[]> input = new LinkedList<Object[]>();
+    Queue<Object[]> input = new LinkedList<>();
     IRowMeta iRowMeta;
 
     // we will use real data and meta.
     SwitchCaseData data = new SwitchCaseData();
     SwitchCaseMeta meta = new SwitchCaseMeta();
 
-    Map<String, IRowSet> map = new HashMap<String, IRowSet>();
+    Map<String, IRowSet> map = new HashMap<>();
 
     SwitchCaseCustom( TransformMockHelper<SwitchCaseMeta, SwitchCaseData> mockHelper ) throws HopValueException {
       super( mockHelper.transformMeta, mockHelper.iTransformMeta, mockHelper.iTransformData, 0, mockHelper.pipelineMeta, mockHelper.pipeline );
@@ -438,45 +429,37 @@ public class SwitchCaseTest {
       // call to convert value will returns same value.
       data.valueMeta = mock( IValueMeta.class );
       when( data.valueMeta.convertData( any( IValueMeta.class ), any() ) ).thenAnswer(
-        new Answer<Object>() {
-          @Override
-          public Object answer( InvocationOnMock invocation ) throws Throwable {
-            Object[] objArr = invocation.getArguments();
-            return ( objArr != null && objArr.length > 1 ) ? objArr[ 1 ] : null;
-          }
+        invocation -> {
+          Object[] objArr = invocation.getArguments();
+          return ( objArr != null && objArr.length > 1 ) ? objArr[ 1 ] : null;
         } );
       // same when call to convertDataFromString
       when( data.valueMeta.convertDataFromString( Mockito.anyString(), any( IValueMeta.class ),
         Mockito.anyString(), Mockito.anyString(), Mockito.anyInt() ) ).thenAnswer(
         //CHECKSTYLE:Indentation:OFF
-        new Answer<Object>() {
-          public Object answer( InvocationOnMock invocation ) throws Throwable {
-            Object[] objArr = invocation.getArguments();
-            return ( objArr != null && objArr.length > 1 ) ? objArr[ 0 ] : null;
-          }
+        invocation -> {
+          Object[] objArr = invocation.getArguments();
+          return ( objArr != null && objArr.length > 1 ) ? objArr[ 0 ] : null;
         } );
       // null-check
-      when( data.valueMeta.isNull( any() ) ).thenAnswer( new Answer<Object>() {
-        @Override
-        public Object answer( InvocationOnMock invocation ) throws Throwable {
-          Object[] objArr = invocation.getArguments();
-          Object obj = objArr[ 0 ];
-          if ( obj == null ) {
-            return true;
-          }
-          if ( EMPTY_STRING_AND_NULL_ARE_DIFFERENT ) {
-            return false;
-          }
-
-          // If it's a string and the string is empty, it's a null value as well
-          //
-          if ( obj instanceof String ) {
-            if ( ( (String) obj ).length() == 0 ) {
-              return true;
-            }
-          }
+      when( data.valueMeta.isNull( any() ) ).thenAnswer( invocation -> {
+        Object[] objArr = invocation.getArguments();
+        Object obj = objArr[ 0 ];
+        if ( obj == null ) {
+          return true;
+        }
+        if ( EMPTY_STRING_AND_NULL_ARE_DIFFERENT ) {
           return false;
         }
+
+        // If it's a string and the string is empty, it's a null value as well
+        //
+        if ( obj instanceof String ) {
+          if ( ( (String) obj ).length() == 0 ) {
+            return true;
+          }
+        }
+        return false;
       } );
 
     }

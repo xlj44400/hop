@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.selectvalues;
 
@@ -44,7 +39,7 @@ import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.xml.XmlHandler;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.lineage.FieldnameLineage;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.*;
@@ -55,21 +50,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Meta Data class for the Select Values Transform.
- * <p>
- * Created on 02-jun-2003
- */
 @Transform(
         id = "SelectValues",
-        i18nPackageName = "org.apache.hop.pipeline.transforms.selectvalues",
-        name = "BaseTransform.TypeLongDesc.SelectValues",
-        description = "BaseTransform.TypeTooltipDesc.SelectValues",
-        categoryDescription = "i18n:org.apache.hop.pipeline.transform:BaseTransform.Category.Transform"
+        image = "selectvalues.svg",
+        name = "i18n:org.apache.hop.pipeline.transforms.selectvalues:BaseTransform.TypeLongDesc.SelectValues",
+        description = "i18n:org.apache.hop.pipeline.transforms.selectvalues:BaseTransform.TypeTooltipDesc.SelectValues",
+        categoryDescription = "i18n:org.apache.hop.pipeline.transform:BaseTransform.Category.Transform",
+        documentationUrl = "https://hop.apache.org/manual/latest/plugins/transforms/selectvalues.html"
 )
 @InjectionSupported( localizationPrefix = "SelectValues.Injection.", groups = { "FIELDS", "REMOVES", "METAS" } )
 public class SelectValuesMeta extends BaseTransformMeta implements ITransformMeta<SelectValues, SelectValuesData> {
-  private static Class<?> PKG = SelectValuesMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = SelectValuesMeta.class; // For Translator
 
   public static final int UNDEFINED = -2;
 
@@ -213,7 +204,7 @@ public class SelectValuesMeta extends BaseTransformMeta implements ITransformMet
   }
 
   @Override
-  public void loadXml( Node transformNode, IMetaStore metaStore ) throws HopXmlException {
+  public void loadXml( Node transformNode, IHopMetadataProvider metadataProvider ) throws HopXmlException {
     readData( transformNode );
   }
 
@@ -278,7 +269,7 @@ public class SelectValuesMeta extends BaseTransformMeta implements ITransformMet
         selectFields[ i ] = new SelectField();
         selectFields[ i ].setName( XmlHandler.getTagValue( line, "name" ) );
         selectFields[ i ].setRename( XmlHandler.getTagValue( line, "rename" ) );
-        selectFields[ i ].setLength( Const.toInt( XmlHandler.getTagValue( line, "length" ), UNDEFINED ) ); // $NON-NtagLS-1$
+        selectFields[ i ].setLength( Const.toInt( XmlHandler.getTagValue( line, "length" ), UNDEFINED ) );
         selectFields[ i ].setPrecision( Const.toInt( XmlHandler.getTagValue( line, "precision" ), UNDEFINED ) );
       }
       selectingAndSortingUnspecifiedFields =
@@ -380,7 +371,7 @@ public class SelectValuesMeta extends BaseTransformMeta implements ITransformMet
     }
   }
 
-  // Not called anywhere else in Hitachi Vantara. It's important to call the method below passing in the IVariables
+  // Not called anywhere else in Hop. It's important to call the method below passing in the IVariables
   @Deprecated
   public void getMetadataFields( IRowMeta inputRowMeta, String name ) throws HopPluginException {
     getMetadataFields( inputRowMeta, name, null );
@@ -471,7 +462,7 @@ public class SelectValuesMeta extends BaseTransformMeta implements ITransformMet
 
   @Override
   public void getFields( IRowMeta inputRowMeta, String name, IRowMeta[] info, TransformMeta nextTransform,
-                         IVariables variables, IMetaStore metaStore ) throws HopTransformException {
+                         IVariables variables, IHopMetadataProvider metadataProvider ) throws HopTransformException {
     try {
       IRowMeta rowMeta = inputRowMeta.clone();
       inputRowMeta.clear();
@@ -521,7 +512,7 @@ public class SelectValuesMeta extends BaseTransformMeta implements ITransformMet
   @Override
   public void check( List<ICheckResult> remarks, PipelineMeta pipelineMeta, TransformMeta transformMeta, IRowMeta prev,
                      String[] input, String[] output, IRowMeta info, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     CheckResult cr;
 
     if ( prev != null && prev.size() > 0 ) {
@@ -533,23 +524,23 @@ public class SelectValuesMeta extends BaseTransformMeta implements ITransformMet
       /*
        * Take care of the normal SELECT fields...
        */
-      String error_message = "";
-      boolean error_found = false;
+      String errorMessage = "";
+      boolean errorFound = false;
 
       // Starting from selected fields in ...
       for ( int i = 0; i < this.selectFields.length; i++ ) {
         int idx = prev.indexOfValue( selectFields[ i ].getName() );
         if ( idx < 0 ) {
-          error_message += "\t\t" + selectFields[ i ].getName() + Const.CR;
-          error_found = true;
+          errorMessage += "\t\t" + selectFields[ i ].getName() + Const.CR;
+          errorFound = true;
         }
       }
-      if ( error_found ) {
-        error_message =
+      if ( errorFound ) {
+        errorMessage =
           BaseMessages.getString( PKG, "SelectValuesMeta.CheckResult.SelectedFieldsNotFound" ) + Const.CR + Const.CR
-            + error_message;
+            + errorMessage;
 
-        cr = new CheckResult( ICheckResult.TYPE_RESULT_ERROR, error_message, transformMeta );
+        cr = new CheckResult( ICheckResult.TYPE_RESULT_ERROR, errorMessage, transformMeta );
         remarks.add( cr );
       } else {
         cr =
@@ -564,16 +555,16 @@ public class SelectValuesMeta extends BaseTransformMeta implements ITransformMet
           IValueMeta pv = prev.getValueMeta( i );
           int idx = Const.indexOfString( pv.getName(), getSelectName() );
           if ( idx < 0 ) {
-            error_message += "\t\t" + pv.getName() + " (" + pv.getTypeDesc() + ")" + Const.CR;
-            error_found = true;
+            errorMessage += "\t\t" + pv.getName() + " (" + pv.getTypeDesc() + ")" + Const.CR;
+            errorFound = true;
           }
         }
-        if ( error_found ) {
-          error_message =
+        if ( errorFound ) {
+          errorMessage =
             BaseMessages.getString( PKG, "SelectValuesMeta.CheckResult.FieldsNotFound" ) + Const.CR + Const.CR
-              + error_message;
+              + errorMessage;
 
-          cr = new CheckResult( ICheckResult.TYPE_RESULT_COMMENT, error_message, transformMeta );
+          cr = new CheckResult( ICheckResult.TYPE_RESULT_COMMENT, errorMessage, transformMeta );
           remarks.add( cr );
         } else {
           cr =
@@ -587,23 +578,23 @@ public class SelectValuesMeta extends BaseTransformMeta implements ITransformMet
        * How about the DE-SELECT (remove) fields...
        */
 
-      error_message = "";
-      error_found = false;
+      errorMessage = "";
+      errorFound = false;
 
       // Starting from selected fields in ...
       for ( int i = 0; i < this.deleteName.length; i++ ) {
         int idx = prev.indexOfValue( deleteName[ i ] );
         if ( idx < 0 ) {
-          error_message += "\t\t" + deleteName[ i ] + Const.CR;
-          error_found = true;
+          errorMessage += "\t\t" + deleteName[ i ] + Const.CR;
+          errorFound = true;
         }
       }
-      if ( error_found ) {
-        error_message =
+      if ( errorFound ) {
+        errorMessage =
           BaseMessages.getString( PKG, "SelectValuesMeta.CheckResult.DeSelectedFieldsNotFound" ) + Const.CR + Const.CR
-            + error_message;
+            + errorMessage;
 
-        cr = new CheckResult( ICheckResult.TYPE_RESULT_ERROR, error_message, transformMeta );
+        cr = new CheckResult( ICheckResult.TYPE_RESULT_ERROR, errorMessage, transformMeta );
         remarks.add( cr );
       } else {
         cr =
@@ -615,23 +606,23 @@ public class SelectValuesMeta extends BaseTransformMeta implements ITransformMet
       /*
        * How about the Meta-fields...?
        */
-      error_message = "";
-      error_found = false;
+      errorMessage = "";
+      errorFound = false;
 
       // Starting from selected fields in ...
       for ( int i = 0; i < this.meta.length; i++ ) {
         int idx = prev.indexOfValue( this.meta[ i ].getName() );
         if ( idx < 0 ) {
-          error_message += "\t\t" + this.meta[ i ].getName() + Const.CR;
-          error_found = true;
+          errorMessage += "\t\t" + this.meta[ i ].getName() + Const.CR;
+          errorFound = true;
         }
       }
-      if ( error_found ) {
-        error_message =
+      if ( errorFound ) {
+        errorMessage =
           BaseMessages.getString( PKG, "SelectValuesMeta.CheckResult.MetadataFieldsNotFound" ) + Const.CR + Const.CR
-            + error_message;
+            + errorMessage;
 
-        cr = new CheckResult( ICheckResult.TYPE_RESULT_ERROR, error_message, transformMeta );
+        cr = new CheckResult( ICheckResult.TYPE_RESULT_ERROR, errorMessage, transformMeta );
         remarks.add( cr );
       } else {
         cr =
@@ -661,8 +652,8 @@ public class SelectValuesMeta extends BaseTransformMeta implements ITransformMet
 
     // Check for doubles in the selected fields...
     int[] cnt = new int[ selectFields.length ];
-    boolean error_found = false;
-    String error_message = "";
+    boolean errorFound = false;
+    String errorMessage = "";
 
     for ( int i = 0; i < selectFields.length; i++ ) {
       cnt[ i ] = 0;
@@ -673,20 +664,20 @@ public class SelectValuesMeta extends BaseTransformMeta implements ITransformMet
       }
 
       if ( cnt[ i ] > 1 ) {
-        if ( !error_found ) { // first time...
-          error_message =
+        if ( !errorFound ) { // first time...
+          errorMessage =
             BaseMessages.getString( PKG, "SelectValuesMeta.CheckResult.DuplicateFieldsSpecified" ) + Const.CR;
         } else {
-          error_found = true;
+          errorFound = true;
         }
-        error_message +=
+        errorMessage +=
           BaseMessages.getString( PKG, "SelectValuesMeta.CheckResult.OccurentRow", i + " : " + selectFields[ i ]
             .getName() + "  (" + cnt[ i ] ) + Const.CR;
-        error_found = true;
+        errorFound = true;
       }
     }
-    if ( error_found ) {
-      cr = new CheckResult( ICheckResult.TYPE_RESULT_ERROR, error_message, transformMeta );
+    if ( errorFound ) {
+      cr = new CheckResult( ICheckResult.TYPE_RESULT_ERROR, errorMessage, transformMeta );
       remarks.add( cr );
     }
   }
@@ -793,11 +784,6 @@ public class SelectValuesMeta extends BaseTransformMeta implements ITransformMet
     }
 
     return lineages;
-  }
-
-  @Override
-  public String getDialogClassName(){
-    return SelectValuesDialog.class.getName();
   }
 
   public static class SelectField implements Cloneable {

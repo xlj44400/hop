@@ -1,36 +1,32 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.file.pipeline;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.Props;
+import org.apache.hop.core.config.DescribedVariable;
+import org.apache.hop.core.config.HopConfig;
 import org.apache.hop.core.logging.HopLogLayout;
 import org.apache.hop.core.logging.HopLogStore;
 import org.apache.hop.core.logging.HopLoggingEvent;
 import org.apache.hop.core.logging.IHasLogChannel;
 import org.apache.hop.core.logging.ILogChannel;
-import org.apache.hop.core.logging.LogLevel;
 import org.apache.hop.core.logging.ILogParentProvided;
+import org.apache.hop.core.logging.LogLevel;
 import org.apache.hop.core.logging.LoggingRegistry;
 import org.apache.hop.core.util.EnvUtil;
 import org.apache.hop.core.util.Utils;
@@ -41,8 +37,6 @@ import org.apache.hop.ui.core.widget.text.Format;
 import org.apache.hop.ui.core.widget.text.TextFormatter;
 import org.apache.hop.ui.hopgui.HopGui;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.StyleRange;
-import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.MouseAdapter;
@@ -52,6 +46,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.swt.widgets.Text;
 
 import java.awt.*;
 import java.net.URI;
@@ -64,15 +59,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class HopGuiLogBrowser {
-  private static Class<?> PKG = HopGui.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = HopGui.class; // For Translator
 
-  private StyledText text;
+  private Text text;
   private ILogParentProvided logProvider;
   private List<String> childIds = new ArrayList<>();
   private Date lastLogRegistryChange;
   private AtomicBoolean paused;
 
-  public HopGuiLogBrowser( final StyledText text, final ILogParentProvided logProvider ) {
+  public HopGuiLogBrowser( final Text text, final ILogParentProvided logProvider ) {
     this.text = text;
     this.logProvider = logProvider;
     this.paused = new AtomicBoolean( false );
@@ -86,17 +81,12 @@ public class HopGuiLogBrowser {
     final AtomicBoolean busy = new AtomicBoolean( false );
     final HopLogLayout logLayout = new HopLogLayout( true );
 
-    final StyleRange normalLogLineStyle = new StyleRange();
-    normalLogLineStyle.foreground = GuiResource.getInstance().getColorBlue();
-    final StyleRange errorLogLineStyle = new StyleRange();
-    errorLogLineStyle.foreground = GuiResource.getInstance().getColorRed();
-
     // Refresh the log every second or so
     //
     final Timer logRefreshTimer = new Timer( "log sniffer Timer" );
     TimerTask timerTask = new TimerTask() {
       public void run() {
-        if ( text.isDisposed() ) {
+        if ( text.isDisposed() || text.getDisplay().isDisposed() ) {
           return;
         }
 
@@ -126,7 +116,14 @@ public class HopGuiLogBrowser {
 
               // The maximum size of the log buffer
               //
-              int maxSize = Props.getInstance().getMaxNrLinesInLog() * 150;
+              int maxSize;
+              DescribedVariable describedVariable = HopConfig.getInstance().findDescribedVariable( Const.HOP_MAX_LOG_SIZE_IN_LINES );
+              if (describedVariable==null) {
+                maxSize = Const.MAX_NR_LOG_LINES;
+              } else {
+                maxSize = Const.toInt( describedVariable.getValue(), Const.MAX_NR_LOG_LINES);
+              }
+
 
               // int position = text.getSelection().x;
               // StringBuilder buffer = new StringBuilder(text.getText());
@@ -143,25 +140,6 @@ public class HopGuiLogBrowser {
                     Format format = TextFormatter.getInstance().execute( line );
                     text.append( format.getText() );
                     text.append( Const.CR );
-
-                    for ( StyleRange styleRange : format.getStyleRanges() ) {
-                      styleRange.start += start;
-                      text.setStyleRange( styleRange );
-                    }
-
-                    if ( event.getLevel() == LogLevel.ERROR ) {
-                      StyleRange styleRange = new StyleRange();
-                      styleRange.foreground = GuiResource.getInstance().getColorRed();
-                      styleRange.start = start;
-                      styleRange.length = length;
-                      text.setStyleRange( styleRange );
-                    } else {
-                      StyleRange styleRange = new StyleRange();
-                      styleRange.foreground = GuiResource.getInstance().getColorBlue();
-                      styleRange.start = start;
-                      styleRange.length = Math.min( 20, length );
-                      text.setStyleRange( styleRange );
-                    }
                   }
                 }
               }
@@ -173,7 +151,7 @@ public class HopGuiLogBrowser {
               if ( maxSize > 0 && size > maxSize ) {
 
                 int dropIndex = ( text.getText().indexOf( Const.CR, size - maxSize ) ) + Const.CR.length();
-                text.replaceTextRange( 0, dropIndex, "" );
+                text.setText( text.getText().substring( dropIndex ) );
               }
 
               text.setSelection( text.getText().length() );
@@ -193,25 +171,15 @@ public class HopGuiLogBrowser {
       .schedule( timerTask, Const.toInt( EnvUtil.getSystemProperty( Const.HOP_LOG_TAB_REFRESH_DELAY ), 1000 ),
         Const.toInt( EnvUtil.getSystemProperty( Const.HOP_LOG_TAB_REFRESH_PERIOD ), 1000 ) );
 
-
-    text.addListener( SWT.MouseDown, e -> {
-      try {
-        int offset = text.getOffsetAtLocation( new Point( e.x, e.y ) );
-        StyleRange style = text.getStyleRangeAtOffset( offset );
-        if ( style != null && style.underline && style.underlineStyle == SWT.UNDERLINE_LINK ) {
-          if ( Desktop.isDesktopSupported() ) {
-            Desktop.getDesktop().browse( new URI( (String) style.data ) );
-          }
-        }
-      } catch ( Exception ex ) {
-        // no character under event.x, event.y
-      }
-    } );
-
     // Make sure the timer goes down when the widget is disposed
     //
-    text.addDisposeListener( new DisposeListener() {
-      public void widgetDisposed( DisposeEvent event ) {
+    text.addDisposeListener( event -> logRefreshTimer.cancel() );
+
+    // Make sure the timer goes down when the Display is disposed
+    // Lambda expression cannot be used here as it causes SecurityException in RAP.
+    text.getDisplay().disposeExec( new Runnable() {
+      @Override
+      public void run() {
         logRefreshTimer.cancel();
       }
     } );
@@ -241,7 +209,7 @@ public class HopGuiLogBrowser {
   /**
    * @return the text
    */
-  public StyledText getText() {
+  public Text getText() {
     return text;
   }
 

@@ -1,28 +1,24 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.workflowexecutor;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hop.core.Const;
 import org.apache.hop.core.Result;
 import org.apache.hop.core.ResultFile;
@@ -33,6 +29,7 @@ import org.apache.hop.core.extension.HopExtensionPoint;
 import org.apache.hop.core.logging.HopLogStore;
 import org.apache.hop.core.logging.ILoggingObject;
 import org.apache.hop.core.logging.LoggingRegistry;
+import org.apache.hop.core.parameters.UnknownParamException;
 import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.row.RowDataUtil;
 import org.apache.hop.core.row.value.ValueMetaFactory;
@@ -40,7 +37,6 @@ import org.apache.hop.core.util.Utils;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
-import org.apache.hop.pipeline.TransformWithMappingMeta;
 import org.apache.hop.pipeline.transform.BaseTransform;
 import org.apache.hop.pipeline.transform.ITransform;
 import org.apache.hop.pipeline.transform.TransformMeta;
@@ -65,7 +61,7 @@ import java.util.ArrayList;
  */
 public class WorkflowExecutor extends BaseTransform<WorkflowExecutorMeta, WorkflowExecutorData> implements ITransform<WorkflowExecutorMeta, WorkflowExecutorData> {
 
-  private static Class<?> PKG = WorkflowExecutorMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = WorkflowExecutorMeta.class; // For Translator
 
   public WorkflowExecutor( TransformMeta transformMeta, WorkflowExecutorMeta meta, WorkflowExecutorData data, int copyNr, PipelineMeta pipelineMeta,
                            Pipeline pipeline ) {
@@ -104,19 +100,19 @@ public class WorkflowExecutor extends BaseTransform<WorkflowExecutorMeta, Workfl
 
         if ( meta.getExecutionResultTargetTransformMeta() != null ) {
           meta.getFields( data.executionResultsOutputRowMeta, getTransformName(), null, meta
-            .getExecutionResultTargetTransformMeta(), this, metaStore );
+            .getExecutionResultTargetTransformMeta(), this, metadataProvider );
           data.executionResultRowSet = findOutputRowSet( meta.getExecutionResultTargetTransformMeta().getName() );
         }
         if ( meta.getResultRowsTargetTransformMeta() != null ) {
           meta.getFields(
             data.resultRowsOutputRowMeta, getTransformName(), null, meta.getResultRowsTargetTransformMeta(), this,
-            metaStore );
+            metadataProvider );
           data.resultRowsRowSet = findOutputRowSet( meta.getResultRowsTargetTransformMeta().getName() );
         }
         if ( meta.getResultFilesTargetTransformMeta() != null ) {
           meta.getFields(
             data.resultFilesOutputRowMeta, getTransformName(), null, meta.getResultFilesTargetTransformMeta(), this,
-            metaStore );
+            metadataProvider );
           data.resultFilesRowSet = findOutputRowSet( meta.getResultFilesTargetTransformMeta().getName() );
         }
 
@@ -186,11 +182,13 @@ public class WorkflowExecutor extends BaseTransform<WorkflowExecutorMeta, Workfl
 
     data.executorWorkflow = createWorkflow( data.executorWorkflowMeta, this );
 
-    data.executorWorkflow.shareVariablesWith( data.executorWorkflowMeta );
+    data.executorWorkflow.initializeFrom( this );
     data.executorWorkflow.setParentPipeline( getPipeline() );
     data.executorWorkflow.setLogLevel( getLogLevel() );
     data.executorWorkflow.setInternalHopVariables();
-    data.executorWorkflow.copyParametersFrom( data.executorWorkflowMeta );
+
+    // Copy the parameters
+    data.executorWorkflow.copyParametersFromDefinitions( data.executorWorkflowMeta );
 
     // data.executorWorkflow.setInteractive(); TODO: pass interactivity through the pipeline too for drill-down.
 
@@ -206,13 +204,13 @@ public class WorkflowExecutor extends BaseTransform<WorkflowExecutorMeta, Workfl
 
     // Pass parameter values
     //
-    passParametersToJob();
+    passParametersToWorkflow();
 
     // keep track for drill down in HopGui...
     //
     getPipeline().addActiveSubWorkflow( getTransformName(), data.executorWorkflow );
 
-    ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.WorkflowStart.id, data.executorWorkflow );
+    ExtensionPointHandler.callExtensionPoint( log, this, HopExtensionPoint.WorkflowStart.id, data.executorWorkflow );
 
     Result result = data.executorWorkflow.startExecution();
 
@@ -309,7 +307,7 @@ public class WorkflowExecutor extends BaseTransform<WorkflowExecutorMeta, Workfl
   @VisibleForTesting
   IWorkflowEngine<WorkflowMeta> createWorkflow( WorkflowMeta workflowMeta, ILoggingObject parentLogging ) throws HopException {
 
-    return WorkflowEngineFactory.createWorkflowEngine( environmentSubstitute(meta.getRunConfigurationName()), metaStore, workflowMeta );
+    return WorkflowEngineFactory.createWorkflowEngine( this, resolve(meta.getRunConfigurationName()), metadataProvider, workflowMeta, parentLogging );
   }
 
   @VisibleForTesting
@@ -322,28 +320,42 @@ public class WorkflowExecutor extends BaseTransform<WorkflowExecutorMeta, Workfl
     }
   }
 
-  private void passParametersToJob() throws HopException {
+  private void passParametersToWorkflow() throws HopException {
     // Set parameters, when fields are used take the first row in the set.
     //
     WorkflowExecutorParameters parameters = meta.getParameters();
 
-    String value;
-
     for ( int i = 0; i < parameters.getVariable().length; i++ ) {
+      String variableName = parameters.getVariable()[i];
+      String variableInput = parameters.getInput()[i];
       String fieldName = parameters.getField()[ i ];
-      if ( !Utils.isEmpty( fieldName ) ) {
-        int idx = getInputRowMeta().indexOfValue( fieldName );
-        if ( idx < 0 ) {
-          throw new HopException( BaseMessages.getString(
-            PKG, "JobExecutor.Exception.UnableToFindField", fieldName ) );
+      String variableValue = null;
+      if (StringUtils.isNotEmpty( variableName )) {
+        // The value is provided by a field in an input row
+        //
+        if ( StringUtils.isNotEmpty( fieldName ) ) {
+          int idx = getInputRowMeta().indexOfValue( fieldName );
+          if ( idx < 0 ) {
+            throw new HopException( BaseMessages.getString(
+              PKG, "JobExecutor.Exception.UnableToFindField", fieldName ) );
+          }
+          variableValue = data.groupBuffer.get( 0 ).getString( idx, "" );
+        } else {
+          // The value is provided by a static String or variable expression as an Input value
+          //
+          if (StringUtils.isNotEmpty( variableInput )) {
+            variableValue = this.resolve( variableInput );
+          }
         }
-        value = data.groupBuffer.get( 0 ).getString( idx, "" );
-        this.setVariable( parameters.getVariable()[ i ], value );
+
+        try {
+          data.executorWorkflow.setParameterValue( variableName, Const.NVL(variableValue, "") );
+        } catch( UnknownParamException e ) {
+          data.executorWorkflow.setVariable( variableName, Const.NVL(variableValue, "") );
+        }
       }
     }
-
-    TransformWithMappingMeta.activateParams( data.executorWorkflow, data.executorWorkflow, this, data.executorWorkflow.listParameters(),
-      parameters.getVariable(), parameters.getInput(), meta.getParameters().isInheritingAllVariables() );
+    data.executorWorkflow.activateParameters(data.executorWorkflow);
   }
 
   @Override
@@ -353,25 +365,25 @@ public class WorkflowExecutor extends BaseTransform<WorkflowExecutorMeta, Workfl
       // First we need to load the mapping (pipeline)
       try {
 
-        data.executorWorkflowMeta = WorkflowExecutorMeta.loadWorkflowMeta( meta, this );
+        data.executorWorkflowMeta = WorkflowExecutorMeta.loadWorkflowMeta( meta, metadataProvider, this );
 
         // Do we have a workflow at all?
         //
         if ( data.executorWorkflowMeta != null ) {
-          data.groupBuffer = new ArrayList<RowMetaAndData>();
+          data.groupBuffer = new ArrayList<>();
 
           // How many rows do we group together for the workflow?
           //
           data.groupSize = -1;
           if ( !Utils.isEmpty( meta.getGroupSize() ) ) {
-            data.groupSize = Const.toInt( environmentSubstitute( meta.getGroupSize() ), -1 );
+            data.groupSize = Const.toInt( resolve( meta.getGroupSize() ), -1 );
           }
 
           // Is there a grouping time set?
           //
           data.groupTime = -1;
           if ( !Utils.isEmpty( meta.getGroupTime() ) ) {
-            data.groupTime = Const.toInt( environmentSubstitute( meta.getGroupTime() ), -1 );
+            data.groupTime = Const.toInt( resolve( meta.getGroupTime() ), -1 );
           }
           data.groupTimeStart = System.currentTimeMillis();
 
@@ -379,7 +391,7 @@ public class WorkflowExecutor extends BaseTransform<WorkflowExecutorMeta, Workfl
           //
           data.groupField = null;
           if ( !Utils.isEmpty( meta.getGroupField() ) ) {
-            data.groupField = environmentSubstitute( meta.getGroupField() );
+            data.groupField = resolve( meta.getGroupField() );
           }
 
           // That's all for now...

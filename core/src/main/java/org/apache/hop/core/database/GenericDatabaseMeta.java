@@ -1,30 +1,26 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.database;
 
 import org.apache.hop.core.Const;
 import org.apache.hop.core.exception.HopValueException;
 import org.apache.hop.core.gui.plugin.GuiElementType;
+import org.apache.hop.core.gui.plugin.GuiPlugin;
 import org.apache.hop.core.gui.plugin.GuiWidgetElement;
 import org.apache.hop.core.row.IValueMeta;
 
@@ -37,7 +33,11 @@ import java.util.Map;
  * @author Matt
  * @since 11-mrt-2005
  */
-
+@DatabaseMetaPlugin(
+  type = "GENERIC",
+  typeDescription = "Generic database"
+)
+@GuiPlugin(description="Generic database GUI Plugin")
 public class GenericDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
   public static final String ATRRIBUTE_CUSTOM_DRIVER_CLASS = "CUSTOM_DRIVER_CLASS";
   public static final String DATABASE_DIALECT_ID = "DATABASE_DIALECT_ID";
@@ -53,8 +53,7 @@ public class GenericDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
   @GuiWidgetElement(
     id = "driverClass",
     order = "10",
-    i18nPackage = "org.apache.hop.ui.core.database",
-    label = "DatabaseDialog.label.DriverClass",
+    label = "i18n:org.apache.hop.ui.core.database:DatabaseDialog.label.DriverClass",
     type = GuiElementType.TEXT,
     variables = true,
     parentId = DatabaseMeta.GUI_PLUGIN_ELEMENT_PARENT_ID )
@@ -64,12 +63,12 @@ public class GenericDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
    * @param driverClass The driverClass to set
    */
   public void setDriverClass( String driverClass ) {
-    getAttributes().setProperty( ATRRIBUTE_CUSTOM_DRIVER_CLASS, driverClass );
+    getAttributes().put( ATRRIBUTE_CUSTOM_DRIVER_CLASS, driverClass );
   }
 
   @Override
   public String getDriverClass() {
-    return getAttributes().getProperty( ATRRIBUTE_CUSTOM_DRIVER_CLASS, "" );
+    return getAttributeProperty( ATRRIBUTE_CUSTOM_DRIVER_CLASS, "" );
   }
 
   @Override
@@ -83,27 +82,23 @@ public class GenericDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
   @Override
   public int[] getAccessTypeList() {
     return new int[] {
-      DatabaseMeta.TYPE_ACCESS_NATIVE, DatabaseMeta.TYPE_ACCESS_ODBC };
+      DatabaseMeta.TYPE_ACCESS_NATIVE };
   }
 
   /**
    * @see IDatabase#getNotFoundTK(boolean)
    */
   @Override
-  public int getNotFoundTK( boolean use_autoinc ) {
-    if ( supportsAutoInc() && use_autoinc ) {
+  public int getNotFoundTK( boolean useAutoIncrement ) {
+    if ( supportsAutoInc() && useAutoIncrement ) {
       return 1;
     }
-    return super.getNotFoundTK( use_autoinc );
+    return super.getNotFoundTK( useAutoIncrement );
   }
 
   @Override
   public String getURL( String hostname, String port, String databaseName ) {
-    if ( getAccessType() == DatabaseMeta.TYPE_ACCESS_NATIVE ) {
-      return manualUrl;
-    } else {
-      return "jdbc:odbc:" + databaseName;
-    }
+    return manualUrl;
   }
 
   /**
@@ -140,50 +135,50 @@ public class GenericDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
    * Generates the SQL statement to add a column to the specified table For this generic type, i set it to the most
    * common possibility.
    *
-   * @param tablename   The table to add
+   * @param tableName   The table to add
    * @param v           The column defined as a value
    * @param tk          the name of the technical key field
-   * @param use_autoinc whether or not this field uses auto increment
+   * @param useAutoIncrement whether or not this field uses auto increment
    * @param pk          the name of the primary key field
    * @param semicolon   whether or not to add a semi-colon behind the statement.
    * @return the SQL statement to add a column to the specified table
    */
   @Override
-  public String getAddColumnStatement( String tablename, IValueMeta v, String tk, boolean use_autoinc,
+  public String getAddColumnStatement( String tableName, IValueMeta v, String tk, boolean useAutoIncrement,
                                        String pk, boolean semicolon ) {
     if ( databaseDialect != null ) {
-      return databaseDialect.getAddColumnStatement( tablename, v, tk, use_autoinc, pk, semicolon );
+      return databaseDialect.getAddColumnStatement( tableName, v, tk, useAutoIncrement, pk, semicolon );
     }
 
-    return "ALTER TABLE " + tablename + " ADD " + getFieldDefinition( v, tk, pk, use_autoinc, true, false );
+    return "ALTER TABLE " + tableName + " ADD " + getFieldDefinition( v, tk, pk, useAutoIncrement, true, false );
   }
 
   /**
    * Generates the SQL statement to modify a column in the specified table
    *
-   * @param tablename   The table to add
+   * @param tableName   The table to add
    * @param v           The column defined as a value
    * @param tk          the name of the technical key field
-   * @param use_autoinc whether or not this field uses auto increment
+   * @param useAutoIncrement whether or not this field uses auto increment
    * @param pk          the name of the primary key field
    * @param semicolon   whether or not to add a semi-colon behind the statement.
    * @return the SQL statement to modify a column in the specified table
    */
   @Override
-  public String getModifyColumnStatement( String tablename, IValueMeta v, String tk, boolean use_autoinc,
+  public String getModifyColumnStatement( String tableName, IValueMeta v, String tk, boolean useAutoIncrement,
                                           String pk, boolean semicolon ) {
     if ( databaseDialect != null ) {
-      return databaseDialect.getModifyColumnStatement( tablename, v, tk, use_autoinc, pk, semicolon );
+      return databaseDialect.getModifyColumnStatement( tableName, v, tk, useAutoIncrement, pk, semicolon );
     }
-    return "ALTER TABLE " + tablename + " MODIFY " + getFieldDefinition( v, tk, pk, use_autoinc, true, false );
+    return "ALTER TABLE " + tableName + " MODIFY " + getFieldDefinition( v, tk, pk, useAutoIncrement, true, false );
   }
 
   @Override
-  public String getFieldDefinition( IValueMeta v, String tk, String pk, boolean use_autoinc,
-                                    boolean add_fieldname, boolean add_cr ) {
+  public String getFieldDefinition( IValueMeta v, String tk, String pk, boolean useAutoIncrement,
+                                    boolean addFieldName, boolean addCr ) {
 
     if ( databaseDialect != null ) {
-      return databaseDialect.getFieldDefinition( v, tk, pk, use_autoinc, add_fieldname, add_cr );
+      return databaseDialect.getFieldDefinition( v, tk, pk, useAutoIncrement, addFieldName, addCr );
     }
 
     String retval = "";
@@ -192,7 +187,7 @@ public class GenericDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
     int length = v.getLength();
     int precision = v.getPrecision();
 
-    if ( add_fieldname ) {
+    if ( addFieldName ) {
       retval += fieldname + " ";
     }
 
@@ -255,7 +250,7 @@ public class GenericDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
         break;
     }
 
-    if ( add_cr ) {
+    if ( addCr ) {
       retval += Const.CR;
     }
 
@@ -384,11 +379,11 @@ public class GenericDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
   }
 
   @Override
-  public String getSqlColumnExists( String columnname, String tablename ) {
+  public String getSqlColumnExists( String columnname, String tableName ) {
     if ( databaseDialect != null ) {
-      return databaseDialect.getSqlColumnExists( columnname, tablename );
+      return databaseDialect.getSqlColumnExists( columnname, tableName );
     }
-    return super.getSqlColumnExists( columnname, tablename );
+    return super.getSqlColumnExists( columnname, tableName );
   }
 
   @Override
@@ -826,12 +821,12 @@ public class GenericDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
   }
 
   @Override
-  public String getDropColumnStatement( String tablename, IValueMeta v, String tk, boolean use_autoinc,
+  public String getDropColumnStatement( String tableName, IValueMeta v, String tk, boolean useAutoIncrement,
                                         String pk, boolean semicolon ) {
     if ( databaseDialect != null ) {
-      return databaseDialect.getDropColumnStatement( tablename, v, tk, use_autoinc, pk, semicolon );
+      return databaseDialect.getDropColumnStatement( tableName, v, tk, useAutoIncrement, pk, semicolon );
     }
-    return super.getDropColumnStatement( tablename, v, tk, use_autoinc, pk, semicolon );
+    return super.getDropColumnStatement( tableName, v, tk, useAutoIncrement, pk, semicolon );
   }
 
   @Override
@@ -851,11 +846,11 @@ public class GenericDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
   }
 
   @Override
-  public String getSchemaTableCombination( String schema_name, String table_part ) {
+  public String getSchemaTableCombination( String schemaName, String tablePart ) {
     if ( databaseDialect != null ) {
-      return databaseDialect.getSchemaTableCombination( schema_name, table_part );
+      return databaseDialect.getSchemaTableCombination( schemaName, tablePart );
     }
-    return super.getSchemaTableCombination( schema_name, table_part );
+    return super.getSchemaTableCombination( schemaName, tablePart );
   }
 
   @Override

@@ -1,33 +1,26 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.jsonoutput;
 
 import org.apache.hop.core.injection.Injection;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.variables.IVariables;
-import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
-import org.apache.hop.pipeline.transform.TransformMeta;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -38,10 +31,10 @@ import java.util.Date;
 public abstract class BaseFileOutputMeta extends BaseTransformMeta {
 
   /**
-   * Flag: add the stepnr in the filename
+   * Flag: add the transformnr in the filename
    */
-  @Injection( name = "INC_STEPNR_IN_FILENAME" )
-  protected boolean stepNrInFilename;
+  @Injection( name = "INC_TRANSFORMNR_IN_FILENAME" )
+  protected boolean transformNrInFilename;
 
   /**
    * Flag: add the partition number in the filename
@@ -115,7 +108,7 @@ public abstract class BaseFileOutputMeta extends BaseTransformMeta {
 
   public abstract int getSplitEvery();
 
-  public int getSplitEvery( IVariables space ) {
+  public int getSplitEvery( IVariables variables ) {
     return getSplitEvery();
   }
 
@@ -157,8 +150,8 @@ public abstract class BaseFileOutputMeta extends BaseTransformMeta {
     return partNrInFilename;
   }
 
-  public boolean isStepNrInFilename() {
-    return stepNrInFilename;
+  public boolean isTransformNrInFilename() {
+    return transformNrInFilename;
   }
 
   public String getFileCompression() {
@@ -170,14 +163,14 @@ public abstract class BaseFileOutputMeta extends BaseTransformMeta {
   }
 
 
-  public String[] getFiles( final IVariables space ) {
-    return getFiles( space, true );
+  public String[] getFiles( final IVariables variables ) {
+    return getFiles( variables, true );
   }
 
-  private String[] getFiles( final IVariables space, final boolean showSamples ) {
+  private String[] getFiles( final IVariables variables, final boolean showSamples ) {
 
-    String realFileName = space.environmentSubstitute( fileName );
-    String realExtension = space.environmentSubstitute( extension );
+    String realFileName = variables.resolve( fileName );
+    String realExtension = variables.resolve( extension );
 
     return getFiles( realFileName, realExtension, showSamples );
   }
@@ -190,7 +183,7 @@ public abstract class BaseFileOutputMeta extends BaseTransformMeta {
       int splits = 1;
       int parts = 1;
 
-      if ( isStepNrInFilename() ) {
+      if ( isTransformNrInFilename() ) {
         copies = 3;
       }
 
@@ -210,11 +203,11 @@ public abstract class BaseFileOutputMeta extends BaseTransformMeta {
       String[] retval = new String[ nr ];
 
       int i = 0;
-      for ( int step = 0; step < copies; step++ ) {
+      for ( int transform = 0; transform < copies; transform++ ) {
         for ( int part = 0; part < parts; part++ ) {
           for ( int split = 0; split < splits; split++ ) {
             retval[ i ] = buildFilename(
-              realFileName, realExtension, step + "", getPartPrefix() + part, split + "", now, false, showSamples );
+              realFileName, realExtension, transform + "", getPartPrefix() + part, split + "", now, false, showSamples );
             i++;
           }
         }
@@ -225,7 +218,7 @@ public abstract class BaseFileOutputMeta extends BaseTransformMeta {
 
       return retval;
     } else {
-      return new String[] { buildFilename( realFileName, realExtension, "<step>", "<partition>", "<split>", now, false,
+      return new String[] { buildFilename( realFileName, realExtension, "<transform>", "<partition>", "<split>", now, false,
         showSamples ) };
     }
   }
@@ -235,39 +228,39 @@ public abstract class BaseFileOutputMeta extends BaseTransformMeta {
   }
 
   public String buildFilename(
-    final IVariables space, final String stepnr, final String partnr, final String splitnr,
+    final IVariables variables, final String copyNr, final String partitionNr, final String splitNr,
     final boolean ziparchive ) {
-    return buildFilename( space, stepnr, partnr, splitnr, ziparchive, true );
+    return buildFilename( variables, copyNr, partitionNr, splitNr, ziparchive, true );
   }
 
   public String buildFilename(
-    final IVariables space, final String stepnr, final String partnr, final String splitnr,
+    final IVariables variables, final String transformnr, final String partnr, final String splitnr,
     final boolean ziparchive, final boolean showSamples ) {
 
-    String realFileName = space.environmentSubstitute( fileName );
-    String realExtension = space.environmentSubstitute( extension );
+    String realFileName = variables.resolve( fileName );
+    String realExtension = variables.resolve( extension );
 
-    return buildFilename( realFileName, realExtension, stepnr, partnr, splitnr, new Date(), ziparchive, showSamples );
+    return buildFilename( realFileName, realExtension, transformnr, partnr, splitnr, new Date(), ziparchive, showSamples );
   }
 
   private String buildFilename(
-    final String realFileName, final String realExtension, final String stepnr, final String partnr,
+    final String realFileName, final String realExtension, final String transformnr, final String partnr,
     final String splitnr,
     final Date date, final boolean ziparchive, final boolean showSamples ) {
-    return buildFilename( realFileName, realExtension, stepnr, partnr, splitnr, date, ziparchive, showSamples, this );
+    return buildFilename( realFileName, realExtension, transformnr, partnr, splitnr, date, ziparchive, showSamples, this );
   }
 
 
   protected String buildFilename(
-    final String realFileName, final String realExtension, final String stepnr, final String partnr,
+    final String realFileName, final String realExtension, final String transformnr, final String partnr,
     final String splitnr, final Date date, final boolean ziparchive, final boolean showSamples,
     final BaseFileOutputMeta meta ) {
-    return buildFilename( null, realFileName, realExtension, stepnr, partnr, splitnr, date, ziparchive, showSamples,
+    return buildFilename( null, realFileName, realExtension, transformnr, partnr, splitnr, date, ziparchive, showSamples,
       meta );
   }
 
   protected String buildFilename(
-    final IVariables space, final String realFileName, final String realExtension, final String stepnr,
+    final IVariables variables, final String realFileName, final String realExtension, final String transformnr,
     final String partnr, final String splitnr, final Date date, final boolean ziparchive, final boolean showSamples,
     final BaseFileOutputMeta meta ) {
 
@@ -306,13 +299,13 @@ public abstract class BaseFileOutputMeta extends BaseTransformMeta {
         }
       }
     }
-    if ( meta.isStepNrInFilename() ) {
-      retval += "_" + stepnr;
+    if ( meta.isTransformNrInFilename() ) {
+      retval += "_" + transformnr;
     }
     if ( meta.isPartNrInFilename() ) {
       retval += "_" + partnr;
     }
-    if ( meta.getSplitEvery( space ) > 0 ) {
+    if ( meta.getSplitEvery( variables ) > 0 ) {
       retval += "_" + splitnr;
     }
 
@@ -333,16 +326,5 @@ public abstract class BaseFileOutputMeta extends BaseTransformMeta {
       }
     }
     return retval;
-  }
-
-  public String[] getFilePaths( final boolean showSamples ) {
-    final TransformMeta parentStepMeta = getParentTransformMeta();
-    if ( parentStepMeta != null ) {
-      final PipelineMeta parentPipelineMeta = parentStepMeta.getParentPipelineMeta();
-      if ( parentPipelineMeta != null ) {
-        return getFiles( parentPipelineMeta, showSamples );
-      }
-    }
-    return new String[] {};
   }
 }

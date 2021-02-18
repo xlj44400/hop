@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.gui;
 
@@ -26,11 +21,13 @@ import org.apache.hop.base.BaseHopMeta;
 import org.apache.hop.base.IBaseMeta;
 import org.apache.hop.core.Const;
 import org.apache.hop.core.NotePadMeta;
+import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.gui.AreaOwner.AreaType;
-import org.apache.hop.core.gui.IPrimitiveGc.EColor;
-import org.apache.hop.core.gui.IPrimitiveGc.EImage;
-import org.apache.hop.core.gui.IPrimitiveGc.ELineStyle;
+import org.apache.hop.core.gui.IGc.EColor;
+import org.apache.hop.core.gui.IGc.EImage;
+import org.apache.hop.core.gui.IGc.ELineStyle;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.pipeline.transform.errorhandling.StreamIcon;
 
 import java.util.List;
@@ -39,7 +36,6 @@ public abstract class BasePainter<Hop extends BaseHopMeta<?>, Part extends IBase
 
   public final double theta = Math.toRadians( 11 ); // arrowhead sharpness
 
-  public static final int MINI_ICON_SIZE = 16;
   public static final int MINI_ICON_MARGIN = 5;
   public static final int MINI_ICON_TRIANGLE_BASE = 20;
   public static final int MINI_ICON_DISTANCE = 4;
@@ -52,6 +48,8 @@ public abstract class BasePainter<Hop extends BaseHopMeta<?>, Part extends IBase
   public static final int CORNER_RADIUS_3 = 6;
   public static final int CORNER_RADIUS_2 = 4;
 
+  protected boolean drawingEditIcons;
+
   protected double zoomFactor;
 
   protected Point area;
@@ -61,8 +59,8 @@ public abstract class BasePainter<Hop extends BaseHopMeta<?>, Part extends IBase
   protected List<AreaOwner> areaOwners;
 
   protected Point offset;
-  protected Point dropCandidate;
   protected int iconSize;
+  protected int miniIconSize;
   protected int gridSize;
   protected Rectangle selectionRectangle;
   protected int lineWidth;
@@ -71,6 +69,7 @@ public abstract class BasePainter<Hop extends BaseHopMeta<?>, Part extends IBase
   protected float translationY;
 
   protected Object subject;
+  protected IVariables variables;
 
   protected IGc gc;
 
@@ -80,28 +79,30 @@ public abstract class BasePainter<Hop extends BaseHopMeta<?>, Part extends IBase
 
   protected Hop candidate;
 
-  public BasePainter( IGc gc, Object subject, Point area, IScrollBar hori,
-                      IScrollBar vert, Point dropCandidate, Rectangle selectionRectangle, List<AreaOwner> areaOwners, int iconSize,
-                      int lineWidth, int gridSize, String noteFontName, int noteFontHeight, double zoomFactor ) {
+  public BasePainter( IGc gc, IVariables variables, Object subject, Point area, IScrollBar hori,
+                      IScrollBar vert, Rectangle selectionRectangle, List<AreaOwner> areaOwners, int iconSize,
+                      int lineWidth, int gridSize, String noteFontName, int noteFontHeight, double zoomFactor, boolean drawingEditIcons ) {
     this.gc = gc;
+    this.variables = variables;
     this.subject = subject;
     this.area = area;
     this.hori = hori;
     this.vert = vert;
 
     this.selectionRectangle = selectionRectangle;
-    this.dropCandidate = dropCandidate;
 
     this.areaOwners = areaOwners;
     areaOwners.clear(); // clear it before we start filling it up again.
 
     // props = PropsUI.getInstance();
     this.iconSize = iconSize;
+    this.miniIconSize = iconSize/2;
     this.lineWidth = lineWidth;
     this.gridSize = gridSize;
 
     this.magnification = 1.0f;
     this.zoomFactor = zoomFactor;
+    this.drawingEditIcons = drawingEditIcons;
 
     gc.setAntialias( true );
 
@@ -185,8 +186,12 @@ public abstract class BasePainter<Hop extends BaseHopMeta<?>, Part extends IBase
     gc.setBackground( notePadMeta.getBackGroundColorRed(), notePadMeta.getBackGroundColorGreen(), notePadMeta.getBackGroundColorBlue() );
     gc.setForeground( notePadMeta.getBorderColorRed(), notePadMeta.getBorderColorGreen(), notePadMeta.getBorderColorBlue() );
 
-    gc.fillRoundRectangle( noteShape.x, noteShape.y, noteShape.width, noteShape.height, (int)(margin*zoomFactor), (int)(margin*zoomFactor) );
-    gc.drawRoundRectangle( noteShape.x, noteShape.y, noteShape.width, noteShape.height, (int)(margin*zoomFactor), (int)(margin*zoomFactor) );
+    // Radius is half the font height
+    //
+    int radius = (int)Math.round( zoomFactor * notePadMeta.getFontSize()/2 );
+
+    gc.fillRoundRectangle( noteShape.x, noteShape.y, noteShape.width, noteShape.height, radius, radius );
+    gc.drawRoundRectangle( noteShape.x, noteShape.y, noteShape.width, noteShape.height, radius, radius );
 
     if ( !Utils.isEmpty( notePadMeta.getNote() ) ) {
       gc.setForeground( notePadMeta.getFontColorRed(), notePadMeta.getFontColorGreen(), notePadMeta.getFontColorBlue() );
@@ -349,14 +354,6 @@ public abstract class BasePainter<Hop extends BaseHopMeta<?>, Part extends IBase
     this.offset = offset;
   }
 
-  public Point getDropCandidate() {
-    return dropCandidate;
-  }
-
-  public void setDropCandidate( Point dropCandidate ) {
-    this.dropCandidate = dropCandidate;
-  }
-
   public int getIconSize() {
     return iconSize;
   }
@@ -467,16 +464,16 @@ public abstract class BasePainter<Hop extends BaseHopMeta<?>, Part extends IBase
     return new int[] { x1, y1, x2, y2 };
   }
 
-  protected void drawArrow( EImage arrow, int[] line, Hop hop, Object startObject, Object endObject ) {
-    Point screen_from = real2screen( line[ 0 ], line[ 1 ] );
-    Point screen_to = real2screen( line[ 2 ], line[ 3 ] );
+  protected void drawArrow( EImage arrow, int[] line, Hop hop, Object startObject, Object endObject ) throws HopException {
+    Point screenFrom = real2screen( line[ 0 ], line[ 1 ] );
+    Point screenTo = real2screen( line[ 2 ], line[ 3 ] );
 
-    drawArrow( arrow, screen_from.x, screen_from.y, screen_to.x, screen_to.y, theta, calcArrowLength(), -1, hop,
+    drawArrow( arrow, screenFrom.x, screenFrom.y, screenTo.x, screenTo.y, theta, calcArrowLength(), -1, hop,
       startObject, endObject );
   }
 
   protected abstract void drawArrow( EImage arrow, int x1, int y1, int x2, int y2, double theta, int size, double factor,
-                                     Hop jobHop, Object startObject, Object endObject );
+                                     Hop jobHop, Object startObject, Object endObject ) throws HopException;
 
   /**
    * Gets zoomFactor
@@ -492,5 +489,37 @@ public abstract class BasePainter<Hop extends BaseHopMeta<?>, Part extends IBase
    */
   public void setZoomFactor( double zoomFactor ) {
     this.zoomFactor = zoomFactor;
+  }
+
+  /**
+   * Gets drawingEditIcons
+   *
+   * @return value of drawingEditIcons
+   */
+  public boolean isDrawingEditIcons() {
+    return drawingEditIcons;
+  }
+
+  /**
+   * @param drawingEditIcons The drawingEditIcons to set
+   */
+  public void setDrawingEditIcons( boolean drawingEditIcons ) {
+    this.drawingEditIcons = drawingEditIcons;
+  }
+
+  /**
+   * Gets miniIconSize
+   *
+   * @return value of miniIconSize
+   */
+  public int getMiniIconSize() {
+    return miniIconSize;
+  }
+
+  /**
+   * @param miniIconSize The miniIconSize to set
+   */
+  public void setMiniIconSize( int miniIconSize ) {
+    this.miniIconSize = miniIconSize;
   }
 }

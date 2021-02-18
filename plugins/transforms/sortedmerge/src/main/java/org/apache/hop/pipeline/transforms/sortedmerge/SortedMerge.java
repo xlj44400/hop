@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.sortedmerge;
 
@@ -45,7 +40,7 @@ import java.util.List;
  * @since 2-jun-2003
  */
 public class SortedMerge extends BaseTransform<SortedMergeMeta, SortedMergeData> implements ITransform<SortedMergeMeta, SortedMergeData> {
-  private static Class<?> PKG = SortedMergeMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = SortedMergeMeta.class; // For Translator
 
   public SortedMerge(TransformMeta transformMeta, SortedMergeMeta meta, SortedMergeData data, int copyNr, PipelineMeta pipelineMeta,
                      Pipeline pipeline ) {
@@ -72,7 +67,7 @@ public class SortedMerge extends BaseTransform<SortedMergeMeta, SortedMergeData>
 
       // Read one row from all rowsets...
       //
-      data.sortedBuffer = new ArrayList<RowSetRow>();
+      data.sortedBuffer = new ArrayList<>();
       data.rowMeta = null;
 
       // PDI-1212:
@@ -81,7 +76,6 @@ public class SortedMerge extends BaseTransform<SortedMergeMeta, SortedMergeData>
       // which throws this loop off by one (the next set never gets processed).
       // Instead of modifying BaseTransform, I figure reversing the loop here would
       // effect change in less areas. If the reverse loop causes a problem, please
-      // re-open http://jira.pentaho.com/browse/PDI-1212.
       List<IRowSet> inputRowSets = getInputRowSets();
       for ( int i = inputRowSets.size() - 1; i >= 0 && !isStopped(); i-- ) {
 
@@ -116,14 +110,11 @@ public class SortedMerge extends BaseTransform<SortedMergeMeta, SortedMergeData>
           }
         }
 
-        data.comparator = new Comparator<RowSetRow>() {
-
-          public int compare( RowSetRow o1, RowSetRow o2 ) {
-            try {
-              return o1.getRowMeta().compare( o1.getRowData(), o2.getRowData(), data.fieldIndices );
-            } catch ( HopValueException e ) {
-              return 0; // TODO see if we should fire off alarms over here... Perhaps throw a RuntimeException.
-            }
+        data.comparator = ( o1, o2 ) -> {
+          try {
+            return o1.getRowMeta().compare( o1.getRowData(), o2.getRowData(), data.fieldIndices );
+          } catch ( HopValueException e ) {
+            return 0; // TODO see if we should fire off alarms over here... Perhaps throw a RuntimeException.
           }
         };
 

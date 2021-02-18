@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.closure;
 
@@ -43,7 +38,7 @@ import java.util.HashMap;
  */
 public class ClosureGenerator extends BaseTransform<ClosureGeneratorMeta, ClosureGeneratorData> implements ITransform<ClosureGeneratorMeta, ClosureGeneratorData> {
 
-  private static final Class<?> PKG = ClosureGeneratorMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ClosureGeneratorMeta.class; // For Translator
 
   public ClosureGenerator( TransformMeta transformMeta, ClosureGeneratorMeta meta, ClosureGeneratorData data, int copyNr,
                            PipelineMeta pipelineMeta, Pipeline pipeline ) {
@@ -64,7 +59,7 @@ public class ClosureGenerator extends BaseTransform<ClosureGeneratorMeta, Closur
           // Create the output row metadata
           //
           data.outputRowMeta = getInputRowMeta().clone();
-          meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+          meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
           // Get indexes of parent and child field
           //
@@ -93,7 +88,7 @@ public class ClosureGenerator extends BaseTransform<ClosureGeneratorMeta, Closur
       // Writing the rows back...
       //
       for ( Object current : data.map.keySet() ) {
-        data.parents = new HashMap<Object, Long>();
+        data.parents = new HashMap<>();
 
         // add self as distance 0
         //
@@ -137,7 +132,7 @@ public class ClosureGenerator extends BaseTransform<ClosureGeneratorMeta, Closur
 
     if ( super.init() ) {
       data.reading = true;
-      data.map = new HashMap<Object, Object>();
+      data.map = new HashMap<>();
 
       data.topLevel = null;
       if ( meta.isRootIdZero() ) {

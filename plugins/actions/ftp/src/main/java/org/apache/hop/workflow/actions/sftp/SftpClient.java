@@ -1,26 +1,35 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.sftp;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetAddress;
+
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileType;
+import org.apache.commons.vfs2.FileUtil;
+import org.apache.hop.core.Const;
+import org.apache.hop.core.exception.HopFileException;
+import org.apache.hop.core.exception.HopWorkflowException;
+import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.vfs.HopVfs;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.jcraft.jsch.Channel;
@@ -34,19 +43,6 @@ import com.jcraft.jsch.ProxySOCKS5;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpATTRS;
 import com.jcraft.jsch.SftpException;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileType;
-import org.apache.commons.vfs2.FileUtil;
-import org.apache.hop.core.Const;
-import org.apache.hop.core.exception.HopFileException;
-import org.apache.hop.core.exception.HopWorkflowException;
-import org.apache.hop.core.util.Utils;
-import org.apache.hop.core.vfs.HopVfs;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
 
 public class SftpClient {
 
@@ -358,10 +354,10 @@ public class SftpClient {
     }
   }
 
-  public boolean folderExists( String foldername ) {
+  public boolean folderExists( String folderName ) {
     boolean retval = false;
     try {
-      SftpATTRS attrs = c.stat( foldername );
+      SftpATTRS attrs = c.stat( folderName );
       if ( attrs == null ) {
         return false;
       }

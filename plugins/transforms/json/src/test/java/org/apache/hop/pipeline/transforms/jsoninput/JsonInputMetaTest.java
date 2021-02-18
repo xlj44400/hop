@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.jsoninput;
 
@@ -27,7 +22,7 @@ import org.apache.hop.core.exception.HopXmlException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.xml.XmlHandler;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.pipeline.transform.TransformMeta;
 import org.junit.Before;
 import org.junit.Test;
@@ -64,13 +59,13 @@ public class JsonInputMetaTest {
   IRowMeta rowMetaInterfaceItem;
 
   @Mock
-  TransformMeta nextStep;
+  TransformMeta nextTransform;
 
   @Mock
-  IVariables space;
+  IVariables variables;
 
   @Mock
-  IMetaStore metaStore;
+  IHopMetadataProvider metadataProvider;
 
   @Mock
   JsonInputMeta.InputFiles inputFiles;
@@ -96,7 +91,7 @@ public class JsonInputMetaTest {
 
     when( rowMeta.indexOfValue( DATA ) ).thenReturn( 0 );
 
-    jsonInputMeta.getFields( rowMeta, NAME, info, nextStep, space, metaStore );
+    jsonInputMeta.getFields( rowMeta, NAME, info, nextTransform, variables, metadataProvider );
 
     verify( rowMeta ).removeValueMeta( 0 );
   }
@@ -118,40 +113,40 @@ public class JsonInputMetaTest {
     assertEquals( expectedMeta( "/transform_defaultPathLeafToNull_N.xml" ), xml );
   }
 
-  // Loading step meta from the step xml where DefaultPathLeafToNull=N
+  // Loading transform meta from the transform xml where DefaultPathLeafToNull=N
   @Test
   public void testMetaLoad_DefaultPathLeafToNull_Is_N() throws HopXmlException {
     jsonInputMeta = new JsonInputMeta();
-    jsonInputMeta.loadXml( loadTransformFile( "/transform_defaultPathLeafToNull_N.xml" ), metaStore );
+    jsonInputMeta.loadXml( loadTransformFile( "/transform_defaultPathLeafToNull_N.xml" ), metadataProvider );
     assertEquals( "Option.DEFAULT_PATH_LEAF_TO_NULL ", false, jsonInputMeta.isDefaultPathLeafToNull() );
   }
 
-  // Loading step meta from default step xml. In this case DefaultPathLeafToNull=Y in xml.
+  // Loading transform meta from default transform xml. In this case DefaultPathLeafToNull=Y in xml.
   @Test
   public void testDefaultMetaLoad_DefaultPathLeafToNull_Is_Y() throws HopXmlException {
     jsonInputMeta = new JsonInputMeta();
-    jsonInputMeta.loadXml( loadTransformFile( "/transform_default.xml" ), metaStore );
+    jsonInputMeta.loadXml( loadTransformFile( "/transform_default.xml" ), metadataProvider );
     assertEquals( "Option.DEFAULT_PATH_LEAF_TO_NULL ", true, jsonInputMeta.isDefaultPathLeafToNull() );
   }
 
-  // Loading step meta from the step xml that was created before PDI-17060 fix. In this case xml contains no
+  // Loading transform meta from the transform xml that was created before PDI-17060 fix. In this case xml contains no
   // DefaultPathLeafToNull node at all.
   // For backward compatibility in this case we think that the option is set to default value - Y.
   @Test
   public void testMetaLoadAsDefault_NoDefaultPathLeafToNull_In_Xml() throws HopXmlException {
     jsonInputMeta = new JsonInputMeta();
-    jsonInputMeta.loadXml( loadTransformFile( "/transform_no_defaultPathLeafToNull_node.xml" ), metaStore );
+    jsonInputMeta.loadXml( loadTransformFile( "/transform_no_defaultPathLeafToNull_node.xml" ), metadataProvider );
     assertEquals( "Option.DEFAULT_PATH_LEAF_TO_NULL ", true, jsonInputMeta.isDefaultPathLeafToNull() );
   }
 
   private Node loadTransformFile( String transformFilename ) throws HopXmlException {
     Document document = XmlHandler.loadXmlFile( this.getClass().getResourceAsStream( transformFilename ) );
-    Node stepNode = document.getDocumentElement();
-    return stepNode;
+    Node transformNode = document.getDocumentElement();
+    return transformNode;
   }
 
-  private String expectedMeta( String step ) throws Exception {
-    try ( BufferedReader reader = new BufferedReader( new InputStreamReader( this.getClass().getResourceAsStream( step ) ) ) ) {
+  private String expectedMeta( String transform ) throws Exception {
+    try ( BufferedReader reader = new BufferedReader( new InputStreamReader( this.getClass().getResourceAsStream( transform ) ) ) ) {
       String xml = reader.lines().collect( Collectors.joining( Const.CR ) );
       xml = CLEAN_NODES.matcher( xml ).replaceAll( "" );
       return xml;

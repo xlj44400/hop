@@ -1,30 +1,43 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
 package org.apache.hop.workflow.config;
 
-import org.apache.hop.core.variables.IVariables;
-import org.apache.hop.core.variables.Variables;
-import org.apache.hop.metastore.IHopMetaStoreElement;
-import org.apache.hop.metastore.api.IMetaStore;
-import org.apache.hop.metastore.persist.MetaStoreAttribute;
-import org.apache.hop.metastore.persist.MetaStoreElementType;
-import org.apache.hop.metastore.persist.MetaStoreFactory;
+import org.apache.hop.metadata.api.HopMetadata;
+import org.apache.hop.metadata.api.HopMetadataBase;
+import org.apache.hop.metadata.api.HopMetadataProperty;
+import org.apache.hop.metadata.api.IHopMetadata;
 
-@MetaStoreElementType(
+@HopMetadata(
+  key = "workflow-run-configuration",
   name = "Workflow Run Configuration",
-  description = "Describes how to execute a workflow"
+  description = "Describes how to execute a workflow",
+  image = "ui/images/workflow_run_config.svg"
 )
-public class WorkflowRunConfiguration extends Variables implements Cloneable, IVariables, IHopMetaStoreElement<WorkflowRunConfiguration> {
+public class WorkflowRunConfiguration extends HopMetadataBase implements Cloneable, IHopMetadata {
 
   public static final String GUI_PLUGIN_ELEMENT_PARENT_ID = "WorkflowRunConfiguration-PluginSpecific-Options";
 
-  private String name;
-
-  @MetaStoreAttribute
+  @HopMetadataProperty
   private String description;
 
-  @MetaStoreAttribute
+  @HopMetadataProperty
   private IWorkflowEngineRunConfiguration engineRunConfiguration;
-
-  private IVariables variables = new Variables();
 
   public WorkflowRunConfiguration() {
   }
@@ -46,32 +59,6 @@ public class WorkflowRunConfiguration extends Variables implements Cloneable, IV
 
   @Override protected WorkflowRunConfiguration clone() {
     return new WorkflowRunConfiguration( this );
-  }
-
-  @Override public MetaStoreFactory<WorkflowRunConfiguration> getFactory( IMetaStore metaStore ) {
-    return createFactory( metaStore );
-  }
-
-  public static final MetaStoreFactory<WorkflowRunConfiguration> createFactory( IMetaStore metaStore ) {
-    MetaStoreFactory<WorkflowRunConfiguration> factory = new MetaStoreFactory<>( WorkflowRunConfiguration.class, metaStore );
-    factory.setObjectFactory( new WorkflowRunConfigurationMetaStoreObjectFactory() );
-    return factory;
-  }
-
-  /**
-   * Gets name
-   *
-   * @return value of name
-   */
-  public String getName() {
-    return name;
-  }
-
-  /**
-   * @param name The name to set
-   */
-  public void setName( String name ) {
-    this.name = name;
   }
 
   /**

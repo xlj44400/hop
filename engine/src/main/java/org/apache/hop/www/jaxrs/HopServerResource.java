@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.www.jaxrs;
 
@@ -30,7 +25,7 @@ import org.apache.hop.workflow.WorkflowMeta;
 import org.apache.hop.workflow.engine.IWorkflowEngine;
 import org.apache.hop.www.HopServerObjectEntry;
 import org.apache.hop.www.HopServerSingleton;
-import org.apache.hop.www.SlaveServerConfig;
+import org.apache.hop.www.HopServerConfig;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -83,8 +78,8 @@ public class HopServerResource {
   @Path( "/configDetails" )
   @Produces( { MediaType.APPLICATION_JSON } )
   public List<NVPair> getConfigDetails() {
-    SlaveServerConfig serverConfig = HopServerSingleton.getInstance().getPipelineMap().getSlaveServerConfig();
-    List<NVPair> list = new ArrayList<NVPair>();
+    HopServerConfig serverConfig = HopServerSingleton.getInstance().getPipelineMap().getHopServerConfig();
+    List<NVPair> list = new ArrayList<>();
     list.add( new NVPair( "maxLogLines", "" + serverConfig.getMaxLogLines() ) );
     list.add( new NVPair( "maxLogLinesAge", "" + serverConfig.getMaxLogTimeoutMinutes() ) );
     list.add( new NVPair( "maxObjectsAge", "" + serverConfig.getObjectTimeoutMinutes() ) );
@@ -107,7 +102,7 @@ public class HopServerResource {
     List<HopServerObjectEntry> pipelineEntries =
       HopServerSingleton.getInstance().getPipelineMap().getPipelineObjects();
 
-    List<PipelineStatus> details = new ArrayList<PipelineStatus>();
+    List<PipelineStatus> details = new ArrayList<>();
 
     PipelineResource pipelineRes = new PipelineResource();
     for ( HopServerObjectEntry entry : pipelineEntries ) {
@@ -130,7 +125,7 @@ public class HopServerResource {
   public List<WorkflowStatus> getWorkflowsDetails() {
     List<HopServerObjectEntry> actions = HopServerSingleton.getInstance().getWorkflowMap().getWorkflowObjects();
 
-    List<WorkflowStatus> details = new ArrayList<WorkflowStatus>();
+    List<WorkflowStatus> details = new ArrayList<>();
 
     WorkflowResource jobRes = new WorkflowResource();
     for ( HopServerObjectEntry entry : actions ) {

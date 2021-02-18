@@ -1,28 +1,23 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.www;
 
-import org.apache.hop.cluster.SlaveServer;
+import org.apache.hop.server.HopServer;
 import org.apache.hop.core.Const;
 import org.apache.hop.core.HopEnvironment;
 import org.apache.hop.core.exception.HopException;
@@ -48,44 +43,44 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class HopServerSingleton {
 
-  private static Class<?> PKG = HopServer.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = org.apache.hop.www.HopServer.class; // For Translator
 
-  private static SlaveServerConfig slaveServerConfig;
+  private static HopServerConfig hopServerConfig;
   private static HopServerSingleton hopServerSingleton;
-  private static HopServer hopServer;
+  private static org.apache.hop.www.HopServer hopServer;
 
   private ILogChannel log;
 
   private PipelineMap pipelineMap;
   private WorkflowMap workflowMap;
 
-  private HopServerSingleton( SlaveServerConfig config ) throws HopException {
+  private HopServerSingleton( HopServerConfig config ) throws HopException {
     HopEnvironment.init();
-    HopLogStore.init( config.getMaxLogLines(), config.getMaxLogTimeoutMinutes() );
+    HopLogStore.init();
 
     this.log = new LogChannel( "HopServer" );
     pipelineMap = new PipelineMap();
-    pipelineMap.setSlaveServerConfig( config );
+    pipelineMap.setHopServerConfig( config );
     workflowMap = new WorkflowMap();
-    workflowMap.setSlaveServerConfig( config );
+    workflowMap.setHopServerConfig( config );
 
     installPurgeTimer( config, log, pipelineMap, workflowMap );
 
-    SlaveServer slaveServer = config.getSlaveServer();
-    if ( slaveServer != null ) {
+    org.apache.hop.server.HopServer hopServer = config.getHopServer();
+    if ( hopServer != null ) {
       int port = WebServer.PORT;
-      if ( !Utils.isEmpty( slaveServer.getPort() ) ) {
+      if ( !Utils.isEmpty( hopServer.getPort() ) ) {
         try {
-          port = Integer.parseInt( slaveServer.getPort() );
+          port = Integer.parseInt( hopServer.getPort() );
         } catch ( Exception e ) {
-          log.logError( BaseMessages.getString( PKG, "HopServer.Error.CanNotPartPort", slaveServer.getHostname(), ""
+          log.logError( BaseMessages.getString( PKG, "HopServer.Error.CanNotPartPort", hopServer.getHostname(), ""
             + port ), e );
         }
       }
     }
   }
 
-  public static void installPurgeTimer( final SlaveServerConfig config, final ILogChannel log,
+  public static void installPurgeTimer( final HopServerConfig config, final ILogChannel log,
                                         final PipelineMap pipelineMap, final WorkflowMap workflowMap ) {
 
     final int objectTimeout;
@@ -141,7 +136,7 @@ public class HopServerSingleton {
 
                     // pipelineMap.deallocateServerSocketPorts(entry);
 
-                    log.logMinimal( "Cleaned up pipeline "
+                    log.logBasic( "Cleaned up pipeline "
                       + entry.getName() + " with id " + entry.getId() + " from " + pipeline.getExecutionStartDate()
                       + ", diff=" + diffInMinutes );
                   }
@@ -168,7 +163,7 @@ public class HopServerSingleton {
 
                     workflowMap.removeWorkflow( entry );
 
-                    log.logMinimal( "Cleaned up workflow "
+                    log.logBasic( "Cleaned up workflow "
                       + entry.getName() + " with id " + entry.getId() + " from " + workflow.getExecutionStartDate() );
                   }
                 }
@@ -190,13 +185,13 @@ public class HopServerSingleton {
   public static HopServerSingleton getInstance() {
     try {
       if ( hopServerSingleton == null ) {
-        if ( slaveServerConfig == null ) {
-          slaveServerConfig = new SlaveServerConfig();
-          SlaveServer slaveServer = new SlaveServer();
-          slaveServerConfig.setSlaveServer( slaveServer );
+        if ( hopServerConfig == null ) {
+          hopServerConfig = new HopServerConfig();
+          org.apache.hop.server.HopServer hopServer = new HopServer();
+          hopServerConfig.setHopServer( hopServer );
         }
 
-        hopServerSingleton = new HopServerSingleton( slaveServerConfig );
+        hopServerSingleton = new HopServerSingleton( hopServerConfig );
 
         String serverObjectId = UUID.randomUUID().toString();
         SimpleLoggingObject servletLoggingObject =
@@ -229,19 +224,19 @@ public class HopServerSingleton {
     this.workflowMap = workflowMap;
   }
 
-   public static SlaveServerConfig getSlaveServerConfig() {
-    return slaveServerConfig;
+   public static HopServerConfig getHopServerConfig() {
+    return hopServerConfig;
   }
 
-  public static void setSlaveServerConfig( SlaveServerConfig slaveServerConfig ) {
-    HopServerSingleton.slaveServerConfig = slaveServerConfig;
+  public static void setHopServerConfig( HopServerConfig hopServerConfig ) {
+    HopServerSingleton.hopServerConfig = hopServerConfig;
   }
 
-  public static void setHopServer( HopServer hopServer ) {
+  public static void setHopServer( org.apache.hop.www.HopServer hopServer ) {
     HopServerSingleton.hopServer = hopServer;
   }
 
-  public static HopServer getHopServer() {
+  public static org.apache.hop.www.HopServer getHopServer() {
     return HopServerSingleton.hopServer;
   }
 

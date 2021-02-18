@@ -1,95 +1,62 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.blockingtransform;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.annotations.PluginDialog;
-import org.apache.hop.core.extension.ExtensionPointHandler;
-import org.apache.hop.core.logging.LogChannel;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
 import org.apache.hop.pipeline.transform.ITransformDialog;
 import org.apache.hop.ui.core.dialog.BaseDialog;
 import org.apache.hop.ui.core.widget.TextVar;
-import org.apache.hop.ui.hopgui.HopGuiExtensionPoint;
-import org.apache.hop.ui.hopgui.delegates.HopGuiDirectoryDialogExtension;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.DirectoryDialog;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 
-@PluginDialog(
-        id = "BlockingTransform",
-        image = "blockingtransform.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = "http://www.project-hop.org/manual/latest/plugins/transforms/blockingtransform.html"
-)
 public class BlockingTransformDialog extends BaseTransformDialog implements ITransformDialog {
-  private static final Class<?> PKG = BlockingTransformDialog.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = BlockingTransformDialog.class; // For Translator
 
-  private BlockingTransformMeta input;
+  private final BlockingTransformMeta input;
 
-  private Label wlPassAllRows;
   private Button wPassAllRows;
 
   private Label wlSpoolDir;
   private Button wbSpoolDir;
   private TextVar wSpoolDir;
-  private FormData fdlSpoolDir, fdbSpoolDir, fdSpoolDir;
 
   private Label wlPrefix;
   private Text wPrefix;
-  private FormData fdlPrefix, fdPrefix;
 
   private Label wlCacheSize;
   private Text wCacheSize;
-  private FormData fdlCacheSize, fdCacheSize;
 
   private Label wlCompress;
   private Button wCompress;
-  private FormData fdlCompress, fdCompress;
 
-  public BlockingTransformDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public BlockingTransformDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (BlockingTransformMeta) in;
   }
 
@@ -102,11 +69,7 @@ public class BlockingTransformDialog extends BaseTransformDialog implements ITra
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
     changed = input.hasChanged();
 
     FormLayout formLayout = new FormLayout();
@@ -139,9 +102,9 @@ public class BlockingTransformDialog extends BaseTransformDialog implements ITra
     wTransformName.setLayoutData( fdTransformName );
 
     // Update the dimension?
-    wlPassAllRows = new Label( shell, SWT.RIGHT );
+    Label wlPassAllRows = new Label(shell, SWT.RIGHT);
     wlPassAllRows.setText( BaseMessages.getString( PKG, "BlockingTransformDialog.PassAllRows.Label" ) );
-    props.setLook( wlPassAllRows );
+    props.setLook(wlPassAllRows);
     FormData fdlUpdate = new FormData();
     fdlUpdate.left = new FormAttachment( 0, 0 );
     fdlUpdate.right = new FormAttachment( middle, -margin );
@@ -151,7 +114,7 @@ public class BlockingTransformDialog extends BaseTransformDialog implements ITra
     props.setLook( wPassAllRows );
     FormData fdUpdate = new FormData();
     fdUpdate.left = new FormAttachment( middle, 0 );
-    fdUpdate.top = new FormAttachment( wTransformName, margin );
+    fdUpdate.top = new FormAttachment( wlPassAllRows, 0, SWT.CENTER );
     fdUpdate.right = new FormAttachment( 100, 0 );
     wPassAllRows.setLayoutData( fdUpdate );
 
@@ -167,86 +130,86 @@ public class BlockingTransformDialog extends BaseTransformDialog implements ITra
     wlSpoolDir = new Label( shell, SWT.RIGHT );
     wlSpoolDir.setText( BaseMessages.getString( PKG, "BlockingTransformDialog.SpoolDir.Label" ) );
     props.setLook( wlSpoolDir );
-    fdlSpoolDir = new FormData();
+    FormData fdlSpoolDir = new FormData();
     fdlSpoolDir.left = new FormAttachment( 0, 0 );
     fdlSpoolDir.right = new FormAttachment( middle, -margin );
     fdlSpoolDir.top = new FormAttachment( wPassAllRows, margin );
-    wlSpoolDir.setLayoutData( fdlSpoolDir );
+    wlSpoolDir.setLayoutData(fdlSpoolDir);
 
     wbSpoolDir = new Button( shell, SWT.PUSH | SWT.CENTER );
     props.setLook( wbSpoolDir );
     wbSpoolDir.setText( BaseMessages.getString( PKG, "System.Button.Browse" ) );
-    fdbSpoolDir = new FormData();
+    FormData fdbSpoolDir = new FormData();
     fdbSpoolDir.right = new FormAttachment( 100, 0 );
     fdbSpoolDir.top = new FormAttachment( wPassAllRows, margin );
-    wbSpoolDir.setLayoutData( fdbSpoolDir );
+    wbSpoolDir.setLayoutData(fdbSpoolDir);
 
-    wSpoolDir = new TextVar( pipelineMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wSpoolDir = new TextVar( variables, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wSpoolDir );
     wSpoolDir.addModifyListener( lsMod );
-    fdSpoolDir = new FormData();
+    FormData fdSpoolDir = new FormData();
     fdSpoolDir.left = new FormAttachment( middle, 0 );
     fdSpoolDir.top = new FormAttachment( wPassAllRows, margin );
     fdSpoolDir.right = new FormAttachment( wbSpoolDir, -margin );
-    wSpoolDir.setLayoutData( fdSpoolDir );
+    wSpoolDir.setLayoutData(fdSpoolDir);
 
     // Whenever something changes, set the tooltip to the expanded version:
-    wSpoolDir.addModifyListener( e -> wSpoolDir.setToolTipText( pipelineMeta.environmentSubstitute( wSpoolDir.getText() ) ) );
+    wSpoolDir.addModifyListener( e -> wSpoolDir.setToolTipText( variables.resolve( wSpoolDir.getText() ) ) );
 
-    wbSpoolDir.addListener( SWT.Selection, e-> BaseDialog.presentDirectoryDialog( shell, wSpoolDir, pipelineMeta ) );
+    wbSpoolDir.addListener( SWT.Selection, e-> BaseDialog.presentDirectoryDialog( shell, wSpoolDir, variables ) );
 
     // Prefix of temporary file
     wlPrefix = new Label( shell, SWT.RIGHT );
     wlPrefix.setText( BaseMessages.getString( PKG, "BlockingTransformDialog.Prefix.Label" ) );
     props.setLook( wlPrefix );
-    fdlPrefix = new FormData();
+    FormData fdlPrefix = new FormData();
     fdlPrefix.left = new FormAttachment( 0, 0 );
     fdlPrefix.right = new FormAttachment( middle, -margin );
     fdlPrefix.top = new FormAttachment( wbSpoolDir, margin * 2 );
-    wlPrefix.setLayoutData( fdlPrefix );
+    wlPrefix.setLayoutData(fdlPrefix);
     wPrefix = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wPrefix );
     wPrefix.addModifyListener( lsMod );
-    fdPrefix = new FormData();
+    FormData fdPrefix = new FormData();
     fdPrefix.left = new FormAttachment( middle, 0 );
     fdPrefix.top = new FormAttachment( wbSpoolDir, margin * 2 );
     fdPrefix.right = new FormAttachment( 100, 0 );
-    wPrefix.setLayoutData( fdPrefix );
+    wPrefix.setLayoutData(fdPrefix);
 
     // Maximum number of lines to keep in memory before using temporary files
     wlCacheSize = new Label( shell, SWT.RIGHT );
     wlCacheSize.setText( BaseMessages.getString( PKG, "BlockingTransformDialog.CacheSize.Label" ) );
     props.setLook( wlCacheSize );
-    fdlCacheSize = new FormData();
+    FormData fdlCacheSize = new FormData();
     fdlCacheSize.left = new FormAttachment( 0, 0 );
     fdlCacheSize.right = new FormAttachment( middle, -margin );
     fdlCacheSize.top = new FormAttachment( wPrefix, margin * 2 );
-    wlCacheSize.setLayoutData( fdlCacheSize );
+    wlCacheSize.setLayoutData(fdlCacheSize);
     wCacheSize = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wCacheSize );
     wCacheSize.addModifyListener( lsMod );
-    fdCacheSize = new FormData();
+    FormData fdCacheSize = new FormData();
     fdCacheSize.left = new FormAttachment( middle, 0 );
     fdCacheSize.top = new FormAttachment( wPrefix, margin * 2 );
     fdCacheSize.right = new FormAttachment( 100, 0 );
-    wCacheSize.setLayoutData( fdCacheSize );
+    wCacheSize.setLayoutData(fdCacheSize);
 
     // Using compression for temporary files?
     wlCompress = new Label( shell, SWT.RIGHT );
     wlCompress.setText( BaseMessages.getString( PKG, "BlockingTransformDialog.Compress.Label" ) );
     props.setLook( wlCompress );
-    fdlCompress = new FormData();
+    FormData fdlCompress = new FormData();
     fdlCompress.left = new FormAttachment( 0, 0 );
     fdlCompress.right = new FormAttachment( middle, -margin );
     fdlCompress.top = new FormAttachment( wCacheSize, margin * 2 );
-    wlCompress.setLayoutData( fdlCompress );
+    wlCompress.setLayoutData(fdlCompress);
     wCompress = new Button( shell, SWT.CHECK );
     props.setLook( wCompress );
-    fdCompress = new FormData();
+    FormData fdCompress = new FormData();
     fdCompress.left = new FormAttachment( middle, 0 );
-    fdCompress.top = new FormAttachment( wCacheSize, margin * 2 );
+    fdCompress.top = new FormAttachment( wlCompress, 0, SWT.CENTER );
     fdCompress.right = new FormAttachment( 100, 0 );
-    wCompress.setLayoutData( fdCompress );
+    wCompress.setLayoutData(fdCompress);
     wCompress.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
@@ -263,16 +226,8 @@ public class BlockingTransformDialog extends BaseTransformDialog implements ITra
       wOk, wCancel }, margin, wCompress );
 
     // Add listeners
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
+    lsCancel = e -> cancel();
+    lsOk = e -> ok();
 
     wCancel.addListener( SWT.Selection, lsCancel );
     wOk.addListener( SWT.Selection, lsOk );

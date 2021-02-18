@@ -1,34 +1,24 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.tableoutput;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.hop.core.Const;
-import org.apache.hop.core.DbCache;
-import org.apache.hop.core.Props;
-import org.apache.hop.core.SourceToTargetMapping;
-import org.apache.hop.core.SqlStatement;
-import org.apache.hop.core.annotations.PluginDialog;
+import org.apache.hop.core.*;
 import org.apache.hop.core.database.Database;
 import org.apache.hop.core.database.DatabaseMeta;
 import org.apache.hop.core.database.IDatabase;
@@ -51,57 +41,25 @@ import org.apache.hop.ui.core.dialog.EnterMappingDialog;
 import org.apache.hop.ui.core.dialog.EnterSelectionDialog;
 import org.apache.hop.ui.core.dialog.ErrorDialog;
 import org.apache.hop.ui.core.gui.GuiResource;
-import org.apache.hop.ui.core.widget.ColumnInfo;
-import org.apache.hop.ui.core.widget.ComboVar;
-import org.apache.hop.ui.core.widget.MetaSelectionLine;
-import org.apache.hop.ui.core.widget.TableView;
-import org.apache.hop.ui.core.widget.TextVar;
+import org.apache.hop.ui.core.widget.*;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
-import org.eclipse.swt.events.FocusListener;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.MessageBox;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import org.apache.hop.core.variables.IVariables;
 
-/**
- * Dialog class for table output transform.
- *
- * @author Matt Casters
- */
-@PluginDialog(
-  id = "TableOutput",
-  image = "tableoutput.svg",
-  pluginType = PluginDialog.PluginType.TRANSFORM,
-  documentationUrl = "http://www.project-hop.org/manual/latest/plugins/transforms/tableoutput.html"
-)
 public class TableOutputDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = TableOutputMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = TableOutputMeta.class; // For Translator
 
   private MetaSelectionLine<DatabaseMeta> wConnection;
 
@@ -146,20 +104,16 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
 
   private Label wlReturnField;
   private TextVar wReturnField;
-  private FormData fdReturnField;
 
-  private Label wlFields;
   private TableView wFields;
 
   private Button wGetFields;
-  private FormData fdGetFields;
 
   private Button wDoMapping;
-  private FormData fdDoMapping;
 
-  private TableOutputMeta input;
+  private final TableOutputMeta input;
 
-  private Map<String, Integer> inputFields;
+  private final Map<String, Integer> inputFields;
 
   private ColumnInfo[] ciFields;
 
@@ -168,15 +122,15 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
   /**
    * List of ColumnInfo that should have the field names of the selected database table
    */
-  private List<ColumnInfo> tableFieldColumns = new ArrayList<ColumnInfo>();
+  private final List<ColumnInfo> tableFieldColumns = new ArrayList<>();
 
   /**
    * Constructor.
    */
-  public TableOutputDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public TableOutputDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (TableOutputMeta) in;
-    inputFields = new HashMap<String, Integer>();
+    inputFields = new HashMap<>();
   }
 
   /**
@@ -254,7 +208,7 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
     fdbSchema.right = new FormAttachment( 100, 0 );
     wbSchema.setLayoutData( fdbSchema );
 
-    wSchema = new TextVar( pipelineMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wSchema = new TextVar( variables, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wSchema );
     wSchema.addModifyListener( lsTableMod );
     FormData fdSchema = new FormData();
@@ -281,7 +235,7 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
     fdbTable.top = new FormAttachment( wbSchema, margin );
     wbTable.setLayoutData( fdbTable );
 
-    wTable = new TextVar( pipelineMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wTable = new TextVar( variables, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wTable );
     wTable.addModifyListener( lsTableMod );
     FormData fdTable = new FormData();
@@ -299,7 +253,7 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
     fdlCommit.right = new FormAttachment( middle, -margin );
     fdlCommit.top = new FormAttachment( wbTable, margin );
     wlCommit.setLayoutData( fdlCommit );
-    wCommit = new TextVar( pipelineMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wCommit = new TextVar( variables, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wCommit );
     FormData fdCommit = new FormData();
     fdCommit.left = new FormAttachment( middle, 0 );
@@ -429,7 +383,7 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
     fdlPartField.left = new FormAttachment( 0, 0 );
     fdlPartField.right = new FormAttachment( middle, -margin );
     wlPartField.setLayoutData( fdlPartField );
-    wPartField = new ComboVar( pipelineMeta, wMainComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wPartField = new ComboVar( variables, wMainComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wPartField );
     FormData fdPartField = new FormData();
     fdPartField.top = new FormAttachment( wlPartField,  0, SWT.CENTER );
@@ -437,10 +391,10 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
     fdPartField.right = new FormAttachment( 100, 0 );
     wPartField.setLayoutData( fdPartField );
     wPartField.addFocusListener( new FocusListener() {
-      public void focusLost( org.eclipse.swt.events.FocusEvent e ) {
+      public void focusLost( FocusEvent e ) {
       }
 
-      public void focusGained( org.eclipse.swt.events.FocusEvent e ) {
+      public void focusGained( FocusEvent e ) {
         Cursor busy = new Cursor( shell.getDisplay(), SWT.CURSOR_WAIT );
         shell.setCursor( busy );
         getFields();
@@ -559,7 +513,7 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
     fdlNameField.top = new FormAttachment( wNameInField, margin );
     fdlNameField.right = new FormAttachment( middle, -margin );
     wlNameField.setLayoutData( fdlNameField );
-    wNameField = new ComboVar( pipelineMeta, wMainComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wNameField = new ComboVar( variables, wMainComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wNameField );
     FormData fdNameField = new FormData();
     fdNameField.left = new FormAttachment( middle, 0 );
@@ -567,10 +521,10 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
     fdNameField.right = new FormAttachment( 100, 0 );
     wNameField.setLayoutData( fdNameField );
     wNameField.addFocusListener( new FocusListener() {
-      public void focusLost( org.eclipse.swt.events.FocusEvent e ) {
+      public void focusLost( FocusEvent e ) {
       }
 
-      public void focusGained( org.eclipse.swt.events.FocusEvent e ) {
+      public void focusGained( FocusEvent e ) {
         Cursor busy = new Cursor( shell.getDisplay(), SWT.CURSOR_WAIT );
         shell.setCursor( busy );
         getFields();
@@ -635,13 +589,13 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
     fdlReturnField.right = new FormAttachment( middle, -margin );
     fdlReturnField.top = new FormAttachment( wReturnKeys, margin );
     wlReturnField.setLayoutData( fdlReturnField );
-    wReturnField = new TextVar( pipelineMeta, wMainComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wReturnField = new TextVar( variables, wMainComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wReturnField );
-    fdReturnField = new FormData();
+    FormData fdReturnField = new FormData();
     fdReturnField.left = new FormAttachment( middle, 0 );
     fdReturnField.top = new FormAttachment( wlReturnField, 0, SWT.CENTER );
     fdReturnField.right = new FormAttachment( 100, 0 );
-    wReturnField.setLayoutData( fdReturnField );
+    wReturnField.setLayoutData(fdReturnField);
 
     FormData fdMainComp = new FormData();
     fdMainComp.left = new FormAttachment( 0, 0 );
@@ -668,9 +622,9 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
     wFieldsComp.setLayout( fieldsCompLayout );
 
     // The fields table
-    wlFields = new Label( wFieldsComp, SWT.NONE );
+    Label wlFields = new Label(wFieldsComp, SWT.NONE);
     wlFields.setText( BaseMessages.getString( PKG, "TableOutputDialog.InsertFields.Label" ) );
-    props.setLook( wlFields );
+    props.setLook(wlFields);
     FormData fdlUpIns = new FormData();
     fdlUpIns.left = new FormAttachment( 0, 0 );
     fdlUpIns.top = new FormAttachment( 0, margin );
@@ -690,32 +644,28 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
         ColumnInfo.COLUMN_TYPE_CCOMBO, new String[] { "" }, false );
     tableFieldColumns.add( ciFields[ 0 ] );
     wFields =
-      new TableView( pipelineMeta, wFieldsComp, SWT.BORDER
+      new TableView( variables, wFieldsComp, SWT.BORDER
         | SWT.FULL_SELECTION | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL, ciFields, UpInsRows, null, props );
 
     wGetFields = new Button( wFieldsComp, SWT.PUSH );
     wGetFields.setText( BaseMessages.getString( PKG, "TableOutputDialog.GetFields.Button" ) );
-    fdGetFields = new FormData();
-    fdGetFields.top = new FormAttachment( wlFields, margin );
+    FormData fdGetFields = new FormData();
+    fdGetFields.top = new FormAttachment(wlFields, margin );
     fdGetFields.right = new FormAttachment( 100, 0 );
-    wGetFields.setLayoutData( fdGetFields );
+    wGetFields.setLayoutData(fdGetFields);
 
     wDoMapping = new Button( wFieldsComp, SWT.PUSH );
     wDoMapping.setText( BaseMessages.getString( PKG, "TableOutputDialog.DoMapping.Button" ) );
-    fdDoMapping = new FormData();
+    FormData fdDoMapping = new FormData();
     fdDoMapping.top = new FormAttachment( wGetFields, margin );
     fdDoMapping.right = new FormAttachment( 100, 0 );
-    wDoMapping.setLayoutData( fdDoMapping );
+    wDoMapping.setLayoutData(fdDoMapping);
 
-    wDoMapping.addListener( SWT.Selection, new Listener() {
-      public void handleEvent( Event arg0 ) {
-        generateMappings();
-      }
-    } );
+    wDoMapping.addListener( SWT.Selection, arg0 -> generateMappings() );
 
     FormData fdFields = new FormData();
     fdFields.left = new FormAttachment( 0, 0 );
-    fdFields.top = new FormAttachment( wlFields, margin );
+    fdFields.top = new FormAttachment(wlFields, margin );
     fdFields.right = new FormAttachment( wDoMapping, -margin );
     fdFields.bottom = new FormAttachment( 100, -2 * margin );
     wFields.setLayoutData( fdFields );
@@ -734,22 +684,20 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
     // Search the fields in the background
     //
 
-    final Runnable runnable = new Runnable() {
-      public void run() {
-        TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
-        if ( transformMeta != null ) {
-          try {
-            IRowMeta row = pipelineMeta.getPrevTransformFields( transformMeta );
+    final Runnable runnable = () -> {
+      TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
+      if ( transformMeta != null ) {
+        try {
+          IRowMeta row = pipelineMeta.getPrevTransformFields( variables, transformMeta );
 
-            // Remember these fields...
-            for ( int i = 0; i < row.size(); i++ ) {
-              inputFields.put( row.getValueMeta( i ).getName(), i );
-            }
-
-            setComboBoxes();
-          } catch ( HopException e ) {
-            logError( BaseMessages.getString( PKG, "System.Dialog.GetFieldsFailed.Message" ) );
+          // Remember these fields...
+          for ( int i = 0; i < row.size(); i++ ) {
+            inputFields.put( row.getValueMeta( i ).getName(), i );
           }
+
+          setComboBoxes();
+        } catch ( HopException e ) {
+          logError( BaseMessages.getString( PKG, "System.Dialog.GetFieldsFailed.Message" ) );
         }
       }
     };
@@ -837,7 +785,7 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
       try {
         String field = wNameField.getText();
         String partfield = wPartField.getText();
-        IRowMeta r = pipelineMeta.getPrevTransformFields( transformName );
+        IRowMeta r = pipelineMeta.getPrevTransformFields( variables, transformName );
         if ( r != null ) {
           wNameField.setItems( r.getFieldNames() );
           wPartField.setItems( r.getFieldNames() );
@@ -869,7 +817,7 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
     IRowMeta targetFields;
 
     try {
-      sourceFields = pipelineMeta.getPrevTransformFields( transformMeta );
+      sourceFields = pipelineMeta.getPrevTransformFields( variables, transformMeta );
     } catch ( HopException e ) {
       new ErrorDialog( shell,
         BaseMessages.getString( PKG, "TableOutputDialog.DoMapping.UnableToFindSourceFields.Title" ),
@@ -879,10 +827,10 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
 
     // refresh data
     input.setDatabaseMeta( pipelineMeta.findDatabase( wConnection.getText() ) );
-    input.setTableName( pipelineMeta.environmentSubstitute( wTable.getText() ) );
+    input.setTableName( variables.resolve( wTable.getText() ) );
     ITransformMeta transformMetaInterface = transformMeta.getTransform();
     try {
-      targetFields = transformMetaInterface.getRequiredFields( pipelineMeta );
+      targetFields = transformMetaInterface.getRequiredFields( variables );
     } catch ( HopException e ) {
       new ErrorDialog( shell,
         BaseMessages.getString( PKG, "TableOutputDialog.DoMapping.UnableToFindTargetFields.Title" ),
@@ -893,12 +841,12 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
     String[] inputNames = new String[ sourceFields.size() ];
     for ( int i = 0; i < sourceFields.size(); i++ ) {
       IValueMeta value = sourceFields.getValueMeta( i );
-      inputNames[ i ] = value.getName() + EnterMappingDialog.STRING_ORIGIN_SEPARATOR + value.getOrigin() + ")";
+      inputNames[ i ] = value.getName();
     }
 
     // Create the existing mapping list...
     //
-    List<SourceToTargetMapping> mappings = new ArrayList<SourceToTargetMapping>();
+    List<SourceToTargetMapping> mappings = new ArrayList<>();
     StringBuilder missingSourceFields = new StringBuilder();
     StringBuilder missingTargetFields = new StringBuilder();
 
@@ -974,7 +922,7 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
   private void getSchemaNames() {
     DatabaseMeta databaseMeta = pipelineMeta.findDatabase( wConnection.getText() );
     if ( databaseMeta != null ) {
-      Database database = new Database( loggingObject, databaseMeta );
+      Database database = new Database( loggingObject, variables, databaseMeta );
       try {
         database.connect();
         String[] schemas = database.getSchemas();
@@ -1030,57 +978,55 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
     String close = BaseMessages.getString( PKG, "System.Button.Close" );
 
     MessageDialog dialog =
-      new MessageDialog( shell, title, GuiResource.getInstance().getImageHopUi(), message, MessageDialog.WARNING,
+      new MessageDialog( shell, title, GuiResource.getInstance().getImageHopUi(), message, SWT.ICON_WARNING,
         new String[] { close }, 0 );
     dialog.open();
   }
 
   private void setTableFieldCombo() {
-    Runnable fieldLoader = new Runnable() {
-      public void run() {
-        if ( !wTable.isDisposed() && !wConnection.isDisposed() && !wSchema.isDisposed() ) {
-          final String tableName = wTable.getText(), connectionName = wConnection.getText(), schemaName =
-            wSchema.getText();
+    Runnable fieldLoader = () -> {
+      if ( !wTable.isDisposed() && !wConnection.isDisposed() && !wSchema.isDisposed() ) {
+        final String tableName = wTable.getText(), connectionName = wConnection.getText(), schemaName =
+          wSchema.getText();
 
-          // clear
-          for ( ColumnInfo colInfo : tableFieldColumns ) {
-            colInfo.setComboValues( new String[] {} );
-          }
-          if ( !Utils.isEmpty( tableName ) ) {
-            DatabaseMeta ci = pipelineMeta.findDatabase( connectionName );
-            if ( ci != null ) {
-              Database db = new Database( loggingObject, ci );
+        // clear
+        for ( ColumnInfo colInfo : tableFieldColumns ) {
+          colInfo.setComboValues( new String[] {} );
+        }
+        if ( !Utils.isEmpty( tableName ) ) {
+          DatabaseMeta databaseMeta = pipelineMeta.findDatabase( connectionName );
+          if ( databaseMeta != null ) {
+            Database db = new Database( loggingObject, variables, databaseMeta );
+            try {
+              db.connect();
+
+              IRowMeta r =
+                db.getTableFieldsMeta(
+                  variables.resolve( schemaName ),
+                  variables.resolve( tableName ) );
+              if ( null != r ) {
+                String[] fieldNames = r.getFieldNames();
+                if ( null != fieldNames ) {
+                  for ( ColumnInfo colInfo : tableFieldColumns ) {
+                    colInfo.setComboValues( fieldNames );
+                  }
+                }
+              }
+            } catch ( Exception e ) {
+              for ( ColumnInfo colInfo : tableFieldColumns ) {
+                colInfo.setComboValues( new String[] {} );
+              }
+              // ignore any errors here. drop downs will not be
+              // filled, but no problem for the user
+            } finally {
               try {
-                db.connect();
-
-                IRowMeta r =
-                  db.getTableFieldsMeta(
-                    pipelineMeta.environmentSubstitute( schemaName ),
-                    pipelineMeta.environmentSubstitute( tableName ) );
-                if ( null != r ) {
-                  String[] fieldNames = r.getFieldNames();
-                  if ( null != fieldNames ) {
-                    for ( ColumnInfo colInfo : tableFieldColumns ) {
-                      colInfo.setComboValues( fieldNames );
-                    }
-                  }
+                if ( db != null ) {
+                  db.disconnect();
                 }
-              } catch ( Exception e ) {
-                for ( ColumnInfo colInfo : tableFieldColumns ) {
-                  colInfo.setComboValues( new String[] {} );
-                }
-                // ignore any errors here. drop downs will not be
-                // filled, but no problem for the user
-              } finally {
-                try {
-                  if ( db != null ) {
-                    db.disconnect();
-                  }
-                } catch ( Exception ignored ) {
-                  // ignore any errors here. Nothing we can do if
-                  // connection fails to close properly
-                  db = null;
-                }
+              } catch ( Exception ignored ) {
+                // ignore any errors here. Nothing we can do if
+                // connection fails to close properly
+                db = null;
               }
             }
           }
@@ -1093,7 +1039,7 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
   protected void setComboBoxes() {
     // Something was changed in the row.
     //
-    final Map<String, Integer> fields = new HashMap<String, Integer>();
+    final Map<String, Integer> fields = new HashMap<>();
 
     // Add the currentMeta fields...
     fields.putAll( inputFields );
@@ -1334,7 +1280,7 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
         logDebug( BaseMessages.getString( PKG, "TableOutputDialog.Log.LookingAtConnection", databaseMeta.toString() ) );
       }
 
-      DatabaseExplorerDialog std = new DatabaseExplorerDialog( shell, SWT.NONE, databaseMeta, pipelineMeta.getDatabases() );
+      DatabaseExplorerDialog std = new DatabaseExplorerDialog( shell, SWT.NONE, variables, databaseMeta, pipelineMeta.getDatabases() );
       std.setSelectedSchemaAndTable( wSchema.getText(), wTable.getText() );
       if ( std.open() ) {
         wSchema.setText( Const.NVL( std.getSchemaName(), "" ) );
@@ -1355,7 +1301,7 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
    */
   private void get() {
     try {
-      IRowMeta r = pipelineMeta.getPrevTransformFields( transformName );
+      IRowMeta r = pipelineMeta.getPrevTransformFields( variables, transformName );
       if ( r != null && !r.isEmpty() ) {
         BaseTransformDialog.getFieldsFromPrevious( r, wFields, 1, new int[] { 1, 2 }, new int[] {}, -1, -1, null );
       }
@@ -1374,7 +1320,7 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
     try {
       TableOutputMeta info = new TableOutputMeta();
       getInfo( info );
-      IRowMeta prev = pipelineMeta.getPrevTransformFields( transformName );
+      IRowMeta prev = pipelineMeta.getPrevTransformFields( variables, transformName );
       if ( info.isTableNameInField() && !info.isTableNameInTable() && info.getTableNameField().length() > 0 ) {
         int idx = prev.indexOfValue( info.getTableNameField() );
         if ( idx >= 0 ) {
@@ -1415,10 +1361,10 @@ public class TableOutputDialog extends BaseTransformDialog implements ITransform
       }
 
       if ( isValidRowMeta( prev ) ) {
-        SqlStatement sql = info.getSqlStatements( pipelineMeta, transformMeta, prev, pk, autoInc, pk );
+        SqlStatement sql = info.getSqlStatements( variables, pipelineMeta, transformMeta, prev, pk, autoInc, pk );
         if ( !sql.hasError() ) {
           if ( sql.hasSql() ) {
-            SqlEditor sqledit = new SqlEditor( pipelineMeta, shell, SWT.NONE, info.getDatabaseMeta(), DbCache.getInstance(), sql.getSql() );
+            SqlEditor sqledit = new SqlEditor( shell, SWT.NONE, variables,  info.getDatabaseMeta(), DbCache.getInstance(), sql.getSql() );
             sqledit.open();
           } else {
             String message = BaseMessages.getString( PKG, "TableOutputDialog.NoSQL.DialogMessage" );

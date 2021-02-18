@@ -1,33 +1,28 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.getvariable;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.row.value.ValueMetaFactory;
 import org.apache.hop.core.row.value.ValueMetaString;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
@@ -43,47 +38,23 @@ import org.apache.hop.ui.core.widget.TableView;
 import org.apache.hop.ui.pipeline.dialog.PipelinePreviewProgressDialog;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
-@PluginDialog(
-        id = "GetVariable",
-        image = "getvariable.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = "http://www.project-hop.org/manual/latest/plugins/transforms/getvariable.html"
-)
 public class GetVariableDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = GetVariableMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = GetVariableMeta.class; // For Translator
 
-  private Label wlTransformName;
   private Text wTransformName;
-  private FormData fdlTransformName, fdTransformName;
 
-  private Label wlFields;
   private TableView wFields;
-  private FormData fdlFields, fdFields;
 
-  private GetVariableMeta input;
+  private final GetVariableMeta input;
 
-  private boolean isReceivingInput = false;
-
-  public GetVariableDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public GetVariableDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (GetVariableMeta) in;
   }
 
@@ -95,11 +66,7 @@ public class GetVariableDialog extends BaseTransformDialog implements ITransform
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
     changed = input.hasChanged();
 
     FormLayout formLayout = new FormLayout();
@@ -114,34 +81,51 @@ public class GetVariableDialog extends BaseTransformDialog implements ITransform
 
     // See if the transform receives input.
     //
-    isReceivingInput = pipelineMeta.findNrPrevTransforms( transformMeta ) > 0;
+    boolean isReceivingInput = pipelineMeta.findNrPrevTransforms(transformMeta) > 0;
 
     // TransformName line
-    wlTransformName = new Label( shell, SWT.RIGHT );
+    Label wlTransformName = new Label(shell, SWT.RIGHT);
     wlTransformName.setText( BaseMessages.getString( PKG, "System.Label.TransformName" ) );
-    props.setLook( wlTransformName );
-    fdlTransformName = new FormData();
+    props.setLook(wlTransformName);
+    FormData fdlTransformName = new FormData();
     fdlTransformName.left = new FormAttachment( 0, 0 );
     fdlTransformName.right = new FormAttachment( middle, -margin );
     fdlTransformName.top = new FormAttachment( 0, margin );
-    wlTransformName.setLayoutData( fdlTransformName );
+    wlTransformName.setLayoutData(fdlTransformName);
     wTransformName = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wTransformName.setText( transformName );
     props.setLook( wTransformName );
     wTransformName.addModifyListener( lsMod );
-    fdTransformName = new FormData();
+    FormData fdTransformName = new FormData();
     fdTransformName.left = new FormAttachment( middle, 0 );
     fdTransformName.top = new FormAttachment( 0, margin );
     fdTransformName.right = new FormAttachment( 100, 0 );
-    wTransformName.setLayoutData( fdTransformName );
+    wTransformName.setLayoutData(fdTransformName);
 
-    wlFields = new Label( shell, SWT.NONE );
+    // Some buttons at the bottom
+    //
+    wOk = new Button( shell, SWT.PUSH );
+    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
+    wOk.addListener( SWT.Selection, e -> ok() );
+    wGet = new Button( this.shell, 8 );
+    wGet.setText( BaseMessages.getString( PKG, "System.Button.GetVariables" ) );
+    wGet.addListener( 13, e -> grabVariables() );
+    wPreview = new Button( this.shell, 8 );
+    wPreview.setText( BaseMessages.getString( PKG, "System.Button.Preview" ) );
+    wPreview.setEnabled( !isReceivingInput);
+    wPreview.addListener( 13, e -> preview() );
+    wCancel = new Button( shell, SWT.PUSH );
+    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
+    wCancel.addListener( SWT.Selection, e -> cancel() );
+    setButtonPositions( new Button[] { wOk, wPreview, wGet, wCancel }, margin, null );
+
+    Label wlFields = new Label(shell, SWT.NONE);
     wlFields.setText( BaseMessages.getString( PKG, "GetVariableDialog.Fields.Label" ) );
-    props.setLook( wlFields );
-    fdlFields = new FormData();
+    props.setLook(wlFields);
+    FormData fdlFields = new FormData();
     fdlFields.left = new FormAttachment( 0, 0 );
     fdlFields.top = new FormAttachment( wTransformName, margin );
-    wlFields.setLayoutData( fdlFields );
+    wlFields.setLayoutData(fdlFields);
 
     final int fieldsRows = input.getFieldDefinitions().length;
 
@@ -177,53 +161,14 @@ public class GetVariableDialog extends BaseTransformDialog implements ITransform
 
     wFields =
       new TableView(
-        pipelineMeta, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, fieldsRows, lsMod, props );
+        variables, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, fieldsRows, lsMod, props );
 
-    fdFields = new FormData();
+    FormData fdFields = new FormData();
     fdFields.left = new FormAttachment( 0, 0 );
-    fdFields.top = new FormAttachment( wlFields, margin );
+    fdFields.top = new FormAttachment(wlFields, margin );
     fdFields.right = new FormAttachment( 100, 0 );
-    fdFields.bottom = new FormAttachment( 100, -50 );
-    wFields.setLayoutData( fdFields );
-
-    // Some buttons
-    wOk = new Button( shell, SWT.PUSH );
-    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
-    wGet = new Button( this.shell, 8 );
-    wGet.setText( BaseMessages.getString( PKG, "System.Button.GetVariables" ) );
-    wPreview = new Button( this.shell, 8 );
-    wPreview.setText( BaseMessages.getString( PKG, "System.Button.Preview" ) );
-    wPreview.setEnabled( !isReceivingInput );
-    wCancel = new Button( shell, SWT.PUSH );
-    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
-
-    setButtonPositions( new Button[] { wOk, wPreview, wGet, wCancel }, margin, wFields );
-
-    // Add listeners
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
-    lsGet = new Listener() {
-      public void handleEvent( Event e ) {
-        getVariables();
-      }
-    };
-    lsPreview = new Listener() {
-      public void handleEvent( Event e ) {
-        preview();
-      }
-    };
-    wGet.addListener( 13, this.lsGet );
-    wPreview.addListener( 13, this.lsPreview );
-    wCancel.addListener( SWT.Selection, lsCancel );
-    wOk.addListener( SWT.Selection, lsOk );
+    fdFields.bottom = new FormAttachment( wOk, -2*margin );
+    wFields.setLayoutData(fdFields);
 
     lsDef = new SelectionAdapter() {
       public void widgetDefaultSelected( SelectionEvent e ) {
@@ -338,12 +283,12 @@ public class GetVariableDialog extends BaseTransformDialog implements ITransform
       GetVariableMeta oneMeta = new GetVariableMeta();
       getInfo( oneMeta );
 
-      PipelineMeta previewMeta = PipelinePreviewFactory.generatePreviewPipeline( pipelineMeta, pipelineMeta.getMetaStore(),
+      PipelineMeta previewMeta = PipelinePreviewFactory.generatePreviewPipeline( variables, pipelineMeta.getMetadataProvider(),
         oneMeta, wTransformName.getText() );
 
       // We always just want to preview a single output row
       //
-      PipelinePreviewProgressDialog progressDialog = new PipelinePreviewProgressDialog( shell, previewMeta, new String[] { wTransformName.getText() }, new int[] { 1 } );
+      PipelinePreviewProgressDialog progressDialog = new PipelinePreviewProgressDialog( shell, variables, previewMeta, new String[] { wTransformName.getText() }, new int[] { 1 } );
       progressDialog.open();
 
       if ( !progressDialog.isCancelled() ) {
@@ -361,7 +306,7 @@ public class GetVariableDialog extends BaseTransformDialog implements ITransform
 
         PreviewRowsDialog prd =
           new PreviewRowsDialog(
-            shell, pipelineMeta, SWT.NONE, wTransformName.getText(), progressDialog.getPreviewRowsMeta( wTransformName
+            shell, variables, SWT.NONE, wTransformName.getText(), progressDialog.getPreviewRowsMeta( wTransformName
             .getText() ), progressDialog.getPreviewRows( wTransformName.getText() ), loggingText );
         prd.open();
 
@@ -374,18 +319,18 @@ public class GetVariableDialog extends BaseTransformDialog implements ITransform
     }
   }
 
-  private void getVariables() {
+  private void grabVariables() {
 
     if ( pipelineMeta == null ) {
       return;
     }
-    String[] key = pipelineMeta.listVariables();
+    String[] key = variables.getVariableNames();
     int size = key.length;
     String[] val = new String[ size ];
     wFields.removeAll();
 
     for ( int i = 0; i < size; i++ ) {
-      val[ i ] = pipelineMeta.environmentSubstitute( key[ i ] );
+      val[ i ] = variables.resolve( key[ i ] );
       TableItem tableItem = new TableItem( wFields.table, 0 );
       tableItem.setText( 1, key[ i ] );
       tableItem.setText( 2, "${" + key[ i ] + "}" );

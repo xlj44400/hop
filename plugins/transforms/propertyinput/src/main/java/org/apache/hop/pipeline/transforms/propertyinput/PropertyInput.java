@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.propertyinput;
 
@@ -37,10 +32,8 @@ import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransform;
-import org.apache.hop.pipeline.transform.ITransformData;
 import org.apache.hop.pipeline.transform.ITransform;
 import org.apache.hop.pipeline.transform.TransformMeta;
-import org.apache.hop.pipeline.transform.ITransform;
 import org.ini4j.Wini;
 
 import java.io.InputStream;
@@ -56,7 +49,7 @@ import java.util.Properties;
  * @since 24-03-2008
  */
 public class PropertyInput extends BaseTransform<PropertyInputMeta, PropertyInputData> implements ITransform<PropertyInputMeta, PropertyInputData> {
-  private static Class<?> PKG = PropertyInputMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = PropertyInputMeta.class; // For Translator
 
   public PropertyInput( TransformMeta transformMeta, PropertyInputMeta meta, PropertyInputData data, int copyNr, PipelineMeta pipelineMeta,
                         Pipeline pipeline ) {
@@ -74,7 +67,7 @@ public class PropertyInput extends BaseTransform<PropertyInputMeta, PropertyInpu
 
       // Create the output row meta-data
       data.outputRowMeta = new RowMeta();
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore ); // get the metadata
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider ); // get the metadata
       // populated
 
       // Create convert meta-data objects that will contain Date & Number formatters
@@ -205,9 +198,9 @@ public class PropertyInput extends BaseTransform<PropertyInputMeta, PropertyInpu
         } else {
           if ( meta.isResolveValueVariable() ) {
             if ( data.propfiles ) {
-              value = environmentSubstitute( data.pro.getProperty( key ) );
+              value = resolve( data.pro.getProperty( key ) );
             } else {
-              value = environmentSubstitute( data.iniSection.fetch( key ) ); // for INI files
+              value = resolve( data.iniSection.fetch( key ) ); // for INI files
             }
           } else {
             if ( data.propfiles ) {
@@ -267,7 +260,7 @@ public class PropertyInput extends BaseTransform<PropertyInputMeta, PropertyInpu
 
       // See if we need to add the section for INI files ...
       if ( meta.includeIniSection() && !Utils.isEmpty( meta.getINISectionField() ) ) {
-        r[ data.totalpreviousfields + rowIndex++ ] = environmentSubstitute( data.iniSection.getName() );
+        r[ data.totalpreviousfields + rowIndex++ ] = resolve( data.iniSection.getName() );
       }
       // Possibly add short filename...
       if ( meta.getShortFileNameField() != null && meta.getShortFileNameField().length() > 0 ) {
@@ -348,7 +341,7 @@ public class PropertyInput extends BaseTransform<PropertyInputMeta, PropertyInpu
 
           data.inputRowMeta = getInputRowMeta();
           data.outputRowMeta = data.inputRowMeta.clone();
-          meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+          meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
           // Get total previous fields
           data.totalpreviousfields = data.inputRowMeta.size();
@@ -381,7 +374,7 @@ public class PropertyInput extends BaseTransform<PropertyInputMeta, PropertyInpu
             .getDynamicFilenameField(), filename ) );
         }
 
-        data.file = HopVfs.getFileObject( filename, getPipelineMeta() );
+        data.file = HopVfs.getFileObject( filename );
         // Check if file exists!
       }
 
@@ -495,11 +488,11 @@ public class PropertyInput extends BaseTransform<PropertyInputMeta, PropertyInpu
 
     if ( super.init() ) {
 
-      String realEncoding = environmentSubstitute( meta.getEncoding() );
+      String realEncoding = resolve( meta.getEncoding() );
       if ( !Utils.isEmpty( realEncoding ) ) {
         data.realEncoding = realEncoding;
       }
-      String realSection = environmentSubstitute( meta.getSection() );
+      String realSection = resolve( meta.getSection() );
       if ( !Utils.isEmpty( realSection ) ) {
         data.realSection = realSection;
       }

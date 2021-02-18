@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.util;
 
@@ -29,17 +24,16 @@ import org.apache.hop.core.Const;
 import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.variables.Variables;
 import org.apache.hop.core.vfs.HopVfs;
-import org.apache.hop.workflow.Workflow;
-import org.apache.hop.workflow.WorkflowMeta;
 import org.apache.hop.pipeline.transform.TransformMeta;
+import org.apache.hop.workflow.WorkflowMeta;
 import org.apache.hop.workflow.engine.IWorkflowEngine;
 
 /**
  * This class resolve and update system variables
- * {@link org.apache.hop.core.Const#INTERNAL_VARIABLE_ENTRY_CURRENT_DIRECTORY}
- * {@link org.apache.hop.core.Const#INTERNAL_VARIABLE_WORKFLOW_FILENAME_DIRECTORY}
- * {@link org.apache.hop.core.Const#INTERNAL_VARIABLE_PIPELINE_FILENAME_DIRECTORY}
- * {@link org.apache.hop.core.Const#INTERNAL_VARIABLE_WORKFLOW_FILENAME_NAME}
+ * {@link Const#INTERNAL_VARIABLE_ENTRY_CURRENT_FOLDER}
+ * {@link Const#INTERNAL_VARIABLE_WORKFLOW_FILENAME_FOLDER}
+ * {@link Const#INTERNAL_VARIABLE_PIPELINE_FILENAME_DIRECTORY}
+ * {@link Const#INTERNAL_VARIABLE_WORKFLOW_FILENAME_NAME}
  */
 public class CurrentDirectoryResolver {
 
@@ -49,21 +43,21 @@ public class CurrentDirectoryResolver {
   /**
    * The logic of this method:
    * <p>
-   * We return the child var space with directory extracted from filename
-   * if we do not have a filename we will return the child var space without updates
+   * We return the child var variables with directory extracted from filename
+   * if we do not have a filename we will return the child var variables without updates
    *
-   * @param parentVariables - parent variable space which can be inherited
+   * @param parentVariables - parent variable variables which can be inherited
    * @param filename        - is file which we use at this moment
-   * @return new var space if inherit was set false or child var space with updated system variables
+   * @return new var variables if inherit was set false or child var variables with updated system variables
    */
   public IVariables resolveCurrentDirectory( IVariables parentVariables, String filename ) {
     Variables tmpSpace = new Variables();
-    tmpSpace.setParentVariableSpace( parentVariables );
-    tmpSpace.initializeVariablesFrom( parentVariables );
+    tmpSpace.setParentVariables( parentVariables );
+    tmpSpace.initializeFrom( parentVariables );
 
     if ( filename != null ) {
       try {
-        FileObject fileObject = HopVfs.getFileObject( filename, tmpSpace );
+        FileObject fileObject = HopVfs.getFileObject( filename );
 
         if ( !fileObject.exists() ) {
           // don't set variables if the file doesn't exist
@@ -78,8 +72,8 @@ public class CurrentDirectoryResolver {
         // The directory of the pipeline
         FileName fileDir = fileName.getParent();
         tmpSpace.setVariable( Const.INTERNAL_VARIABLE_PIPELINE_FILENAME_DIRECTORY, fileDir.getURI() );
-        tmpSpace.setVariable( Const.INTERNAL_VARIABLE_WORKFLOW_FILENAME_DIRECTORY, fileDir.getURI() );
-        tmpSpace.setVariable( Const.INTERNAL_VARIABLE_ENTRY_CURRENT_DIRECTORY, fileDir.getURI() );
+        tmpSpace.setVariable( Const.INTERNAL_VARIABLE_WORKFLOW_FILENAME_FOLDER, fileDir.getURI() );
+        tmpSpace.setVariable( Const.INTERNAL_VARIABLE_ENTRY_CURRENT_FOLDER, fileDir.getURI() );
       } catch ( Exception e ) {
         throw new RuntimeException( "Unable to figure out the current directory", e );
       }

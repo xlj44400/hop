@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 package org.apache.hop.databases.netezza;
 
 import org.apache.hop.core.database.DatabaseMeta;
@@ -29,14 +24,12 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class NetezzaDatabaseMetaTest {
-  private NetezzaDatabaseMeta nativeMeta, odbcMeta;
+  private NetezzaDatabaseMeta nativeMeta;
 
   @Before
   public void setupBefore() {
     nativeMeta = new NetezzaDatabaseMeta();
     nativeMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_NATIVE );
-    odbcMeta = new NetezzaDatabaseMeta();
-    odbcMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_ODBC );
 
   }
 
@@ -44,12 +37,10 @@ public class NetezzaDatabaseMetaTest {
   public void testSettings() throws Exception {
     assertEquals( "&", nativeMeta.getExtraOptionSeparator() );
     assertEquals( "?", nativeMeta.getExtraOptionIndicator() );
-    assertArrayEquals( new int[] { DatabaseMeta.TYPE_ACCESS_NATIVE, DatabaseMeta.TYPE_ACCESS_ODBC },
+    assertArrayEquals( new int[] { DatabaseMeta.TYPE_ACCESS_NATIVE },
       nativeMeta.getAccessTypeList() );
     assertEquals( 5480, nativeMeta.getDefaultDatabasePort() );
-    assertEquals( -1, odbcMeta.getDefaultDatabasePort() );
     assertEquals( "org.netezza.Driver", nativeMeta.getDriverClass() );
-    assertEquals( "jdbc:odbc:FOO", odbcMeta.getURL( "IGNORED", "IGNORED", "FOO" ) );
     assertEquals( "jdbc:netezza://FOO:BAR/WIBBLE", nativeMeta.getURL( "FOO", "BAR", "WIBBLE" ) );
     assertEquals( "jdbc:netezza://FOO:/WIBBLE", nativeMeta.getURL( "FOO", "", "WIBBLE" ) ); // I think this is a bug...
     assertEquals( "jdbc:netezza://FOO:null/WIBBLE", nativeMeta.getURL( "FOO", null, "WIBBLE" ) ); // I think this is a bug...

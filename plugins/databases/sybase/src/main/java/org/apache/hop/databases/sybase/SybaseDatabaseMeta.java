@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.databases.sybase;
 
@@ -46,7 +41,7 @@ public class SybaseDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
   @Override
   public int[] getAccessTypeList() {
     return new int[] {
-      DatabaseMeta.TYPE_ACCESS_NATIVE, DatabaseMeta.TYPE_ACCESS_ODBC };
+      DatabaseMeta.TYPE_ACCESS_NATIVE };
   }
 
   @Override
@@ -75,16 +70,12 @@ public class SybaseDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
 
   @Override
   public String getURL( String hostname, String port, String databaseName ) {
-    if ( getAccessType() == DatabaseMeta.TYPE_ACCESS_ODBC ) {
-      return "jdbc:odbc:" + databaseName;
-    } else {
-      // jdbc:jtds:<server_type>://<server>[:<port>][/<database>][;<property>=<value>[;...]]
-      return "jdbc:jtds:sybase://" + hostname + ":" + port + "/" + databaseName;
-    }
+    // jdbc:jtds:<server_type>://<server>[:<port>][/<database>][;<property>=<value>[;...]]
+    return "jdbc:jtds:sybase://" + hostname + ":" + port + "/" + databaseName;
   }
 
   /**
-   * @see IDatabase#getSchemaTableCombination(java.lang.String, java.lang.String)
+   * @see IDatabase#getSchemaTableCombination(String, String)
    */
   @Override
   public String getSchemaTableCombination( String schemaName, String tablePart ) {
@@ -102,7 +93,7 @@ public class SybaseDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
   /**
    * Generates the SQL statement to add a column to the specified table
    *
-   * @param tablename   The table to add
+   * @param tableName   The table to add
    * @param v           The column defined as a value
    * @param tk          the name of the technical key field
    * @param useAutoinc whether or not this field uses auto increment
@@ -111,15 +102,15 @@ public class SybaseDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
    * @return the SQL statement to add a column to the specified table
    */
   @Override
-  public String getAddColumnStatement( String tablename, IValueMeta v, String tk, boolean useAutoinc,
+  public String getAddColumnStatement( String tableName, IValueMeta v, String tk, boolean useAutoinc,
                                        String pk, boolean semicolon ) {
-    return "ALTER TABLE " + tablename + " ADD " + getFieldDefinition( v, tk, pk, useAutoinc, true, false );
+    return "ALTER TABLE " + tableName + " ADD " + getFieldDefinition( v, tk, pk, useAutoinc, true, false );
   }
 
   /**
    * Generates the SQL statement to modify a column in the specified table
    *
-   * @param tablename   The table to add
+   * @param tableName   The table to add
    * @param v           The column defined as a value
    * @param tk          the name of the technical key field
    * @param useAutoinc whether or not this field uses auto increment
@@ -128,21 +119,21 @@ public class SybaseDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
    * @return the SQL statement to modify a column in the specified table
    */
   @Override
-  public String getModifyColumnStatement( String tablename, IValueMeta v, String tk, boolean useAutoinc,
+  public String getModifyColumnStatement( String tableName, IValueMeta v, String tk, boolean useAutoinc,
                                           String pk, boolean semicolon ) {
-    return "ALTER TABLE " + tablename + " MODIFY " + getFieldDefinition( v, tk, pk, useAutoinc, true, false );
+    return "ALTER TABLE " + tableName + " MODIFY " + getFieldDefinition( v, tk, pk, useAutoinc, true, false );
   }
 
   @Override
   public String getFieldDefinition( IValueMeta v, String tk, String pk, boolean useAutoinc,
-                                    boolean addFieldname, boolean addCr ) {
+                                    boolean addFieldName, boolean addCr ) {
     String retval = "";
 
     String fieldname = v.getName();
     int length = v.getLength();
     int precision = v.getPrecision();
 
-    if ( addFieldname ) {
+    if ( addFieldName ) {
       retval += fieldname + " ";
     }
 

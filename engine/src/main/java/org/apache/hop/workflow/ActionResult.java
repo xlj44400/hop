@@ -1,29 +1,24 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow;
 
 import org.apache.hop.core.Result;
-import org.apache.hop.workflow.action.ActionCopy;
+import org.apache.hop.workflow.action.ActionMeta;
 
 import java.util.Comparator;
 import java.util.Date;
@@ -42,7 +37,6 @@ import java.util.Date;
 public class ActionResult implements Cloneable, Comparator<ActionResult>, Comparable<ActionResult> {
   private Result result;
   private String actionName;
-  private int actionNr;
 
   private String comment;
   private String reason;
@@ -64,7 +58,7 @@ public class ActionResult implements Cloneable, Comparator<ActionResult>, Compar
    * Creates a new action result...
    */
   public ActionResult( Result result, String logChannelId, String comment, String reason, String actionName,
-                       int actionNr, String actionFilename ) {
+                       String actionFilename ) {
     this();
     if ( result != null ) {
       // lightClone doesn't bother cloning all the rows.
@@ -78,23 +72,7 @@ public class ActionResult implements Cloneable, Comparator<ActionResult>, Compar
     this.comment = comment;
     this.reason = reason;
     this.actionName = actionName;
-    this.actionNr = actionNr;
     this.actionFilename = actionFilename;
-  }
-
-  /**
-   * @param result
-   * @param comment
-   * @param reason
-   * @param copy
-   * @deprecated use {@link #ActionResult(Result, String, String, String, String, int, String)}
-   */
-  @Deprecated
-  public ActionResult( Result result, String comment, String reason, ActionCopy copy ) {
-
-    this( result, copy.getAction().getLogChannel().getLogChannelId(), comment, reason, copy != null ? copy
-      .getName() : null, copy != null ? copy.getNr() : 0, copy == null ? null : ( copy.getAction() != null ? copy
-      .getAction().getFilename() : null ) );
   }
 
   @Override
@@ -196,20 +174,6 @@ public class ActionResult implements Cloneable, Comparator<ActionResult>, Compar
     this.actionFilename = actionFilename;
   }
 
-  /**
-   * @return the actionNr
-   */
-  public int getActionNr() {
-    return actionNr;
-  }
-
-  /**
-   * @param actionNr the actionNr to set
-   */
-  public void setActionNr( int actionNr ) {
-    this.actionNr = actionNr;
-  }
-
   @Override
   public int compare( ActionResult one, ActionResult two ) {
     if ( one == null && two != null ) {
@@ -231,11 +195,7 @@ public class ActionResult implements Cloneable, Comparator<ActionResult>, Compar
       return 0;
     }
 
-    int cmp = one.getActionName().compareTo( two.getActionName() );
-    if ( cmp != 0 ) {
-      return cmp;
-    }
-    return Integer.valueOf( one.getActionNr() ).compareTo( Integer.valueOf( two.getActionNr() ) );
+    return one.getActionName().compareTo( two.getActionName() );
   }
 
   @Override

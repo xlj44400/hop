@@ -1,6 +1,22 @@
+////
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+  http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+////
 :documentationPath: /plugins/transforms/
 :language: en_US
-:page-alternativeEditUrl: https://github.com/project-hop/hop/edit/master/plugins/transforms/databaselookup/src/main/doc/databaselookup.adoc
+:page-alternativeEditUrl: https://github.com/apache/incubator-hop/edit/master/plugins/transforms/databaselookup/src/main/doc/databaselookup.adoc
 = Database Lookup
 
 == Description
@@ -23,7 +39,7 @@ The Database lookup transform allows you to look up values in a database table. 
 |Load all data from table|Pre-loads the cache with all the data present in the lookup table.  This may improve performance by avoiding database calls.
 However, if you have a large table, you risk running out of memory.
 
-*IMPORTANT*:  In memory look-ups can lead to different results because of the differences in the way your database compares data. For example, if your database table allows case-insensitive comparisons, you may get different results with this option. Further information can be found on PDI-11440 (illustrating an issue with the Merge join transform, but the issue is valid for this transform as well). The same goes for data with trailing spaces. Those are ignored in certain databases when using certain character data types. See more details on the below note about this option.
+*IMPORTANT*:  In memory look-ups can lead to different results because of the differences in the way your database compares data. For example, if your database table allows case-insensitive comparisons, you may get different results with this option. The same goes for data with trailing spaces. Those are ignored in certain databases when using certain character data types. See more details on the below note about this option.
 |Keys to look up table|The keys and conditions to perform the database lookup.
 
 *Tip*: When using the LIKE operator on the key lookup it's not automatically adding wildcards to the stream value.  So by default the LIKE operator is behaving as an "=" (see your database for SQL specific topics on the LIKE operator). It is possible to add the wildcards to add a 'Replace in String' transform before the database lookup.  In the replace transform select the lookup field then use Regex to look for (^.*) and replace with %$1%.  This will add the wildcards to the field for the subsequent lookup task.

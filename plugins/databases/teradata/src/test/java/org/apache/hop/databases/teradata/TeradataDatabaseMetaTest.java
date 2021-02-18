@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 package org.apache.hop.databases.teradata;
 
 import org.apache.hop.core.database.DatabaseMeta;
@@ -35,24 +30,20 @@ import static org.junit.Assert.*;
 public class TeradataDatabaseMetaTest {
   @ClassRule public static RestoreHopEnvironment env = new RestoreHopEnvironment();
 
-  private TeradataDatabaseMeta nativeMeta, odbcMeta;
+  private TeradataDatabaseMeta nativeMeta;
 
   @Before
   public void setupBefore() {
     nativeMeta = new TeradataDatabaseMeta();
     nativeMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_NATIVE );
-    odbcMeta = new TeradataDatabaseMeta();
-    odbcMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_ODBC );
   }
 
   @Test
   public void testSettings() throws Exception {
-    assertArrayEquals( new int[] { DatabaseMeta.TYPE_ACCESS_NATIVE, DatabaseMeta.TYPE_ACCESS_ODBC },
+    assertArrayEquals( new int[] { DatabaseMeta.TYPE_ACCESS_NATIVE },
       nativeMeta.getAccessTypeList() );
     assertEquals( 1025, nativeMeta.getDefaultDatabasePort() );
-    assertEquals( 1025, odbcMeta.getDefaultDatabasePort() ); // Inconsistent behavior - likely a bug (usually returns -1 )
     assertEquals( "com.teradata.jdbc.TeraDriver", nativeMeta.getDriverClass() );
-    assertEquals( "jdbc:odbc:FOO", odbcMeta.getURL( "IGNORED", "IGNORED", "FOO" ) );
     assertEquals( "jdbc:teradata://FOO/DATABASE=WIBBLE", nativeMeta.getURL( "FOO", "IGNOREDHERE", "WIBBLE" ) );
     assertFalse( nativeMeta.isFetchSizeSupported() );
     assertEquals( "FOO.BAR", nativeMeta.getSchemaTableCombination( "FOO", "BAR" ) );

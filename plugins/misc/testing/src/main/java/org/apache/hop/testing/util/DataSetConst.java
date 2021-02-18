@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Pentaho Data Integration
- *
- * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.testing.util;
 
@@ -30,7 +25,7 @@ import org.apache.hop.core.logging.ILogChannel;
 import org.apache.hop.core.row.RowMeta;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.IValueMeta;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.engine.IPipelineEngine;
 import org.apache.hop.testing.DataSet;
@@ -45,12 +40,11 @@ import org.apache.hop.testing.xp.RowCollection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
 public class DataSetConst {
-  private static Class<?> PKG = DataSetConst.class; // for i18n purposes, needed by Translator2!!
+  private static final Class<?> PKG = DataSetConst.class; // For Translator
 
   public static final String DATABASE_FACTORY_KEY = "DatabaseMetaFactory";
   public static final String GROUP_FACTORY_KEY = "DataSetGroupFactory";
@@ -72,7 +66,7 @@ public class DataSetConst {
   public static final String ROW_COLLECTION_MAP = "RowCollectionMap";
   public static final String UNIT_TEST_RESULTS = "UnitTestResults";
 
-  public static final String VARIABLE_UNIT_TESTS_BASE_PATH = "UNIT_TESTS_BASE_PATH";
+  public static final String VARIABLE_HOP_UNIT_TESTS_FOLDER = "HOP_UNIT_TESTS_FOLDER";
 
   private static final String[] tweakDesc = new String[] {
     BaseMessages.getString( PKG, "DataSetConst.Tweak.NONE.Desc" ),
@@ -90,12 +84,12 @@ public class DataSetConst {
    *
    * @param pipeline     The pipeline after execution
    * @param unitTest  The unit test
-   * @param metaStore The MetaStore to use
+   * @param metadataProvider The MetaStore to use
    * @param results   The results list to add comments to
    * @return The nr of errors, 0 if no errors found
    * @throws HopException In case there was an error loading data or metadata.
    */
-  public static final int validateTransResultAgainstUnitTest( IPipelineEngine<PipelineMeta> pipeline, PipelineUnitTest unitTest, IMetaStore metaStore, List<UnitTestResult> results ) throws HopException {
+  public static final int validateTransResultAgainstUnitTest( IPipelineEngine<PipelineMeta> pipeline, PipelineUnitTest unitTest, IHopMetadataProvider metadataProvider, List<UnitTestResult> results ) throws HopException {
     int nrErrors = 0;
 
     ILogChannel log = pipeline.getLogChannel();
@@ -125,7 +119,7 @@ public class DataSetConst {
         //
         resultCollection = new RowCollection();
         resultCollection.setRowMeta( new RowMeta() );
-        resultCollection.setRows( new ArrayList<Object[]>() );
+        resultCollection.setRows( new ArrayList<>() );
 
         String comment = "WARNING: no test results found for transform '" + location.getTransformName() + "' : check disabled hops, input and so on.";
         results.add( new UnitTestResult(
@@ -136,8 +130,8 @@ public class DataSetConst {
 
       log.logDetailed( "Found " + resultCollection.getRows().size() + " results for data comparing in transform '" + location.getTransformName() + "', fields: " + resultRowMeta.toString() );
 
-      DataSet goldenDataSet = unitTest.getGoldenDataSet( log, metaStore, location );
-      List<Object[]> goldenRows = goldenDataSet.getAllRows( log, location );
+      DataSet goldenDataSet = unitTest.getGoldenDataSet( log, metadataProvider, location );
+      List<Object[]> goldenRows = goldenDataSet.getAllRows( pipeline, log, location );
       IRowMeta goldenRowMeta = goldenDataSet.getMappedDataSetFieldsRowMeta( location );
 
       log.logDetailed( "Found " + goldenRows.size() + " golden rows '" + location.getTransformName() + "', fields: " + goldenRowMeta );
@@ -173,13 +167,11 @@ public class DataSetConst {
         }
         try {
           log.logDetailed( "Sorting result rows collection on fields: " + location.getFieldOrder() );
-          resultCollection.getRows().sort( new Comparator<Object[]>() {
-            @Override public int compare( Object[] row1, Object[] row2 ) {
-              try {
-                return resultRowMeta.compare( row1, row2, resultFieldIndexes );
-              } catch ( HopValueException e ) {
-                throw new RuntimeException( "Error comparing golden data result rows", e );
-              }
+          resultCollection.getRows().sort( ( row1, row2 ) -> {
+            try {
+              return resultRowMeta.compare( row1, row2, resultFieldIndexes );
+            } catch ( HopValueException e ) {
+              throw new RuntimeException( "Error comparing golden data result rows", e );
             }
           } );
         } catch ( RuntimeException e ) {
@@ -207,13 +199,11 @@ public class DataSetConst {
         try {
           log.logDetailed( "Sorting golden rows collection on fields: " + location.getFieldOrder() );
 
-          goldenRows.sort( new Comparator<Object[]>() {
-            @Override public int compare( Object[] row1, Object[] row2 ) {
-              try {
-                return goldenRowMeta.compare( row1, row2, goldenFieldIndexes );
-              } catch ( HopValueException e ) {
-                throw new RuntimeException( "Error comparing golden data set rows", e );
-              }
+          goldenRows.sort( ( row1, row2 ) -> {
+            try {
+              return goldenRowMeta.compare( row1, row2, goldenFieldIndexes );
+            } catch ( HopValueException e ) {
+              throw new RuntimeException( "Error comparing golden data set rows", e );
             }
           } );
         } catch ( RuntimeException e ) {
@@ -235,7 +225,13 @@ public class DataSetConst {
             PipelineUnitTestFieldMapping fieldMapping = location.getFieldMappings().get( i );
 
             transformFieldIndices[ i ] = resultRowMeta.indexOfValue( fieldMapping.getTransformFieldName() );
+            if (transformFieldIndices[i]<0) {
+              throw new HopException( "Unable to find output field '" + fieldMapping.getTransformFieldName() + "' while testing output of transform '" + location.getTransformName()+"'" );
+            }
             goldenIndices[ i ] = goldenRowMeta.indexOfValue( fieldMapping.getDataSetFieldName() );
+            if (goldenIndices[i]<0) {
+              throw new HopException( "Unable to find golden data set field '" + fieldMapping.getDataSetFieldName() + "' while testing output of transform '" + location.getTransformName()+"'" );
+            }
             log.logDetailed( "Field to compare #" + i + " found on transform index : " + transformFieldIndices[ i ] + ", golden index : " + goldenIndices[ i ] );
           }
 

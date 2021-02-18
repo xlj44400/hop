@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.www;
 
@@ -28,11 +23,8 @@ import org.apache.hop.workflow.WorkflowMeta;
 import org.apache.hop.workflow.engine.IWorkflowEngine;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -46,7 +38,7 @@ public class WorkflowMap {
   private final Map<HopServerObjectEntry, IWorkflowEngine<WorkflowMeta>> workflowMap;
   private final Map<HopServerObjectEntry, WorkflowConfiguration> configurationMap;
 
-  private SlaveServerConfig slaveServerConfig;
+  private HopServerConfig hopServerConfig;
 
   public WorkflowMap() {
     workflowMap = new ConcurrentHashMap<>(  );
@@ -68,13 +60,13 @@ public class WorkflowMap {
         workflowMap.put( entry, workflow );
         configurationMap.put( entry, workflowConfiguration );
       } else {
-        addWorkflow( workflow.getWorkflowName(), workflow.getContainerObjectId(), workflow, workflowConfiguration );
+        addWorkflow( workflow.getWorkflowName(), workflow.getContainerId(), workflow, workflowConfiguration );
       }
     }
   }
 
   private HopServerObjectEntry getEntry(IWorkflowEngine<WorkflowMeta> workflow) {
-    return new HopServerObjectEntry( workflow.getWorkflowName(), workflow.getContainerObjectId() );
+    return new HopServerObjectEntry( workflow.getWorkflowName(), workflow.getContainerId() );
   }
 
   /**
@@ -150,17 +142,17 @@ public class WorkflowMap {
   }
 
   /**
-   * @return the slaveServerConfig
+   * @return the hopServerConfig
    */
-  public SlaveServerConfig getSlaveServerConfig() {
-    return slaveServerConfig;
+  public HopServerConfig getHopServerConfig() {
+    return hopServerConfig;
   }
 
   /**
-   * @param slaveServerConfig the slaveServerConfig to set
+   * @param hopServerConfig the hopServerConfig to set
    */
-  public void setSlaveServerConfig( SlaveServerConfig slaveServerConfig ) {
-    this.slaveServerConfig = slaveServerConfig;
+  public void setHopServerConfig( HopServerConfig hopServerConfig ) {
+    this.hopServerConfig = hopServerConfig;
   }
 
   /**
@@ -172,7 +164,7 @@ public class WorkflowMap {
   public synchronized IWorkflowEngine<WorkflowMeta> findWorkflow( String id ) {
     synchronized ( workflowMap ) {
       for ( IWorkflowEngine<WorkflowMeta> workflow : workflowMap.values() ) {
-        if ( workflow.getContainerObjectId().equals( id ) ) {
+        if ( workflow.getContainerId().equals( id ) ) {
           return workflow;
         }
       }

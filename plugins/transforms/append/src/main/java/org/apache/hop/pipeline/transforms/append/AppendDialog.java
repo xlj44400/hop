@@ -1,30 +1,25 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.append;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
@@ -33,22 +28,11 @@ import org.apache.hop.pipeline.transform.errorhandling.IStream;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CCombo;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
 import java.util.List;
 
@@ -57,27 +41,18 @@ import java.util.List;
  *
  * @author Sven Boden
  */
-@PluginDialog(
-        id = "Append",
-        image = "append.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = "http://www.project-hop.org/manual/latest/plugins/transforms/append.html"
-)
+
 public class AppendDialog extends BaseTransformDialog implements ITransformDialog {
-  private static final Class<?> PKG = AppendDialog.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = AppendDialog.class; // For Translator
 
-  private Label wlHeadHop;
   private CCombo wHeadHop;
-  private FormData fdlHeadHop, fdHeadHop;
 
-  private Label wlTailHop;
   private CCombo wTailHop;
-  private FormData fdlTailHop, fdTailHop;
 
-  private AppendMeta input;
+  private final AppendMeta input;
 
-  public AppendDialog( Shell parent, Object in, PipelineMeta tr, String sname ) {
-    super( parent, (BaseTransformMeta) in, tr, sname );
+  public AppendDialog( Shell parent, IVariables variables, Object in, PipelineMeta tr, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, tr, sname );
     input = (AppendMeta) in;
   }
 
@@ -90,11 +65,7 @@ public class AppendDialog extends BaseTransformDialog implements ITransformDialo
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
     backupChanged = input.hasChanged();
 
     FormLayout formLayout = new FormLayout();
@@ -129,14 +100,14 @@ public class AppendDialog extends BaseTransformDialog implements ITransformDialo
     // Get the previous transforms...
     String[] previousTransforms = pipelineMeta.getPrevTransformNames( transformName );
 
-    wlHeadHop = new Label( shell, SWT.RIGHT );
+    Label wlHeadHop = new Label(shell, SWT.RIGHT);
     wlHeadHop.setText( BaseMessages.getString( PKG, "AppendDialog.HeadHop.Label" ) );
-    props.setLook( wlHeadHop );
-    fdlHeadHop = new FormData();
+    props.setLook(wlHeadHop);
+    FormData fdlHeadHop = new FormData();
     fdlHeadHop.left = new FormAttachment( 0, 0 );
     fdlHeadHop.right = new FormAttachment( middle, -margin );
     fdlHeadHop.top = new FormAttachment( wTransformName, margin );
-    wlHeadHop.setLayoutData( fdlHeadHop );
+    wlHeadHop.setLayoutData(fdlHeadHop);
     wHeadHop = new CCombo( shell, SWT.BORDER );
     props.setLook( wHeadHop );
 
@@ -145,20 +116,20 @@ public class AppendDialog extends BaseTransformDialog implements ITransformDialo
     }
 
     wHeadHop.addModifyListener( lsMod );
-    fdHeadHop = new FormData();
+    FormData fdHeadHop = new FormData();
     fdHeadHop.left = new FormAttachment( middle, 0 );
     fdHeadHop.top = new FormAttachment( wTransformName, margin );
     fdHeadHop.right = new FormAttachment( 100, 0 );
-    wHeadHop.setLayoutData( fdHeadHop );
+    wHeadHop.setLayoutData(fdHeadHop);
 
-    wlTailHop = new Label( shell, SWT.RIGHT );
+    Label wlTailHop = new Label(shell, SWT.RIGHT);
     wlTailHop.setText( BaseMessages.getString( PKG, "AppendDialog.TailHop.Label" ) );
-    props.setLook( wlTailHop );
-    fdlTailHop = new FormData();
+    props.setLook(wlTailHop);
+    FormData fdlTailHop = new FormData();
     fdlTailHop.left = new FormAttachment( 0, 0 );
     fdlTailHop.right = new FormAttachment( middle, -margin );
     fdlTailHop.top = new FormAttachment( wHeadHop, margin );
-    wlTailHop.setLayoutData( fdlTailHop );
+    wlTailHop.setLayoutData(fdlTailHop);
     wTailHop = new CCombo( shell, SWT.BORDER );
     props.setLook( wTailHop );
 
@@ -167,11 +138,11 @@ public class AppendDialog extends BaseTransformDialog implements ITransformDialo
     }
 
     wTailHop.addModifyListener( lsMod );
-    fdTailHop = new FormData();
+    FormData fdTailHop = new FormData();
     fdTailHop.top = new FormAttachment( wHeadHop, margin );
     fdTailHop.left = new FormAttachment( middle, 0 );
     fdTailHop.right = new FormAttachment( 100, 0 );
-    wTailHop.setLayoutData( fdTailHop );
+    wTailHop.setLayoutData(fdTailHop);
 
     // Some buttons
     wOk = new Button( shell, SWT.PUSH );
@@ -182,16 +153,8 @@ public class AppendDialog extends BaseTransformDialog implements ITransformDialo
     setButtonPositions( new Button[] { wOk, wCancel }, margin, wTailHop );
 
     // Add listeners
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
+    lsCancel = e -> cancel();
+    lsOk = e -> ok();
 
     wCancel.addListener( SWT.Selection, lsCancel );
     wOk.addListener( SWT.Selection, lsOk );

@@ -1,30 +1,26 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.pipelineexecutor;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hop.core.CheckResult;
 import org.apache.hop.core.ICheckResult;
+import org.apache.hop.core.annotations.Transform;
 import org.apache.hop.core.Const;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.exception.HopPluginException;
@@ -38,7 +34,7 @@ import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.xml.XmlHandler;
 import org.apache.hop.i18n.BaseMessages;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.TransformWithMappingMeta;
@@ -67,11 +63,19 @@ import java.util.List;
  * @author Matt
  * @since 18-mar-2013
  */
+@Transform(
+  id = "PipelineExecutor",
+  image = "ui/images/pipelineexecutor.svg",
+  name = "i18n:org.apache.hop.pipeline.transform:BaseTransform.TypeLongDesc.PipelineExecutor",
+  description = "i18n:org.apache.hop.pipeline.transform:BaseTransform.TypeTooltipDesc.PipelineExecutor",
+  categoryDescription = "i18n:org.apache.hop.pipeline.transform:BaseTransform.Category.Flow",
+  keywords = ""
+)
 public class PipelineExecutorMeta
   extends TransformWithMappingMeta<PipelineExecutor, PipelineExecutorData>
   implements ITransformMeta<PipelineExecutor, PipelineExecutorData>, ISubPipelineAwareMeta {
 
-  private static Class<?> PKG = PipelineExecutorMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = PipelineExecutorMeta.class; // For Translator
 
   static final String F_EXECUTION_RESULT_TARGET_TRANSFORM = "execution_result_target_transform";
   static final String F_RESULT_FILE_TARGET_TRANSFORM = "result_files_target_transform";
@@ -205,7 +209,7 @@ public class PipelineExecutorMeta
 
   private TransformMeta executorsOutputTransformMeta;
 
-  private IMetaStore metaStore;
+  private IHopMetadataProvider metadataProvider;
 
   public PipelineExecutorMeta() {
     super(); // allocate BaseTransformMeta
@@ -295,7 +299,7 @@ public class PipelineExecutorMeta
     return retval.toString();
   }
 
-  public void loadXml( Node transformNode, IMetaStore metaStore ) throws HopXmlException {
+  public void loadXml( Node transformNode, IHopMetadataProvider metadataProvider ) throws HopXmlException {
     try {
       runConfigurationName = XmlHandler.getTagValue( transformNode, "run_configuration" );
       filename = XmlHandler.getTagValue( transformNode, "filename" );
@@ -428,7 +432,7 @@ public class PipelineExecutorMeta
 
   @Override
   public void getFields( IRowMeta inputRowMeta, String name, IRowMeta[] info, TransformMeta nextTransform,
-                         IVariables variables, IMetaStore metaStore ) throws HopTransformException {
+                         IVariables variables, IHopMetadataProvider metadataProvider ) throws HopTransformException {
     if ( nextTransform != null ) {
       if ( nextTransform.equals( executionResultTargetTransformMeta ) ) {
         inputRowMeta.clear();
@@ -459,7 +463,7 @@ public class PipelineExecutorMeta
 
   public void check( List<ICheckResult> remarks, PipelineMeta pipelineMeta, TransformMeta transforminfo, IRowMeta prev,
                      String[] input, String[] output, IRowMeta info, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     CheckResult cr;
     if ( prev == null || prev.size() == 0 ) {
       cr =
@@ -493,10 +497,10 @@ public class PipelineExecutorMeta
   }
 
   @Override
-  public List<ResourceReference> getResourceDependencies( PipelineMeta pipelineMeta, TransformMeta transformInfo ) {
-    List<ResourceReference> references = new ArrayList<ResourceReference>( 5 );
-    String realFilename = pipelineMeta.environmentSubstitute( filename );
-    ResourceReference reference = new ResourceReference( transformInfo );
+  public List<ResourceReference> getResourceDependencies( IVariables variables, TransformMeta transformMeta ) {
+    List<ResourceReference> references = new ArrayList<>( 5 );
+    String realFilename = variables.resolve( filename );
+    ResourceReference reference = new ResourceReference( transformMeta );
 
     if ( StringUtils.isNotEmpty( realFilename ) ) {
       // Add the filename to the references, including a reference to this transform
@@ -911,21 +915,21 @@ public class PipelineExecutorMeta
    * Load the referenced object
    *
    * @param index the object index to load
-   * @param variables the variable space to use
+   * @param variables the variable variables to use
    * @return the referenced object once loaded
    * @throws HopException
    */
-  public IHasFilename loadReferencedObject( int index, IMetaStore metaStore, IVariables variables )
+  public IHasFilename loadReferencedObject( int index, IHopMetadataProvider metadataProvider, IVariables variables )
     throws HopException {
-    return loadMappingMeta( this, metaStore, variables );
+    return loadMappingMeta( this, metadataProvider, variables );
   }
 
-  public IMetaStore getMetaStore() {
-    return metaStore;
+  public IHopMetadataProvider getMetadataProvider() {
+    return metadataProvider;
   }
 
-  public void setMetaStore( IMetaStore metaStore ) {
-    this.metaStore = metaStore;
+  public void setMetadataProvider( IHopMetadataProvider metadataProvider ) {
+    this.metadataProvider = metadataProvider;
   }
 
   public String getOutputRowsSourceTransform() {

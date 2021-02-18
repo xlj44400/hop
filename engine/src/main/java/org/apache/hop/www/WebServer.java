@@ -1,29 +1,23 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.www;
 
 import com.sun.jersey.spi.container.servlet.ServletContainer;
-import org.apache.hop.cluster.SlaveServer;
 import org.apache.hop.core.Const;
 import org.apache.hop.core.HopEnvironment;
 import org.apache.hop.core.exception.HopException;
@@ -34,7 +28,10 @@ import org.apache.hop.core.plugins.HopServerPluginType;
 import org.apache.hop.core.plugins.IPlugin;
 import org.apache.hop.core.plugins.PluginRegistry;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
+import org.apache.hop.core.variables.Variables;
 import org.apache.hop.i18n.BaseMessages;
+import org.apache.hop.server.HopServer;
 import org.eclipse.jetty.jaas.JAASLoginService;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -67,10 +64,10 @@ import java.util.List;
 public class WebServer {
 
   private static final int DEFAULT_DETECTION_TIMER = 20000;
-  private static Class<?> PKG = WebServer.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = WebServer.class; // For Translator
 
   private ILogChannel log;
-
+  private IVariables variables;
   public static final int PORT = 80;
 
   private Server server;
@@ -99,6 +96,13 @@ public class WebServer {
     this.log = log;
     this.pipelineMap = pipelineMap;
     this.workflowMap = workflowMap;
+    if (pipelineMap!=null) {
+      variables = pipelineMap.getHopServerConfig().getVariables();
+    } else if (workflowMap!=null) {
+      variables = workflowMap.getHopServerConfig().getVariables();
+    } else {
+      variables = Variables.getADefaultVariableSpace();
+    }
     this.hostname = hostname;
     this.port = port;
     this.passwordFile = passwordFile;
@@ -110,7 +114,7 @@ public class WebServer {
     Runtime.getRuntime().addShutdownHook( webServerShutdownHook );
 
     try {
-      ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.HopServerStartup.id, this );
+      ExtensionPointHandler.callExtensionPoint( log, variables, HopExtensionPoint.HopServerStartup.id, this );
     } catch ( HopException e ) {
       // Log error but continue regular operations to make sure HopServer continues to run properly
       //
@@ -152,11 +156,11 @@ public class WebServer {
     } else {
       roles.add( "default" );
       HashLoginService hashLoginService;
-      SlaveServer slaveServer = pipelineMap.getSlaveServerConfig().getSlaveServer();
-      if ( !Utils.isEmpty( slaveServer.getPassword() ) ) {
+      HopServer hopServer = pipelineMap.getHopServerConfig().getHopServer();
+      if ( !Utils.isEmpty( hopServer.getPassword() ) ) {
         hashLoginService = new HashLoginService( "Hop" );
         UserStore userStore = new UserStore();
-        userStore.addUser( slaveServer.getUsername(), new Password( slaveServer.getPassword() ), new String[] { "default" } );
+        userStore.addUser( hopServer.getUsername(), new Password( hopServer.getPassword() ), new String[] { "default" } );
         hashLoginService.setUserStore( userStore );
       } else {
         // See if there is a hop.pwd file in the HOP_HOME directory:
@@ -267,7 +271,7 @@ public class WebServer {
     webServerShutdownHook.setShuttingDown( true );
 
     try {
-      ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.HopServerShutdown.id, this );
+      ExtensionPointHandler.callExtensionPoint( log, variables, HopExtensionPoint.HopServerShutdown.id, this );
     } catch ( HopException e ) {
       // Log error but continue regular operations to make sure HopServer can be shut down properly.
       //
@@ -328,21 +332,21 @@ public class WebServer {
    */
   protected void setupJettyOptions( ServerConnector connector ) {
     LowResourceMonitor lowResourceMonitor = new LowResourceMonitor( server );
-    if ( validProperty( Const.HOP_CARTE_JETTY_ACCEPTORS ) ) {
-      server.addBean( new ConnectionLimit( Integer.parseInt( System.getProperty( Const.HOP_CARTE_JETTY_ACCEPTORS ) ) ) );
+    if ( validProperty( Const.HOP_SERVER_JETTY_ACCEPTORS ) ) {
+      server.addBean( new ConnectionLimit( Integer.parseInt( System.getProperty( Const.HOP_SERVER_JETTY_ACCEPTORS ) ) ) );
       log.logBasic(
         BaseMessages.getString( PKG, "WebServer.Log.ConfigOptions", "acceptors", connector.getAcceptors() ) );
     }
 
-    if ( validProperty( Const.HOP_CARTE_JETTY_ACCEPT_QUEUE_SIZE ) ) {
+    if ( validProperty( Const.HOP_SERVER_JETTY_ACCEPT_QUEUE_SIZE ) ) {
       connector
-        .setAcceptQueueSize( Integer.parseInt( System.getProperty( Const.HOP_CARTE_JETTY_ACCEPT_QUEUE_SIZE ) ) );
+        .setAcceptQueueSize( Integer.parseInt( System.getProperty( Const.HOP_SERVER_JETTY_ACCEPT_QUEUE_SIZE ) ) );
       log.logBasic( BaseMessages
         .getString( PKG, "WebServer.Log.ConfigOptions", "acceptQueueSize", connector.getAcceptQueueSize() ) );
     }
 
-    if ( validProperty( Const.HOP_CARTE_JETTY_RES_MAX_IDLE_TIME ) ) {
-      connector.setIdleTimeout( Integer.parseInt( System.getProperty( Const.HOP_CARTE_JETTY_RES_MAX_IDLE_TIME ) ) );
+    if ( validProperty( Const.HOP_SERVER_JETTY_RES_MAX_IDLE_TIME ) ) {
+      connector.setIdleTimeout( Integer.parseInt( System.getProperty( Const.HOP_SERVER_JETTY_RES_MAX_IDLE_TIME ) ) );
       log.logBasic( BaseMessages.getString( PKG, "WebServer.Log.ConfigOptions", "lowResourcesMaxIdleTime",
         connector.getIdleTimeout() ) );
     }
@@ -427,6 +431,22 @@ public class WebServer {
   }
 
   /**
+   * Gets variables
+   *
+   * @return value of variables
+   */
+  public IVariables getVariables() {
+    return variables;
+  }
+
+  /**
+   * @param variables The variables to set
+   */
+  public void setVariables( IVariables variables ) {
+    this.variables = variables;
+  }
+
+  /**
    * Can be used to override the default shutdown behavior of performing a System.exit
    *
    * @param webServerShutdownHandler
@@ -436,7 +456,7 @@ public class WebServer {
   }
 
   public int defaultDetectionTimer() {
-    String sDetectionTimer = System.getProperty( Const.HOP_SLAVE_DETECTION_TIMER );
+    String sDetectionTimer = System.getProperty( Const.HOP_SERVER_DETECTION_TIMER );
 
     if ( sDetectionTimer != null ) {
       return Integer.parseInt( sDetectionTimer );

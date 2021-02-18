@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.www;
 
@@ -30,6 +25,7 @@ import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.engine.IPipelineEngine;
 import org.apache.hop.workflow.WorkflowMeta;
 import org.apache.hop.workflow.engine.IWorkflowEngine;
+import org.apache.hop.core.annotations.HopServerServlet;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -44,8 +40,9 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
+@HopServerServlet(id="status", name = "Get the status of the server")
 public class GetStatusServlet extends BaseHttpServlet implements IHopServerPlugin {
-  private static Class<?> PKG = GetStatusServlet.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = GetStatusServlet.class; // For Translator
 
   private static final long serialVersionUID = 3634806745372015720L;
 
@@ -58,129 +55,6 @@ public class GetStatusServlet extends BaseHttpServlet implements IHopServerPlugi
     super( pipelineMap, workflowMap );
   }
 
-  /**
-   * <div id="mindtouch">
-   * <h1>/hop/status</h1>
-   * <a name="GET"></a>
-   * <h2>GET</h2>
-   * <p>Retrieve server status. The status contains information about the server itself (OS, memory, etc)
-   * and information about workflows and pipelines present on the server.</p>
-   *
-   * <p><b>Example Request:</b><br />
-   * <pre function="syntax.xml">
-   * GET /hop/status/?xml=Y
-   * </pre>
-   *
-   * </p>
-   * <h3>Parameters</h3>
-   * <table class="hop-table">
-   * <tbody>
-   * <tr>
-   * <th>name</th>
-   * <th>description</th>
-   * <th>type</th>
-   * </tr>
-   * <tr>
-   * <td>xml</td>
-   * <td>Boolean flag which defines output format <code>Y</code> forces XML output to be generated.
-   * HTML is returned otherwise.</td>
-   * <td>boolean, optional</td>
-   * </tr>
-   * </tbody>
-   * </table>
-   *
-   * <h3>Response Body</h3>
-   *
-   * <table class="hop-table">
-   * <tbody>
-   * <tr>
-   * <td align="right">element:</td>
-   * <td>(custom)</td>
-   * </tr>
-   * <tr>
-   * <td align="right">media types:</td>
-   * <td>text/xml, text/html</td>
-   * </tr>
-   * </tbody>
-   * </table>
-   * <p>Response XML or HTML response containing details about the pipeline specified.
-   * If an error occurs during method invocation <code>result</code> field of the response
-   * will contain <code>ERROR</code> status.</p>
-   *
-   * <p><b>Example Response:</b></p>
-   * <pre function="syntax.xml">
-   * <?xml version="1.0" encoding="UTF-8"?>
-   * <serverstatus>
-   * <statusdesc>Online</statusdesc>
-   * <memory_free>229093440</memory_free>
-   * <memory_total>285736960</memory_total>
-   * <cpu_cores>4</cpu_cores>
-   * <cpu_process_time>7534848300</cpu_process_time>
-   * <uptime>68818403</uptime>
-   * <thread_count>45</thread_count>
-   * <load_avg>-1.0</load_avg>
-   * <os_name>Windows 7</os_name>
-   * <os_version>6.1</os_version>
-   * <os_arch>amd64</os_arch>
-   * <pipeline_status_list>
-   * <pipeline_status>
-   * <pipeline_name>Row generator test</pipeline_name>
-   * <id>56c93d4e-96c1-4fae-92d9-d864b0779845</id>
-   * <status_desc>Waiting</status_desc>
-   * <error_desc/>
-   * <paused>N</paused>
-   * <transform_status_list>
-   * </transform_status_list>
-   * <first_log_line_nr>0</first_log_line_nr>
-   * <last_log_line_nr>0</last_log_line_nr>
-   * <logging_string>&#x3c;&#x21;&#x5b;CDATA&#x5b;&#x5d;&#x5d;&#x3e;</logging_string>
-   * </pipeline_status>
-   * <pipeline_status>
-   * <pipeline_name>dummy-pipeline</pipeline_name>
-   * <id>c56961b2-c848-49b8-abde-76c8015e29b0</id>
-   * <status_desc>Stopped</status_desc>
-   * <error_desc/>
-   * <paused>N</paused>
-   * <transform_status_list>
-   * </transform_status_list>
-   * <first_log_line_nr>0</first_log_line_nr>
-   * <last_log_line_nr>0</last_log_line_nr>
-   * <logging_string>&#x3c;&#x21;&#x5b;CDATA&#x5b;&#x5d;&#x5d;&#x3e;</logging_string>
-   * </pipeline_status>
-   * </pipeline_status>
-   * <jobstatuslist>
-   * <jobstatus>
-   * <workflowname>dummy_job</workflowname>
-   * <id>abd61143-8174-4f27-9037-6b22fbd3e229</id>
-   * <status_desc>Stopped</status_desc>
-   * <error_desc/>
-   * <logging_string>&#x3c;&#x21;&#x5b;CDATA&#x5b;&#x5d;&#x5d;&#x3e;</logging_string>
-   * <first_log_line_nr>0</first_log_line_nr>
-   * <last_log_line_nr>0</last_log_line_nr>
-   * </jobstatus>
-   * </jobstatuslist>
-   * </serverstatus>
-   * </pre>
-   *
-   * <h3>Status Codes</h3>
-   * <table class="hop-table">
-   * <tbody>
-   * <tr>
-   * <th>code</th>
-   * <th>description</th>
-   * </tr>
-   * <tr>
-   * <td>200</td>
-   * <td>Request was processed.</td>
-   * </tr>
-   * <tr>
-   * <td>500</td>
-   * <td>Internal server error occurs during request processing.</td>
-   * </tr>
-   * </tbody>
-   * </table>
-   * </div>
-   */
   public void doGet( HttpServletRequest request, HttpServletResponse response ) throws ServletException,
     IOException {
     if ( isJettyMode() && !request.getContextPath().startsWith( CONTEXT_PATH ) ) {
@@ -211,7 +85,7 @@ public class GetStatusServlet extends BaseHttpServlet implements IHopServerPlugi
 
     if ( useXML ) {
       out.print( XmlHandler.getXmlHeader( Const.XML_ENCODING ) );
-      SlaveServerStatus serverStatus = new SlaveServerStatus();
+      HopServerStatus serverStatus = new HopServerStatus();
       serverStatus.setStatusDescription( "Online" );
 
       getSystemInfo( serverStatus );
@@ -220,16 +94,16 @@ public class GetStatusServlet extends BaseHttpServlet implements IHopServerPlugi
         IPipelineEngine<PipelineMeta> pipeline = getPipelineMap().getPipeline( entry );
         String statusDescription = pipeline.getStatusDescription();
 
-        SlaveServerPipelineStatus sstatus = new SlaveServerPipelineStatus( entry.getName(), entry.getId(), statusDescription );
-        sstatus.setLogDate( pipeline.getExecutionStartDate() );
-        sstatus.setPaused( pipeline.isPaused() );
-        serverStatus.getPipelineStatusList().add( sstatus );
+        HopServerPipelineStatus pipelineStatus = new HopServerPipelineStatus( entry.getName(), entry.getId(), statusDescription );
+        pipelineStatus.setLogDate( pipeline.getExecutionStartDate() );
+        pipelineStatus.setPaused( pipeline.isPaused() );
+        serverStatus.getPipelineStatusList().add( pipelineStatus );
       }
 
       for ( HopServerObjectEntry entry : actions ) {
         IWorkflowEngine<WorkflowMeta> workflow = getWorkflowMap().getWorkflow( entry );
         String status = workflow.getStatusDescription();
-        SlaveServerWorkflowStatus jobStatus = new SlaveServerWorkflowStatus( entry.getName(), entry.getId(), status );
+        HopServerWorkflowStatus jobStatus = new HopServerWorkflowStatus( entry.getName(), entry.getId(), status );
         jobStatus.setLogDate( workflow.getExecutionStartDate() );
         serverStatus.getJobStatusList().add( jobStatus );
       }
@@ -242,7 +116,7 @@ public class GetStatusServlet extends BaseHttpServlet implements IHopServerPlugi
     } else {
       out.println( "<HTML>" );
       out.println( "<HEAD><TITLE>"
-        + BaseMessages.getString( PKG, "GetStatusServlet.HopSlaveServerStatus" ) + "</TITLE>" );
+        + BaseMessages.getString( PKG, "GetStatusServlet.HopHopServerStatus" ) + "</TITLE>" );
       out.println( "<META http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">" );
 
       int tableBorder = 1;
@@ -389,7 +263,7 @@ public class GetStatusServlet extends BaseHttpServlet implements IHopServerPlugi
           out.print( "<td onMouseEnter=\"mouseEnterFunction( this, '" + tdClass + "' )\" "
             + "onMouseLeave=\"mouseLeaveFunction( this, '" + tdClass + "' )\" "
             + "onClick=\"clickFunction( this, '" + tdClass + "' )\" "
-            + "id=\"cellTableLastCell_" + i + "\" class=\"cellTableCell cellTableLastColumn " + tdClass + "\">" + dateStr.substring( dateStr.indexOf( ' ' ), dateStr.length() ) + "</td>" );
+            + "id=\"cellTableLastCell_" + i + "\" class=\"cellTableCell cellTableLastColumn " + tdClass + "\">" + dateStr.substring( dateStr.indexOf( ' ' ) ) + "</td>" );
           out.print( "</tr>" );
         }
         out.print( "</table></table>" );
@@ -432,22 +306,19 @@ public class GetStatusServlet extends BaseHttpServlet implements IHopServerPlugi
           + BaseMessages.getString( PKG, "GetStatusServlet.StartDate" ) + "</th> <th class=\"cellTableHeader\">"
           + BaseMessages.getString( PKG, "GetStatusServlet.LastLogTime" ) + "</th> </tr>" );
 
-        Comparator<HopServerObjectEntry> jobComparator = new Comparator<HopServerObjectEntry>() {
-          @Override
-          public int compare( HopServerObjectEntry o1, HopServerObjectEntry o2 ) {
-            IWorkflowEngine<WorkflowMeta> t1 = getWorkflowMap().getWorkflow( o1 );
-            IWorkflowEngine<WorkflowMeta> t2 = getWorkflowMap().getWorkflow( o2 );
-            Date d1 = t1.getExecutionStartDate();
-            Date d2 = t2.getExecutionStartDate();
-            // if both workflows have last log date, desc sort by log date
-            if ( d1 != null && d2 != null ) {
-              int logDateCompare = d2.compareTo( d1 );
-              if ( logDateCompare != 0 ) {
-                return logDateCompare;
-              }
+        Comparator<HopServerObjectEntry> jobComparator = ( o1, o2 ) -> {
+          IWorkflowEngine<WorkflowMeta> t1 = getWorkflowMap().getWorkflow( o1 );
+          IWorkflowEngine<WorkflowMeta> t2 = getWorkflowMap().getWorkflow( o2 );
+          Date d1 = t1.getExecutionStartDate();
+          Date d2 = t2.getExecutionStartDate();
+          // if both workflows have last log date, desc sort by log date
+          if ( d1 != null && d2 != null ) {
+            int logDateCompare = d2.compareTo( d1 );
+            if ( logDateCompare != 0 ) {
+              return logDateCompare;
             }
-            return o1.compareTo( o2 );
           }
+          return o1.compareTo( o2 );
         };
 
         Collections.sort( actions, jobComparator );
@@ -511,7 +382,7 @@ public class GetStatusServlet extends BaseHttpServlet implements IHopServerPlugi
 
       // The max number of log lines in the back-end
       //
-      SlaveServerConfig serverConfig = getPipelineMap().getSlaveServerConfig();
+      HopServerConfig serverConfig = getPipelineMap().getHopServerConfig();
       if ( serverConfig != null ) {
         String maxLines = "";
         if ( serverConfig.getMaxLogLines() == 0 ) {
@@ -864,7 +735,7 @@ public class GetStatusServlet extends BaseHttpServlet implements IHopServerPlugi
     }
   }
 
-  private static void getSystemInfo( SlaveServerStatus serverStatus ) {
+  private static void getSystemInfo( HopServerStatus serverStatus ) {
     OperatingSystemMXBean operatingSystemMXBean =
       java.lang.management.ManagementFactory.getOperatingSystemMXBean();
     ThreadMXBean threadMXBean = java.lang.management.ManagementFactory.getThreadMXBean();

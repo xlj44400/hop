@@ -1,33 +1,25 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.plugins;
 
-import org.apache.hop.core.Const;
 import org.apache.hop.core.annotations.PartitionerPlugin;
-import org.apache.hop.core.exception.HopPluginException;
 import org.apache.hop.pipeline.IPartitioner;
 
-import java.lang.annotation.Annotation;
 import java.util.Map;
 
 /**
@@ -37,13 +29,12 @@ import java.util.Map;
  */
 @PluginMainClassType( IPartitioner.class )
 @PluginAnnotationType( PartitionerPlugin.class )
-public class PartitionerPluginType extends BasePluginType implements IPluginType {
+public class PartitionerPluginType extends BasePluginType<PartitionerPlugin> {
 
   private static PartitionerPluginType pluginType;
 
   private PartitionerPluginType() {
-    super( PartitionerPlugin.class, "PARTITIONER", "IPartitioner" );
-    populateFolders( "transforms" );
+    super( PartitionerPlugin.class, "PARTITIONER", "Partitioner" );
   }
 
   public static PartitionerPluginType getInstance() {
@@ -54,89 +45,66 @@ public class PartitionerPluginType extends BasePluginType implements IPluginType
   }
 
   @Override
-  protected String getXmlPluginFile() {
-    return Const.XML_FILE_HOP_PARTITION_PLUGINS;
-  }
-
-  @Override
-  protected String getMainTag() {
-    return "plugins";
-  }
-
-  @Override
-  protected String getSubTag() {
-    return "plugin-partitioner";
-  }
-
-  /**
-   * Scan & register internal transform plugins
-   */
-  protected void registerAnnotations() throws HopPluginException {
-    // This is no longer done because it was deemed too slow. Only jar files in the plugins/ folders are scanned for
-    // annotations.
-  }
-
-  @Override
-  protected String extractCategory( Annotation annotation ) {
+  protected String extractCategory( PartitionerPlugin annotation ) {
     return "";
   }
 
   @Override
-  protected String extractDesc( Annotation annotation ) {
-    return ( (PartitionerPlugin) annotation ).description();
+  protected String extractDesc( PartitionerPlugin annotation ) {
+    return annotation.description();
   }
 
   @Override
-  protected String extractID( Annotation annotation ) {
-    return ( (PartitionerPlugin) annotation ).id();
+  protected String extractID( PartitionerPlugin annotation ) {
+    return annotation.id();
   }
 
   @Override
-  protected String extractName( Annotation annotation ) {
-    return ( (PartitionerPlugin) annotation ).name();
+  protected String extractName( PartitionerPlugin annotation ) {
+    return annotation.name();
   }
 
   @Override
-  protected String extractImageFile( Annotation annotation ) {
+  protected String extractImageFile( PartitionerPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected boolean extractSeparateClassLoader( Annotation annotation ) {
+  protected boolean extractSeparateClassLoader( PartitionerPlugin annotation ) {
     return false;
   }
 
   @Override
-  protected String extractI18nPackageName( Annotation annotation ) {
-    return ( (PartitionerPlugin) annotation ).i18nPackageName();
+  protected String extractI18nPackageName( PartitionerPlugin annotation ) {
+    return annotation.i18nPackageName();
   }
 
   @Override
-  protected void addExtraClasses( Map<Class<?>, String> classMap, Class<?> clazz, Annotation annotation ) {
+  protected void addExtraClasses( Map<Class<?>, String> classMap, Class<?> clazz, PartitionerPlugin annotation ) {
   }
 
   @Override
-  protected String extractDocumentationUrl( Annotation annotation ) {
+  protected String extractDocumentationUrl( PartitionerPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected String extractCasesUrl( Annotation annotation ) {
+  protected String extractCasesUrl( PartitionerPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected String extractForumUrl( Annotation annotation ) {
+  protected String extractForumUrl( PartitionerPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected String extractSuggestion( Annotation annotation ) {
+  protected String extractSuggestion( PartitionerPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected String extractClassLoaderGroup( Annotation annotation ) {
-    return ( (PartitionerPlugin) annotation ).classLoaderGroup();
+  protected String extractClassLoaderGroup( PartitionerPlugin annotation ) {
+    return annotation.classLoaderGroup();
   }
 }

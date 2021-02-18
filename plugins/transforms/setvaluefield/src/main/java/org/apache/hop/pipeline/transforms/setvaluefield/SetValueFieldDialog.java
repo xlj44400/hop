@@ -1,29 +1,23 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.setvaluefield;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.util.Utils;
@@ -32,63 +26,38 @@ import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
 import org.apache.hop.pipeline.transform.ITransformDialog;
 import org.apache.hop.pipeline.transform.TransformMeta;
-import org.apache.hop.pipeline.transforms.setvaluefield.SetValueFieldMeta;
 import org.apache.hop.ui.core.dialog.ErrorDialog;
 import org.apache.hop.ui.core.widget.ColumnInfo;
 import org.apache.hop.ui.core.widget.TableView;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import org.apache.hop.core.variables.IVariables;
 
-@PluginDialog(
-        id = "SetValueField",
-        image = "setvaluefield.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = ""
-)
 public class SetValueFieldDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = SetValueFieldMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = SetValueFieldMeta.class; // For Translator
 
-  private Label wlTransformName;
   private Text wTransformName;
-  private FormData fdlTransformName, fdTransformName;
 
-  private Label wlFields;
   private TableView wFields;
-  private FormData fdlFields, fdFields;
 
-  private SetValueFieldMeta input;
+  private final SetValueFieldMeta input;
 
-  private Map<String, Integer> inputFields;
+  private final Map<String, Integer> inputFields;
 
   private ColumnInfo[] colinf;
 
-  public SetValueFieldDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public SetValueFieldDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (SetValueFieldMeta) in;
-    inputFields = new HashMap<String, Integer>();
+    inputFields = new HashMap<>();
   }
 
   public String open() {
@@ -99,11 +68,7 @@ public class SetValueFieldDialog extends BaseTransformDialog implements ITransfo
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
     changed = input.hasChanged();
 
     FormLayout formLayout = new FormLayout();
@@ -116,32 +81,46 @@ public class SetValueFieldDialog extends BaseTransformDialog implements ITransfo
     int middle = props.getMiddlePct();
     int margin = props.getMargin();
 
+    // Some buttons at the buttons
+    //
+    wOk = new Button( shell, SWT.PUSH );
+    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
+    wOk.addListener( SWT.Selection, e -> ok() );
+    wGet = new Button( shell, SWT.PUSH );
+    wGet.setText( BaseMessages.getString( PKG, "System.Button.GetFields" ) );
+    wGet.addListener( SWT.Selection, e -> get() );
+    wCancel = new Button( shell, SWT.PUSH );
+    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
+    wCancel.addListener( SWT.Selection, e -> cancel() );
+    setButtonPositions( new Button[] { wOk, wGet, wCancel }, margin, null );
+
+
     // TransformName line
-    wlTransformName = new Label( shell, SWT.RIGHT );
+    Label wlTransformName = new Label(shell, SWT.RIGHT);
     wlTransformName.setText( BaseMessages.getString( PKG, "SetValueFieldDialog.TransformName.Label" ) );
-    props.setLook( wlTransformName );
-    fdlTransformName = new FormData();
+    props.setLook(wlTransformName);
+    FormData fdlTransformName = new FormData();
     fdlTransformName.left = new FormAttachment( 0, 0 );
     fdlTransformName.right = new FormAttachment( middle, -margin );
     fdlTransformName.top = new FormAttachment( 0, margin );
-    wlTransformName.setLayoutData( fdlTransformName );
+    wlTransformName.setLayoutData(fdlTransformName);
     wTransformName = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wTransformName.setText( transformName );
     props.setLook( wTransformName );
     wTransformName.addModifyListener( lsMod );
-    fdTransformName = new FormData();
+    FormData fdTransformName = new FormData();
     fdTransformName.left = new FormAttachment( middle, 0 );
     fdTransformName.top = new FormAttachment( 0, margin );
     fdTransformName.right = new FormAttachment( 100, 0 );
-    wTransformName.setLayoutData( fdTransformName );
+    wTransformName.setLayoutData(fdTransformName);
 
-    wlFields = new Label( shell, SWT.NONE );
+    Label wlFields = new Label(shell, SWT.NONE);
     wlFields.setText( BaseMessages.getString( PKG, "SetValueFieldDialog.Fields.Label" ) );
-    props.setLook( wlFields );
-    fdlFields = new FormData();
+    props.setLook(wlFields);
+    FormData fdlFields = new FormData();
     fdlFields.left = new FormAttachment( 0, 0 );
     fdlFields.top = new FormAttachment( wTransformName, margin );
-    wlFields.setLayoutData( fdlFields );
+    wlFields.setLayoutData(fdlFields);
 
     final int FieldsCols = 2;
     final int FieldsRows = input.getFieldName().length;
@@ -157,69 +136,38 @@ public class SetValueFieldDialog extends BaseTransformDialog implements ITransfo
         ColumnInfo.COLUMN_TYPE_CCOMBO, new String[] { "" }, false );
     wFields =
       new TableView(
-        pipelineMeta, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
+        variables, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
 
-    fdFields = new FormData();
+    FormData fdFields = new FormData();
     fdFields.left = new FormAttachment( 0, 0 );
-    fdFields.top = new FormAttachment( wlFields, margin );
+    fdFields.top = new FormAttachment(wlFields, margin );
     fdFields.right = new FormAttachment( 100, 0 );
-    fdFields.bottom = new FormAttachment( 100, -50 );
-    wFields.setLayoutData( fdFields );
+    fdFields.bottom = new FormAttachment( wOk, -2*margin );
+    wFields.setLayoutData(fdFields);
 
     //
     // Search the fields in the background
 
-    final Runnable runnable = new Runnable() {
-      public void run() {
-        TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
-        if ( transformMeta != null ) {
-          try {
-            IRowMeta row = pipelineMeta.getPrevTransformFields( transformMeta );
+    final Runnable runnable = () -> {
+      TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
+      if ( transformMeta != null ) {
+        try {
+          IRowMeta row = pipelineMeta.getPrevTransformFields( variables, transformMeta );
 
-            // Remember these fields...
-            for ( int i = 0; i < row.size(); i++ ) {
-              inputFields.put( row.getValueMeta( i ).getName(), Integer.valueOf( i ) );
-            }
-
-            setComboBoxes();
-          } catch ( HopException e ) {
-            logError( "It was not possible to get the list of input fields from previous transforms", e );
+          // Remember these fields...
+          for ( int i = 0; i < row.size(); i++ ) {
+            inputFields.put( row.getValueMeta( i ).getName(), i);
           }
+
+          setComboBoxes();
+        } catch ( HopException e ) {
+          logError( "It was not possible to get the list of input fields from previous transforms", e );
         }
       }
     };
     new Thread( runnable ).start();
 
-    // Some buttons
-    wOk = new Button( shell, SWT.PUSH );
-    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
-    wGet = new Button( shell, SWT.PUSH );
-    wGet.setText( BaseMessages.getString( PKG, "System.Button.GetFields" ) );
-    wCancel = new Button( shell, SWT.PUSH );
-    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
-
-    setButtonPositions( new Button[] { wOk, wGet, wCancel }, margin, wFields );
-
     // Add listeners
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-    lsGet = new Listener() {
-      public void handleEvent( Event e ) {
-        get();
-      }
-    };
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
-
-    wCancel.addListener( SWT.Selection, lsCancel );
-    wGet.addListener( SWT.Selection, lsGet );
-    wOk.addListener( SWT.Selection, lsOk );
 
     lsDef = new SelectionAdapter() {
       public void widgetDefaultSelected( SelectionEvent e ) {
@@ -254,7 +202,7 @@ public class SetValueFieldDialog extends BaseTransformDialog implements ITransfo
   protected void setComboBoxes() {
     // Something was changed in the row.
     //
-    final Map<String, Integer> fields = new HashMap<String, Integer>();
+    final Map<String, Integer> fields = new HashMap<>();
 
     // Add the currentMeta fields...
     fields.putAll( inputFields );
@@ -322,7 +270,7 @@ public class SetValueFieldDialog extends BaseTransformDialog implements ITransfo
 
   private void get() {
     try {
-      IRowMeta r = pipelineMeta.getPrevTransformFields( transformMeta );
+      IRowMeta r = pipelineMeta.getPrevTransformFields( variables, transformMeta );
       if ( r != null ) {
         BaseTransformDialog.getFieldsFromPrevious( r, wFields, 1, new int[] { 1 }, null, -1, -1, null );
       }

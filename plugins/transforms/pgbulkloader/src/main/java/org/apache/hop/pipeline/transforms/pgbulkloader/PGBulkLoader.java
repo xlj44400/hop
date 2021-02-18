@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.pgbulkloader;
 
@@ -43,9 +38,7 @@ import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.transform.BaseTransform;
-import org.apache.hop.pipeline.transform.ITransformData;
 import org.apache.hop.pipeline.transform.ITransform;
-import org.apache.hop.pipeline.transform.ITransformMeta;
 import org.apache.hop.pipeline.transform.TransformMeta;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.PGCopyOutputStream;
@@ -67,7 +60,7 @@ import java.sql.Statement;
  */
 public class PGBulkLoader extends BaseTransform<PGBulkLoaderMeta, PGBulkLoaderData> implements ITransform<PGBulkLoaderMeta, PGBulkLoaderData> {
 
-  private static Class<?> PKG = PGBulkLoaderMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = PGBulkLoaderMeta.class; // For Translator
 
   private Charset clientEncoding = Charset.defaultCharset();
   private PGCopyOutputStream pgCopyOut;
@@ -88,8 +81,7 @@ public class PGBulkLoader extends BaseTransform<PGBulkLoaderMeta, PGBulkLoaderDa
     StringBuilder contents = new StringBuilder( 500 );
 
     String tableName =
-      dm.getQuotedSchemaTableCombination(
-        environmentSubstitute( meta.getSchemaName() ), environmentSubstitute( meta.getTableName() ) );
+      dm.getQuotedSchemaTableCombination( this, meta.getSchemaName(), meta.getTableName() );
 
     // Set the date style...
     //
@@ -126,9 +118,9 @@ public class PGBulkLoader extends BaseTransform<PGBulkLoaderMeta, PGBulkLoaderDa
     contents.append( " FROM STDIN" ); // FIFO file
 
     // The "FORMAT" clause
-    contents.append( " WITH CSV DELIMITER AS '" ).append( environmentSubstitute( meta.getDelimiter() ) )
+    contents.append( " WITH CSV DELIMITER AS '" ).append( resolve( meta.getDelimiter() ) )
       .append( "' QUOTE AS '" ).append(
-      environmentSubstitute( meta.getEnclosure() ) ).append( "'" );
+      resolve( meta.getEnclosure() ) ).append( "'" );
     contents.append( ";" ).append( Const.CR );
 
     return contents.toString();
@@ -157,7 +149,7 @@ public class PGBulkLoader extends BaseTransform<PGBulkLoaderMeta, PGBulkLoaderDa
     }
   }
 
-  private void do_copy( PGBulkLoaderMeta meta, boolean wait ) throws HopException {
+  private void doCopy( PGBulkLoaderMeta meta, boolean wait ) throws HopException {
     data.db = getDatabase( this, meta );
     String copyCmd = getCopyCommand();
     try {
@@ -179,13 +171,13 @@ public class PGBulkLoader extends BaseTransform<PGBulkLoaderMeta, PGBulkLoaderDa
   Database getDatabase( ILoggingObject parentObject, PGBulkLoaderMeta pgBulkLoaderMeta ) {
     DatabaseMeta dbMeta = pgBulkLoaderMeta.getDatabaseMeta();
     // If dbNameOverride is present, clone the origin db meta and override the DB name
-    String dbNameOverride = environmentSubstitute( pgBulkLoaderMeta.getDbNameOverride() );
+    String dbNameOverride = resolve( pgBulkLoaderMeta.getDbNameOverride() );
     if ( !Utils.isEmpty( dbNameOverride ) ) {
       dbMeta = (DatabaseMeta) pgBulkLoaderMeta.getDatabaseMeta().clone();
       dbMeta.setDBName( dbNameOverride.trim() );
       logDebug( "DB name overridden to the value: " + dbNameOverride );
     }
-    return new Database( parentObject, dbMeta );
+    return new Database( parentObject, variables, dbMeta );
   }
 
   void connect() throws HopException {
@@ -195,13 +187,12 @@ public class PGBulkLoader extends BaseTransform<PGBulkLoaderMeta, PGBulkLoaderDa
   void processTruncate() throws Exception {
     Connection connection = data.db.getConnection();
 
-    String loadAction = environmentSubstitute( meta.getLoadAction() );
+    String loadAction = resolve( meta.getLoadAction() );
 
     if ( loadAction.equalsIgnoreCase( "truncate" ) ) {
       DatabaseMeta dm = meta.getDatabaseMeta();
       String tableName =
-        dm.getQuotedSchemaTableCombination( environmentSubstitute( meta.getSchemaName() ),
-          environmentSubstitute( meta.getTableName() ) );
+        dm.getQuotedSchemaTableCombination( this, meta.getSchemaName(), meta.getTableName() );
       logBasic( "Launching command: " + "TRUNCATE " + tableName );
 
       Statement statement = connection.createStatement();
@@ -248,7 +239,7 @@ public class PGBulkLoader extends BaseTransform<PGBulkLoaderMeta, PGBulkLoaderDa
 
         // execute the copy statement... pgCopyOut is setup there
         //
-        do_copy( meta, true );
+        doCopy( meta, true );
 
 
         // Write rows of data hereafter...
@@ -435,8 +426,8 @@ public class PGBulkLoader extends BaseTransform<PGBulkLoaderMeta, PGBulkLoaderDa
 
   public boolean init(){
 
-    String enclosure = environmentSubstitute( meta.getEnclosure() );
-    String separator = environmentSubstitute( meta.getDelimiter() );
+    String enclosure = resolve( meta.getEnclosure() );
+    String separator = resolve( meta.getDelimiter() );
 
     if ( super.init() ) {
 

@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.gui.plugin;
 
@@ -27,27 +22,25 @@ import org.apache.hop.core.util.StringUtil;
 import org.apache.hop.i18n.BaseMessages;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * This represents a list of GUI elements under a certain heading or ID
  */
-public class GuiElements extends BaseGuiElements {
+public class GuiElements extends BaseGuiElements implements Comparable<GuiElements> {
 
   private String id;
+
+  private String order;
 
   private String parentId;
 
   private String label;
 
   private String toolTip;
-
-  private String i18nPackage;
 
   private GuiElementType type;
 
@@ -91,13 +84,14 @@ public class GuiElements extends BaseGuiElements {
 
     String fieldName = field.getName();
     Class<?> fieldClass = field.getType();
-
+    String fieldPackageName = field.getDeclaringClass().getPackage().getName();
+    
     if (StringUtil.isEmpty( guiElement.id() )) {
       this.id = field.getName();
     } else {
       this.id = guiElement.id();
     }
-
+    this.order = guiElement.order();
     this.type = guiElement.type();
     this.parentId = guiElement.parentId();
     this.fieldName = fieldName;
@@ -109,18 +103,10 @@ public class GuiElements extends BaseGuiElements {
     this.disabledImage = null;
     this.variablesEnabled = guiElement.variables();
     this.password = guiElement.password();
-    this.i18nPackage = calculateI18nPackage( guiElement.i18nPackageClass(), guiElement.i18nPackage() );
     this.ignored = guiElement.ignored();
     this.addingSeparator = guiElement.separator();
-    this.label = calculateI18n( i18nPackage, guiElement.label() );
-    this.toolTip = calculateI18n( i18nPackage, guiElement.toolTip() );
-    if ( StringUtils.isNotEmpty( i18nPackage ) ) {
-      this.label = BaseMessages.getString( i18nPackage, guiElement.label() );
-      this.toolTip = BaseMessages.getString( i18nPackage, guiElement.toolTip() );
-    } else {
-      this.label = guiElement.label();
-      this.toolTip = guiElement.toolTip();
-    }
+    this.label = getTranslation( guiElement.label(), fieldPackageName, field.getDeclaringClass() );
+    this.toolTip = getTranslation( guiElement.toolTip(), fieldPackageName, field.getDeclaringClass() );
   }
 
 
@@ -129,7 +115,7 @@ public class GuiElements extends BaseGuiElements {
    * If no sort field is available we use the ID
    */
   public void sortChildren() {
-    Collections.sort( children, Comparator.comparing( o -> o.id ) );
+    Collections.sort( children );
   }
 
   public GuiElements findChild( String id ) {
@@ -156,6 +142,14 @@ public class GuiElements extends BaseGuiElements {
     return Objects.hash( id );
   }
 
+  @Override public int compareTo( GuiElements e ) {
+    if (StringUtils.isNotEmpty( order ) && StringUtils.isNotEmpty( e.id )) {
+      return order.compareTo( e.order );
+    } else {
+      return id.compareTo( e.id );
+    }
+  }
+
   /**
    * Gets id
    *
@@ -170,6 +164,22 @@ public class GuiElements extends BaseGuiElements {
    */
   public void setId( String id ) {
     this.id = id;
+  }
+
+  /**
+   * Gets order
+   *
+   * @return value of order
+   */
+  public String getOrder() {
+    return order;
+  }
+
+  /**
+   * @param order The order to set
+   */
+  public void setOrder( String order ) {
+    this.order = order;
   }
 
   /**
@@ -218,22 +228,6 @@ public class GuiElements extends BaseGuiElements {
    */
   public void setToolTip( String toolTip ) {
     this.toolTip = toolTip;
-  }
-
-  /**
-   * Gets i18nPackage
-   *
-   * @return value of i18nPackage
-   */
-  public String getI18nPackage() {
-    return i18nPackage;
-  }
-
-  /**
-   * @param i18nPackage The i18nPackage to set
-   */
-  public void setI18nPackage( String i18nPackage ) {
-    this.i18nPackage = i18nPackage;
   }
 
   /**
@@ -507,4 +501,6 @@ public class GuiElements extends BaseGuiElements {
   public void setClassLoader( ClassLoader classLoader ) {
     this.classLoader = classLoader;
   }
+
+
 }

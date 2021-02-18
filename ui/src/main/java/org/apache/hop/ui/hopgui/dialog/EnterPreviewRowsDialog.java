@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.dialog;
 
@@ -55,7 +50,7 @@ import org.eclipse.swt.widgets.Shell;
  * @author Matt
  */
 public class EnterPreviewRowsDialog extends Dialog {
-  private static Class<?> PKG = EnterPreviewRowsDialog.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = EnterPreviewRowsDialog.class; // For Translator
 
   private String transformName;
 
@@ -95,7 +90,7 @@ public class EnterPreviewRowsDialog extends Dialog {
     shell.setLayout( formLayout );
     shell.setText( BaseMessages.getString( PKG, "EnterPreviewRowsDialog.Dialog.PreviewTransform.Title" ) ); // Select the
     // preview transform:
-    shell.setImage( GuiResource.getInstance().getImageLogoSmall() );
+    shell.setImage( GuiResource.getInstance().getImageHopUi() );
 
     int middle = props.getMiddlePct();
     int margin = props.getMargin();
@@ -135,16 +130,8 @@ public class EnterPreviewRowsDialog extends Dialog {
 
     BaseTransformDialog.positionBottomButtons( shell, new Button[] { wShow, wClose }, margin, null );
     // Add listeners
-    lsShow = new Listener() {
-      public void handleEvent( Event e ) {
-        show();
-      }
-    };
-    lsClose = new Listener() {
-      public void handleEvent( Event e ) {
-        close();
-      }
-    };
+    lsShow = e -> show();
+    lsClose = e -> close();
 
     wShow.addListener( SWT.Selection, lsShow );
     wClose.addListener( SWT.Selection, lsClose );

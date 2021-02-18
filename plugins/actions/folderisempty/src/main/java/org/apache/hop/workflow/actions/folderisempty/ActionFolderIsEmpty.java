@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.folderisempty;
 
@@ -41,7 +36,7 @@ import org.apache.hop.workflow.action.ActionBase;
 import org.apache.hop.workflow.action.IAction;
 import org.apache.hop.workflow.action.validator.ActionValidatorUtils;
 import org.apache.hop.workflow.action.validator.AndValidator;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.w3c.dom.Node;
 
 import java.io.IOException;
@@ -56,32 +51,31 @@ import java.util.regex.Pattern;
  * @author Sven/Samatar
  * @since 18-10-2007
  */
-
 @Action(
   id = "FOLDER_IS_EMPTY",
-  i18nPackageName = "org.apache.hop.workflow.actions.folderisempty",
-  name = "ActionFolderIsEmpty.Name",
-  description = "ActionFolderIsEmpty.Description",
+  name = "i18n::ActionFolderIsEmpty.Name",
+  description = "i18n::ActionFolderIsEmpty.Description",
   image = "FolderIsEmpty.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Conditions"
+  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Conditions",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/folderisempty.html"
 )
 public class ActionFolderIsEmpty extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionFolderIsEmpty.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionFolderIsEmpty.class; // For Translator
 
-  private String foldername;
+  private String folderName;
   private int filescount;
   private int folderscount;
   private boolean includeSubfolders;
-  private boolean specifywildcard;
+  private boolean specifyWildcard;
   private String wildcard;
   private Pattern pattern;
 
   public ActionFolderIsEmpty( String n ) {
     super( n, "" );
-    foldername = null;
+    folderName = null;
     wildcard = null;
     includeSubfolders = false;
-    specifywildcard = false;
+    specifyWildcard = false;
   }
 
   public ActionFolderIsEmpty() {
@@ -97,45 +91,45 @@ public class ActionFolderIsEmpty extends ActionBase implements Cloneable, IActio
     StringBuilder retval = new StringBuilder( 50 );
 
     retval.append( super.getXml() );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "foldername", foldername ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "foldername", folderName ) );
     retval.append( "      " ).append( XmlHandler.addTagValue( "include_subfolders", includeSubfolders ) );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "specify_wildcard", specifywildcard ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "specify_wildcard", specifyWildcard ) );
     retval.append( "      " ).append( XmlHandler.addTagValue( "wildcard", wildcard ) );
 
     return retval.toString();
   }
 
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
-      foldername = XmlHandler.getTagValue( entrynode, "foldername" );
+      folderName = XmlHandler.getTagValue( entrynode, "foldername" );
       includeSubfolders = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "include_subfolders" ) );
-      specifywildcard = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "specify_wildcard" ) );
+      specifyWildcard = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "specify_wildcard" ) );
       wildcard = XmlHandler.getTagValue( entrynode, "wildcard" );
     } catch ( HopXmlException xe ) {
       throw new HopXmlException( "Unable to load action of type 'create folder' from XML node", xe );
     }
   }
 
-  public void setSpecifyWildcard( boolean specifywildcard ) {
-    this.specifywildcard = specifywildcard;
+  public void setSpecifyWildcard( boolean specifyWildcard ) {
+    this.specifyWildcard = specifyWildcard;
   }
 
   public boolean isSpecifyWildcard() {
-    return specifywildcard;
+    return specifyWildcard;
   }
 
-  public void setFoldername( String foldername ) {
-    this.foldername = foldername;
+  public void setFoldername( String folderName ) {
+    this.folderName = folderName;
   }
 
   public String getFoldername() {
-    return foldername;
+    return folderName;
   }
 
   public String getRealFoldername() {
-    return environmentSubstitute( getFoldername() );
+    return resolve( getFoldername() );
   }
 
   public String getWildcard() {
@@ -143,7 +137,7 @@ public class ActionFolderIsEmpty extends ActionBase implements Cloneable, IActio
   }
 
   public String getRealWildcard() {
-    return environmentSubstitute( getWildcard() );
+    return resolve( getWildcard() );
   }
 
   public void setWildcard( String wildcard ) {
@@ -175,11 +169,11 @@ public class ActionFolderIsEmpty extends ActionBase implements Cloneable, IActio
       pattern = Pattern.compile( getRealWildcard() );
     }
 
-    if ( foldername != null ) {
+    if ( folderName != null ) {
       String realFoldername = getRealFoldername();
       FileObject folderObject = null;
       try {
-        folderObject = HopVfs.getFileObject( realFoldername, this );
+        folderObject = HopVfs.getFileObject( realFoldername );
         if ( folderObject.exists() ) {
           // Check if it's a folder
           if ( folderObject.getType() == FileType.FOLDER ) {
@@ -236,20 +230,20 @@ public class ActionFolderIsEmpty extends ActionBase implements Cloneable, IActio
   }
 
   private class TextFileSelector implements FileSelector {
-    String root_folder = null;
+    String rootFolder = null;
 
     public TextFileSelector( String rootfolder ) {
       if ( rootfolder != null ) {
-        root_folder = rootfolder;
+        rootFolder = rootfolder;
       }
     }
 
     public boolean includeFile( FileSelectInfo info ) throws ExpectedException {
       boolean returncode = false;
-      FileObject file_name = null;
+      FileObject filename = null;
       boolean rethrow = false;
       try {
-        if ( !info.getFile().toString().equals( root_folder ) ) {
+        if ( !info.getFile().toString().equals( rootFolder ) ) {
           // Pass over the Base folder itself
           if ( ( info.getFile().getType() == FileType.FILE ) ) {
             if ( info.getFile().getParent().equals( info.getBaseFolder() ) ) {
@@ -293,10 +287,10 @@ public class ActionFolderIsEmpty extends ActionBase implements Cloneable, IActio
           throw (ExpectedException) e;
         }
       } finally {
-        if ( file_name != null ) {
+        if ( filename != null ) {
           try {
-            file_name.close();
-            file_name = null;
+            filename.close();
+            filename = null;
           } catch ( IOException ex ) { /* Ignore */
           }
         }
@@ -325,13 +319,13 @@ public class ActionFolderIsEmpty extends ActionBase implements Cloneable, IActio
     return getIt;
   }
 
-  public boolean evaluates() {
+  @Override public boolean isEvaluation() {
     return true;
   }
 
   @Override
   public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     ActionValidatorUtils.andValidator().validate( this, "filename", remarks,
       AndValidator.putValidators( ActionValidatorUtils.notBlankValidator() ) );
   }

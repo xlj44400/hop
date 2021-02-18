@@ -1,28 +1,24 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.www;
 
 import org.apache.hop.core.Const;
+import org.apache.hop.core.annotations.HopServerServlet;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.xml.XmlHandler;
 import org.apache.hop.i18n.BaseMessages;
@@ -37,8 +33,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URLEncoder;
 
+@HopServerServlet(id="pausePipeline", name = "Pause or continue a pipeline")
 public class PausePipelineServlet extends BaseHttpServlet implements IHopServerPlugin {
-  private static Class<?> PKG = PausePipelineServlet.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = PausePipelineServlet.class; // For Translator
 
   private static final long serialVersionUID = -2598233582435767691L;
   public static final String CONTEXT_PATH = "/hop/pausePipeline";
@@ -50,92 +47,6 @@ public class PausePipelineServlet extends BaseHttpServlet implements IHopServerP
     super( pipelineMap );
   }
 
-  /**
-   * <div id="mindtouch">
-   * <h1>/hop/pausePipeline</h1>
-   * <a name="GET"></a>
-   * <h2>GET</h2>
-   * <p>Pauses pipeline to be executed.
-   * Method is used for pausing running pipeline by its name.</p>
-   *
-   * <p><b>Example Request:</b><br />
-   * <pre function="syntax.xml">
-   * GET /hop/pausePipeline/?name=dummy-pipeline&xml=Y
-   * </pre>
-   *
-   * </p>
-   * <h3>Parameters</h3>
-   * <table class="hop-table">
-   * <tbody>
-   * <tr>
-   * <th>name</th>
-   * <th>description</th>
-   * <th>type</th>
-   * </tr>
-   * <tr>
-   * <td>name</td>
-   * <td>Name of the pipeline to be paused.</td>
-   * <td>query</td>
-   * </tr>
-   * <tr>
-   * <td>xml</td>
-   * <td>Boolean flag which sets the output format required. Use <code>Y</code> to receive XML response.</td>
-   * <td>boolean, optional</td>
-   * </tr>
-   * <tr>
-   * <td>id</td>
-   * <td>HopServer pipeline ID of the pipeline to be paused. This parameter is optional when xml=Y is used.</td>
-   * <td>query, optional</td>
-   * </tr>
-   * </tbody>
-   * </table>
-   *
-   * <h3>Response Body</h3>
-   *
-   * <table class="hop-table">
-   * <tbody>
-   * <tr>
-   * <td align="right">text:</td>
-   * <td>HTML</td>
-   * </tr>
-   * <tr>
-   * <td align="right">media types:</td>
-   * <td>text/xml, text/html</td>
-   * </tr>
-   * </tbody>
-   * </table>
-   * <p>Response XML or HTML containing operation result. When using xml=Y <code>result</code> field indicates whether
-   * operation was successful (<code>OK</code>) or not (<code>ERROR</code>).</p>
-   *
-   * <p><b>Example Response:</b></p>
-   * <pre function="syntax.xml">
-   * <?xml version="1.0" encoding="UTF-8"?>
-   * <webresult>
-   * <result>OK</result>
-   * <message>Pipeline &#x5b;dummy-pipeline &#x28;master&#x29;&#x5d; &#x3a; pause requested.</message>
-   * <id/>
-   * </webresult>
-   * </pre>
-   *
-   * <h3>Status Codes</h3>
-   * <table class="hop-table">
-   * <tbody>
-   * <tr>
-   * <th>code</th>
-   * <th>description</th>
-   * </tr>
-   * <tr>
-   * <td>200</td>
-   * <td>Request was processed.</td>
-   * </tr>
-   * <tr>
-   * <td>500</td>
-   * <td>Internal server error occurs during request processing.</td>
-   * </tr>
-   * </tbody>
-   * </table>
-   * </div>
-   */
   public void doGet( HttpServletRequest request, HttpServletResponse response ) throws ServletException,
     IOException {
     if ( isJettyMode() && !request.getContextPath().startsWith( CONTEXT_PATH ) ) {

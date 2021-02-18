@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.propertyoutput;
 
@@ -32,10 +27,8 @@ import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransform;
-import org.apache.hop.pipeline.transform.ITransformData;
 import org.apache.hop.pipeline.transform.ITransform;
 import org.apache.hop.pipeline.transform.TransformMeta;
-import org.apache.hop.pipeline.transform.ITransform;
 
 import java.io.OutputStream;
 import java.util.Properties;
@@ -47,11 +40,11 @@ import java.util.Properties;
  * @since 13-Apr-2008
  */
 
-public class PropertyOutput extends BaseTransform implements ITransform {
-  private static Class<?> PKG = PropertyOutputMeta.class; // for i18n purposes, needed by Translator!!
+public class PropertyOutput
+  extends BaseTransform<PropertyOutputMeta,PropertyOutputData>
+  implements ITransform<PropertyOutputMeta,PropertyOutputData> {
 
-  private PropertyOutputMeta meta;
-  private PropertyOutputData data;
+  private static final Class<?> PKG = PropertyOutputMeta.class; // For Translator
 
   public PropertyOutput( TransformMeta transformMeta, PropertyOutputMeta meta, PropertyOutputData data, int copyNr, PipelineMeta pipelineMeta,
                          Pipeline pipeline ) {
@@ -71,7 +64,7 @@ public class PropertyOutput extends BaseTransform implements ITransform {
       first = false;
       data.inputRowMeta = getInputRowMeta();
       data.outputRowMeta = data.inputRowMeta.clone();
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
       // Let's take the index of Key field ...
       data.indexOfKeyField = data.inputRowMeta.indexOfValue( meta.getKeyField() );
@@ -90,7 +83,7 @@ public class PropertyOutput extends BaseTransform implements ITransform {
       }
 
       if ( meta.isFileNameInField() ) {
-        String realFieldName = environmentSubstitute( meta.getFileNameField() );
+        String realFieldName = resolve( meta.getFileNameField() );
         if ( Utils.isEmpty( realFieldName ) ) {
           logError( BaseMessages.getString( PKG, "PropertyOutput.Log.FilenameInFieldEmpty" ) );
           throw new HopException( BaseMessages.getString( PKG, "PropertyOutput.Log.FilenameInFieldEmpty" ) );
@@ -174,7 +167,7 @@ public class PropertyOutput extends BaseTransform implements ITransform {
   }
 
   private void openNewFile() throws HopException {
-    try ( FileObject newFile = HopVfs.getFileObject( data.filename, getPipelineMeta() ) ) {
+    try ( FileObject newFile = HopVfs.getFileObject( data.filename ) ) {
       data.pro = new Properties();
       data.KeySet.clear();
 
@@ -229,7 +222,7 @@ public class PropertyOutput extends BaseTransform implements ITransform {
     }
     boolean retval = false;
     try ( OutputStream propsFile = HopVfs.getOutputStream( data.file, false ) ) {
-      data.pro.store( propsFile, environmentSubstitute( meta.getComment() ) );
+      data.pro.store( propsFile, resolve( meta.getComment() ) );
 
       if ( meta.isAddToResult() ) {
         // Add this to the result file names...

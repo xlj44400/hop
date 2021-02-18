@@ -1,47 +1,22 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.plugins;
 
-import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSelectInfo;
-import org.apache.commons.vfs2.FileSelector;
-import org.apache.hop.core.Const;
-import org.apache.hop.core.exception.HopPluginException;
-import org.apache.hop.core.exception.HopXmlException;
-import org.apache.hop.core.logging.DefaultLogLevel;
-import org.apache.hop.core.logging.LogChannel;
-import org.apache.hop.core.logging.LogLevel;
-import org.apache.hop.core.util.Utils;
-import org.apache.hop.core.vfs.HopVfs;
-import org.apache.hop.core.xml.XmlHandler;
-import org.apache.hop.i18n.BaseMessages;
-import org.apache.hop.i18n.GlobalMessageUtil;
-import org.scannotation.AnnotationDB;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -53,111 +28,69 @@ import java.net.URLClassLoader;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public abstract class BasePluginType implements IPluginType {
-  protected static Class<?> PKG = BasePluginType.class; // for i18n purposes, needed by Translator!!
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.StopWatch;
+import org.apache.hop.core.Const;
+import org.apache.hop.core.exception.HopPluginException;
+import org.apache.hop.core.logging.DefaultLogLevel;
+import org.apache.hop.core.logging.LogChannel;
+import org.apache.hop.core.logging.LogLevel;
+import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.xml.XmlHandler;
+import org.apache.hop.i18n.BaseMessages;
+import org.apache.hop.i18n.GlobalMessageUtil;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
-  protected String id;
-  protected String name;
-  protected List<IPluginFolder> pluginFolders;
+import com.google.common.annotations.VisibleForTesting;
 
-  protected PluginRegistry registry;
+public abstract class BasePluginType<T extends Annotation> implements IPluginType<T> {
+  protected static Class<?> classFromResourcesPackage = BasePluginType.class; // For Translator
 
-  protected LogChannel log;
+  protected final PluginRegistry registry;
+  
+  private String id;
+  
+  private String name;
 
-  protected Map<Class<?>, String> objectTypes = new HashMap<>();
+  private LogChannel log;
 
-  protected boolean searchLibDir;
+  private Map<Class<?>, String> objectTypes = new HashMap<>();
 
-  Class<? extends java.lang.annotation.Annotation> pluginType;
+  private Class<T> pluginClass;
 
-  public BasePluginType( Class<? extends java.lang.annotation.Annotation> pluginType ) {
-    this.pluginFolders = new ArrayList<>();
+  private List<String> extraLibraryFolders;
+  
+  public BasePluginType( Class<T> pluginClazz ) {
     this.log = new LogChannel( "Plugin type" );
 
     registry = PluginRegistry.getInstance();
-    this.pluginType = pluginType;
+    this.pluginClass = pluginClazz;
+
+    this.extraLibraryFolders = new ArrayList<>();
   }
 
   /**
    * @param id   The plugin type ID
    * @param name the name of the plugin
    */
-  public BasePluginType( Class<? extends java.lang.annotation.Annotation> pluginType, String id, String name ) {
+  public BasePluginType( Class<T> pluginType, String id, String name ) {
     this( pluginType );
     this.id = id;
     this.name = name;
-  }
-
-  /**
-   * This method return parameter for registerNatives() method
-   *
-   * @return XML plugin file
-   */
-  protected String getXmlPluginFile() {
-    return null;
-  }
-
-  /**
-   * This method return parameter for registerNatives() method
-   *
-   * @return Alternative XML plugin file
-   */
-  protected String getAlternativePluginFile() {
-    return null;
-  }
-
-  /**
-   * This method return parameter for registerPlugins() method
-   *
-   * @return Main XML tag
-   */
-  protected String getMainTag() {
-    return null;
-  }
-
-  /**
-   * This method return parameter for registerPlugins() method
-   *
-   * @return Subordinate XML tag
-   */
-  protected String getSubTag() {
-    return null;
-  }
-
-  /**
-   * This method return parameter for registerPlugins() method
-   *
-   * @return Path
-   */
-  protected String getPath() {
-    return null;
-  }
-
-  /**
-   * This method return parameter for registerNatives() method
-   *
-   * @return Flag ("return;" or "throw exception")
-   */
-  protected boolean isReturn() {
-    return false;
-  }
-
-  /**
-   * this is a utility method for subclasses so they can easily register which folders contain plugins
-   *
-   * @param xmlSubfolder the sub-folder where xml plugin definitions can be found
-   */
-  protected void populateFolders( String xmlSubfolder ) {
-    pluginFolders.addAll( PluginFolder.populateFolders( xmlSubfolder ) );
   }
 
   public Map<Class<?>, String> getAdditionalRuntimeObjectTypes() {
@@ -174,61 +107,59 @@ public abstract class BasePluginType implements IPluginType {
     return name + "(" + id + ")";
   }
 
-  /**
-   * Let's put in code here to search for the transform plugins..
-   */
+  /** Let's put in code here to search for the transform plugins.. */
   @Override
   public void searchPlugins() throws HopPluginException {
+
+    StopWatch watch = new StopWatch();    
+    if ( log.isDebug() ) {
+      watch.start();
+    }    
+    
+    // Register natives plugins
     registerNatives();
+    
+    // Register plugins from plugin folders
     registerPluginJars();
+     
+    if ( log.isDebug() ) {
+      watch.stop();
+      List<Plugin> plugins = registry.getPlugins(this.getClass());
+      log.logBasic(pluginClass.getSimpleName()+" register " + plugins.size()+ " plugins (Time Elapsed: " + watch.getTime()+"ms)"); 
+    }
   }
 
   protected void registerNatives() throws HopPluginException {
-    // Scan the native transforms...
-    //
-    String xmlFile = getXmlPluginFile();
-    String alternative = null;
-    if ( !Utils.isEmpty( getAlternativePluginFile() ) ) {
-      alternative = getPropertyExternal( getAlternativePluginFile(), null );
-      if ( !Utils.isEmpty( alternative ) ) {
-        xmlFile = alternative;
-      }
-    }
-
-    // Load the plugins for this file...
-    //
-    InputStream inputStream = null;
     try {
-      inputStream = getResAsStreamExternal( xmlFile );
-      if ( inputStream == null ) {
-        inputStream = getResAsStreamExternal( "/" + xmlFile );
-      }
+      JarCache cache = JarCache.getInstance();
+      DotName pluginName = DotName.createSimple(pluginClass.getName());
+      for (File jarFile : cache.getNativeJars()) {
+        IndexView index = cache.getIndex(jarFile);
 
-      if ( !Utils.isEmpty( getAlternativePluginFile() ) ) {
-        // Retry to load a regular file...
-        if ( inputStream == null && !Utils.isEmpty( alternative ) ) {
-          try {
-            inputStream = getFileInputStreamExternal( xmlFile );
-          } catch ( Exception e ) {
-            throw new HopPluginException( "Unable to load native plugins '" + xmlFile + "'", e );
+        // find annotations annotated with this meta-annotation
+        for (AnnotationInstance instance : index.getAnnotations(pluginName)) {
+          if (instance.target() instanceof ClassInfo) {
+
+            ClassInfo classInfo = (ClassInfo) instance.target();
+            String className = classInfo.name().toString();
+            
+
+            Class<?> clazz = this.getClass().getClassLoader().loadClass(className);
+
+            if (clazz == null) {
+              throw new HopPluginException("Unable to load class: " + className);
+            }
+
+            T annotation = clazz.getAnnotation( pluginClass );
+
+            List<String> libraries = new ArrayList<>();
+            
+            handlePluginAnnotation( clazz, annotation, libraries, true, null );           
           }
         }
       }
-
-      if ( inputStream == null ) {
-        if ( isReturn() ) {
-          return;
-        } else {
-          throw new HopPluginException( "Unable to find native plugins definition file: " + xmlFile );
-        }
-      }
-
-      registerPlugins( inputStream );
-
-    } catch ( HopXmlException e ) {
-      throw new HopPluginException( "Unable to read the kettle XML config file: " + xmlFile, e );
-    } finally {
-      IOUtils.closeQuietly( inputStream );
+    } catch (Exception e) {
+      throw new HopPluginException("Error registring native plugins", e);
     }
   }
 
@@ -245,24 +176,6 @@ public abstract class BasePluginType implements IPluginType {
   @VisibleForTesting
   protected InputStream getFileInputStreamExternal( String name ) throws FileNotFoundException {
     return new FileInputStream( name );
-  }
-
-  /**
-   * This method registers plugins from the InputStream with the XML Resource
-   *
-   * @param inputStream
-   * @throws HopPluginException
-   * @throws HopXmlException
-   */
-  protected void registerPlugins( InputStream inputStream ) throws HopPluginException, HopXmlException {
-    Document document = XmlHandler.loadXmlFile( inputStream, null, true, false );
-
-    Node repsNode = XmlHandler.getSubNode( document, getMainTag() );
-    List<Node> repsNodes = XmlHandler.getNodes( repsNode, getSubTag() );
-
-    for ( Node repNode : repsNodes ) {
-      registerPluginFromXmlResource( repNode, getPath(), this.getClass(), true, null );
-    }
   }
 
   /**
@@ -295,27 +208,12 @@ public abstract class BasePluginType implements IPluginType {
     this.name = name;
   }
 
-  /**
-   * @return the pluginFolders
-   */
-  @Override
-  public List<IPluginFolder> getPluginFolders() {
-    return pluginFolders;
-  }
-
-  /**
-   * @param pluginFolders the pluginFolders to set
-   */
-  public void setPluginFolders( List<IPluginFolder> pluginFolders ) {
-    this.pluginFolders = pluginFolders;
-  }
-
   protected static String getCodedTranslation( String codedString ) {
     if ( codedString == null ) {
       return null;
     }
 
-    if ( codedString.startsWith( "i18n:" ) ) {
+    if ( codedString.startsWith( Const.I18N_PREFIX ) ) {
       String[] parts = codedString.split( ":" );
       if ( parts.length != 3 ) {
         return codedString;
@@ -344,12 +242,22 @@ public abstract class BasePluginType implements IPluginType {
       return null;
     }
 
-    if ( string.startsWith( "i18n:" ) ) {
+    if ( string.startsWith( Const.I18N_PREFIX ) ) {
       String[] parts = string.split( ":" );
       if ( parts.length != 3 ) {
         return string;
       } else {
-        return BaseMessages.getString( parts[ 1 ], parts[ 2 ] );
+        String i18nPackage = parts[1];
+        if ( StringUtils.isEmpty( i18nPackage )) {
+          i18nPackage = Const.NVL(packageName, altPackageName);
+        }
+        String i18nKey = parts[2];
+
+        String translation = BaseMessages.getString( i18nPackage, i18nKey, resourceClass );
+        if (translation.startsWith( "!" ) && translation.endsWith( "!" )) {
+          translation = BaseMessages.getString( i18nPackage, i18nKey );
+        }
+        return translation;
       }
     } else {
       // Try the default package name
@@ -364,16 +272,14 @@ public abstract class BasePluginType implements IPluginType {
 
         translation = BaseMessages.getString( packageName, string, resourceClass );
         if ( translation.startsWith( "!" ) && translation.endsWith( "!" ) ) {
-          translation = BaseMessages.getString( PKG, string, resourceClass );
+          translation = BaseMessages.getString( classFromResourcesPackage, string, resourceClass );
         }
 
         // restore loglevel, when the last alternative fails, log it when loglevel is detailed
         //
         DefaultLogLevel.setLogLevel( oldLogLevel );
-        if ( !Utils.isEmpty( altPackageName ) ) {
-          if ( translation.startsWith( "!" ) && translation.endsWith( "!" ) ) {
-            translation = BaseMessages.getString( altPackageName, string, resourceClass );
-          }
+        if ( !Utils.isEmpty( altPackageName ) &&  translation.startsWith( "!" ) && translation.endsWith( "!" ) ) {
+          translation = BaseMessages.getString( altPackageName, string, resourceClass );
         }
       } else {
         // Translations are not supported, simply keep the original text.
@@ -385,74 +291,45 @@ public abstract class BasePluginType implements IPluginType {
     }
   }
 
-  protected List<JarFileAnnotationPlugin> findAnnotatedClassFiles( String annotationClassName ) {
-    JarFileCache jarFileCache = JarFileCache.getInstance();
-    List<JarFileAnnotationPlugin> classFiles = new ArrayList<>();
+  protected List<PluginClassFile> findAnnotatedClassFiles(String annotationClassName)
+      throws HopPluginException {
+    JarCache cache = JarCache.getInstance();
 
-    // We want to scan the plugins folder for plugin.xml files...
-    //
-    for ( IPluginFolder pluginFolder : getPluginFolders() ) {
+    List<PluginClassFile> classFiles = new ArrayList<>();
 
-      if ( pluginFolder.isPluginAnnotationsFolder() ) {
-
-        try {
-          // Get all the jar files in the plugin folder...
-          //
-          FileObject[] fileObjects = jarFileCache.getFileObjects( pluginFolder );
-          if ( fileObjects != null ) {
-            for ( FileObject fileObject : fileObjects ) {
-
-              // These are the jar files : find annotations in it...
-              //
-              AnnotationDB annotationDB = jarFileCache.getAnnotationDB( fileObject );
-              Set<String> impls = annotationDB.getAnnotationIndex().get( annotationClassName );
-              if ( impls != null ) {
-
-                for ( String fil : impls ) {
-                  classFiles.add( new JarFileAnnotationPlugin( fil, fileObject.getURL(), fileObject
-                    .getParent().getURL() ) );
-                }
-              }
-            }
-
-          }
-        } catch ( Exception e ) {
-          e.printStackTrace();
-        }
-      }
-    }
-    return classFiles;
-  }
-
-  protected List<FileObject> findPluginXmlFiles( String folder ) {
-
-    return findPluginFiles( folder, ".*\\/plugin\\.xml$" );
-  }
-
-  protected List<FileObject> findPluginFiles( String folder, final String regex ) {
-
-    List<FileObject> list = new ArrayList<>();
     try {
-      FileObject folderObject = HopVfs.getFileObject( folder );
-      FileObject[] files = folderObject.findFiles( new FileSelector() {
+      // Get all the jar files with annotation index files...
+      //      
+      for (File jarFile : cache.getPluginJars()) {
 
-        @Override
-        public boolean traverseDescendents( FileSelectInfo fileSelectInfo ) throws Exception {
-          return true;
-        }
+        // These are the jar files : find annotations in it...
+        //
+        IndexView index = cache.getIndex(jarFile);
+        // find annotations annotated with this meta-annotation
+        for (AnnotationInstance instance :
+            index.getAnnotations(DotName.createSimple(pluginClass.getName()))) {
+          if (instance.target() instanceof ClassInfo) {
+            try {
+              ClassInfo classInfo = (ClassInfo) instance.target();
+              String className = classInfo.name().toString();
 
-        @Override
-        public boolean includeFile( FileSelectInfo fileSelectInfo ) throws Exception {
-          return fileSelectInfo.getFile().toString().matches( regex );
+              File folder = jarFile.getParentFile();
+
+              classFiles.add(
+                  new PluginClassFile(className, jarFile.toURI().toURL(), folder.toURI().toURL()));
+
+            } catch (Exception e) {
+              System.out.println(
+                  "Error searching annotation for " + pluginClass + " in " + jarFile);
+            }
+          }
         }
-      } );
-      if ( files != null ) {
-        Collections.addAll( list, files );
       }
-    } catch ( Exception e ) {
-      // ignore this: unknown folder, insufficient permissions, etc
+    } catch (Exception e) {
+      throw new HopPluginException("Error finding plugin annotation " + annotationClassName, e);
     }
-    return list;
+
+    return classFiles;
   }
 
   /**
@@ -472,123 +349,28 @@ public abstract class BasePluginType implements IPluginType {
     Map<Class<?>, String> classMap = new HashMap<>();
     PluginMainClassType mainClassTypesAnnotation = pluginType.getAnnotation( PluginMainClassType.class );
     classMap.put( mainClassTypesAnnotation.value(), clazz.getName() );
-    IPlugin transformPlugin =
-      new Plugin(
-        new String[] { id }, pluginType, mainClassTypesAnnotation.value(), cat, name, desc, image, false,
-        false, classMap, new ArrayList<>(), null, null, null, null, null, null );
-    registry.registerPlugin( pluginType, transformPlugin );
+    IPlugin plugin = new Plugin( new String[] { id }, pluginType, mainClassTypesAnnotation.value(), cat, name, desc, image, false,
+        false, classMap, new ArrayList<>(), null, null, null, false, null, null, null );
+    registry.registerPlugin( pluginType, plugin );
   }
 
-  protected IPlugin registerPluginFromXmlResource( Node pluginNode, String path,
-                                                   Class<? extends IPluginType> pluginType, boolean nativePlugin, URL pluginFolder ) throws HopPluginException {
-    try {
 
-      String id = XmlHandler.getTagAttribute( pluginNode, "id" );
-      String description = getTagOrAttribute( pluginNode, "description" );
-      String iconfile = getTagOrAttribute( pluginNode, "iconfile" );
-      String tooltip = getTagOrAttribute( pluginNode, "tooltip" );
-      String category = getTagOrAttribute( pluginNode, "category" );
-      String classname = getTagOrAttribute( pluginNode, "classname" );
-      String errorHelpfile = getTagOrAttribute( pluginNode, "errorhelpfile" );
-      String documentationUrl = getTagOrAttribute( pluginNode, "documentation_url" );
-      String casesUrl = getTagOrAttribute( pluginNode, "cases_url" );
-      String forumUrl = getTagOrAttribute( pluginNode, "forum_url" );
-      String suggestion = getTagOrAttribute( pluginNode, "suggestion" );
-      String keywordsString = getTagOrAttribute( pluginNode, "keywords" );
-      String[] keywords = keywordsString == null ? new String[] {} : keywordsString.split( "," );
-
-      // If we have no ID, we take the class name as unique ID of the plugin
-      //
-      if ( StringUtils.isEmpty( id ) ) {
-        id = classname;
+  /**
+   * Loop over the extra library folders and find all the jar files in all sub-folders
+   * @return the list of jar files in all the extra library folders
+   */
+  private List<String> addExtraJarFiles( ) {
+    List<String> files = new ArrayList<>();
+    for (String extraLibraryFolder : extraLibraryFolders) {
+      File folder = new File(extraLibraryFolder);
+      if (folder.exists()) {
+        Collection<File> jarFiles = FileUtils.listFiles( folder, new String[] { "jar", "JAR", }, true );
+        jarFiles.stream().forEach( file->files.add(file.getPath()) );
       }
-
-      Node libsnode = XmlHandler.getSubNode( pluginNode, "libraries" );
-      int nrlibs = XmlHandler.countNodes( libsnode, "library" );
-
-      List<String> jarFiles = new ArrayList<>();
-      if ( path != null ) {
-        for ( int j = 0; j < nrlibs; j++ ) {
-          Node libnode = XmlHandler.getSubNodeByNr( libsnode, "library", j );
-          String jarfile = XmlHandler.getTagAttribute( libnode, "name" );
-          jarFiles.add( new File( path + Const.FILE_SEPARATOR + jarfile ).getAbsolutePath() );
-        }
-      }
-
-      // Localized categories, descriptions and tool tips
-      //
-      Map<String, String> localizedCategories = readPluginLocale( pluginNode, "localized_category", "category" );
-      category = getAlternativeTranslation( category, localizedCategories );
-
-      Map<String, String> localDescriptions =
-        readPluginLocale( pluginNode, "localized_description", "description" );
-      description = getAlternativeTranslation( description, localDescriptions );
-      description += addDeprecation( category );
-
-      suggestion = getAlternativeTranslation( suggestion, localDescriptions );
-
-      Map<String, String> localizedTooltips = readPluginLocale( pluginNode, "localized_tooltip", "tooltip" );
-      tooltip = getAlternativeTranslation( tooltip, localizedTooltips );
-
-      String iconFilename = ( path == null ) ? iconfile : path + Const.FILE_SEPARATOR + iconfile;
-      String errorHelpFileFull = errorHelpfile;
-      if ( !Utils.isEmpty( errorHelpfile ) ) {
-        errorHelpFileFull = ( path == null ) ? errorHelpfile : path + Const.FILE_SEPARATOR + errorHelpfile;
-      }
-
-      Map<Class<?>, String> classMap = new HashMap<Class<?>, String>();
-
-      PluginMainClassType mainClassTypesAnnotation = pluginType.getAnnotation( PluginMainClassType.class );
-      if ( mainClassTypesAnnotation != null ) {
-        classMap.put( mainClassTypesAnnotation.value(), classname );
-      } else {
-        classMap.put( PluginMainClassType.class, classname );
-      }
-
-      // process annotated extra types
-      PluginExtraClassTypes classTypesAnnotation = pluginType.getAnnotation( PluginExtraClassTypes.class );
-      if ( classTypesAnnotation != null ) {
-        for ( int i = 0; i < classTypesAnnotation.classTypes().length; i++ ) {
-          Class<?> classType = classTypesAnnotation.classTypes()[ i ];
-          String className = getTagOrAttribute( pluginNode, classTypesAnnotation.xmlNodeNames()[ i ] );
-
-          classMap.put( classType, className );
-        }
-      }
-
-      // process extra types added at runtime
-      Map<Class<?>, String> objectMap = getAdditionalRuntimeObjectTypes();
-      for ( Map.Entry<Class<?>, String> entry : objectMap.entrySet() ) {
-        String clzName = getTagOrAttribute( pluginNode, entry.getValue() );
-        classMap.put( entry.getKey(), clzName );
-      }
-
-      Class<?> mainAnnotationClass = PluginMainClassType.class;
-      if ( mainClassTypesAnnotation != null ) {
-        mainAnnotationClass = mainClassTypesAnnotation.value();
-      }
-
-      IPlugin pluginInterface =
-        new Plugin(
-          id.split( "," ), pluginType, mainAnnotationClass, category, description, tooltip,
-          iconFilename, false, nativePlugin, classMap, jarFiles, errorHelpFileFull, keywords, pluginFolder,
-          documentationUrl, casesUrl, forumUrl, suggestion );
-      registry.registerPlugin( pluginType, pluginInterface );
-
-      return pluginInterface;
-    } catch ( Throwable e ) {
-      throw new HopPluginException( BaseMessages.getString(
-        PKG, "BasePluginType.RuntimeError.UnableToReadPluginXML.PLUGIN0001" ), e );
     }
+    return files;
   }
 
-  protected String getTagOrAttribute( Node pluginNode, String tag ) {
-    String string = XmlHandler.getTagValue( pluginNode, tag );
-    if ( string == null ) {
-      string = XmlHandler.getTagAttribute( pluginNode, tag );
-    }
-    return string;
-  }
 
   /**
    * @param input
@@ -617,26 +399,6 @@ public abstract class BasePluginType implements IPluginType {
     }
   }
 
-  protected Map<String, String> readPluginLocale( Node pluginNode, String localizedTag, String translationTag ) {
-    Map<String, String> map = new Hashtable<String, String>();
-
-    Node locTipsNode = XmlHandler.getSubNode( pluginNode, localizedTag );
-    int nrLocTips = XmlHandler.countNodes( locTipsNode, translationTag );
-    for ( int j = 0; j < nrLocTips; j++ ) {
-      Node locTipNode = XmlHandler.getSubNodeByNr( locTipsNode, translationTag, j );
-      if ( locTipNode != null ) {
-        String locale = XmlHandler.getTagAttribute( locTipNode, "locale" );
-        String locTip = XmlHandler.getNodeValue( locTipNode );
-
-        if ( !Utils.isEmpty( locale ) && !Utils.isEmpty( locTip ) ) {
-          map.put( locale.toLowerCase(), locTip );
-        }
-      }
-    }
-
-    return map;
-  }
-
   /**
    * Create a new URL class loader with the jar file specified. Also include all the jar files in the lib folder next to
    * that file.
@@ -651,15 +413,14 @@ public abstract class BasePluginType implements IPluginType {
     // Also append all the files in the underlying lib folder if it exists...
     //
     try {
-
+      JarCache jarCache = JarCache.getInstance();
+      
       String parentFolderName = new File( URLDecoder.decode( jarFileUrl.getFile(), "UTF-8" ) ).getParent();
 
-      String libFolderName = parentFolderName + Const.FILE_SEPARATOR + "lib";
-      if ( new File( libFolderName ).exists() ) {
-        PluginFolder pluginFolder = new PluginFolder( libFolderName, false, true, searchLibDir );
-        FileObject[] libFiles = pluginFolder.findJarFiles( true );
-        for ( FileObject libFile : libFiles ) {
-          urls.add( libFile.getURL() );
+      File libFolder = new File(parentFolderName + Const.FILE_SEPARATOR + "lib");
+      if ( libFolder.exists() ) {        
+        for ( File libFile : jarCache.findJarFiles(libFolder) ) {
+          urls.add( libFile.toURI().toURL() );
         }
       }
 
@@ -681,11 +442,9 @@ public abstract class BasePluginType implements IPluginType {
           if ( dependenciesFolder.exists() ) {
             // Now get the jar files in this dependency folder
             // This includes the possible lib/ folder dependencies in there
-            //
-            PluginFolder pluginFolder = new PluginFolder( dependenciesFolderName, false, false, true );
-            FileObject[] libFiles = pluginFolder.findJarFiles( true );
-            for ( FileObject libFile : libFiles ) {
-              urls.add( libFile.getURL() );
+            //            
+            for ( File libFile : jarCache.findJarFiles(dependenciesFolder) ) {
+              urls.add( libFile.toURI().toURL() );
             }
           }
         }
@@ -701,93 +460,84 @@ public abstract class BasePluginType implements IPluginType {
     return new HopURLClassLoader( urls.toArray( new URL[ urls.size() ] ), classLoader );
   }
 
-  protected String extractCategory( Annotation annotation ) {
+  protected String extractCategory( T annotation ) {
     return null;
   }
 
-  protected abstract String extractID( java.lang.annotation.Annotation annotation );
+  protected abstract String extractID( T annotation );
 
-  protected abstract String extractName( java.lang.annotation.Annotation annotation );
+  protected abstract String extractName( T annotation );
 
-  protected abstract String extractDesc( java.lang.annotation.Annotation annotation );
+  protected abstract String extractDesc( T annotation );
 
   /**
    * Extract extra classes information from a plugin annotation.
    *
    * @param annotation
    */
-  protected String extractClassLoaderGroup( java.lang.annotation.Annotation annotation ) {
+  protected String extractClassLoaderGroup( T annotation ) {
     return null;
   }
 
-  protected String extractImageFile( Annotation annotation ) {
+  protected String extractImageFile( T annotation ) {
     return null;
   }
 
-  protected boolean extractSeparateClassLoader( Annotation annotation ) {
+  protected boolean extractSeparateClassLoader( T annotation ) {
     return false;
   }
 
-  protected String extractI18nPackageName( Annotation annotation ) {
+  protected String extractI18nPackageName( T annotation ) {
     return null;
   }
 
-  protected void addExtraClasses( Map<Class<?>, String> classMap, Class<?> clazz, Annotation annotation ) {
+  protected void addExtraClasses( Map<Class<?>, String> classMap, Class<?> clazz, T annotation ) {
   }
 
-  protected String extractDocumentationUrl( Annotation annotation ) {
+  protected String extractDocumentationUrl( T annotation ) {
     return null;
   }
 
-  protected String extractCasesUrl( Annotation annotation ) {
+  protected String extractCasesUrl( T annotation ) {
     return null;
   }
 
-  protected String extractForumUrl( Annotation annotation ) {
+  protected String extractForumUrl( T annotation ) {
     return null;
   }
 
-  protected String extractSuggestion( Annotation annotation ) {
+  protected String extractSuggestion( T annotation ) {
     return null;
   }
 
-  protected String[] extractKeywords( Annotation annotation ) {
+  protected String[] extractKeywords( T annotation ) {
     return new String[] {};
   }
 
-  /**
-   * When set to true the PluginFolder objects created by this type will be instructed to search for additional plugins
-   * in the lib directory of plugin folders.
-   *
-   * @param searchLibDir
-   */
-  protected void setSearchLibDirs( boolean searchLibDir ) {
-    this.searchLibDir = searchLibDir;
-  }
-
   protected void registerPluginJars() throws HopPluginException {
-    List<JarFileAnnotationPlugin> jarFilePlugins = findAnnotatedClassFiles( pluginType.getName() );
-    for ( JarFileAnnotationPlugin jarFilePlugin : jarFilePlugins ) {
+                
+    List<PluginClassFile> pluginClassFiles = findAnnotatedClassFiles(pluginClass.getName());
+    for ( PluginClassFile pluginClassFile : pluginClassFiles ) {
 
-      URLClassLoader urlClassLoader = createUrlClassLoader( jarFilePlugin.getJarFile(), getClass().getClassLoader() );
+      URLClassLoader urlClassLoader = createUrlClassLoader( pluginClassFile.getJarFile(), getClass().getClassLoader() );
 
       try {
-        Class<?> clazz = urlClassLoader.loadClass( jarFilePlugin.getClassName() );
+        Class<?> clazz = urlClassLoader.loadClass( pluginClassFile.getClassName() );
         if ( clazz == null ) {
-          throw new HopPluginException( "Unable to load class: " + jarFilePlugin.getClassName() );
+          throw new HopPluginException( "Unable to load class: " + pluginClassFile.getClassName() );
         }
         List<String> libraries = Arrays.stream( urlClassLoader.getURLs() )
           .map( URL::getFile )
           .collect( Collectors.toList() );
-        Annotation annotation = clazz.getAnnotation( pluginType );
-
-        handlePluginAnnotation( clazz, annotation, libraries, false, jarFilePlugin.getPluginFolder() );
+        T annotation = clazz.getAnnotation( pluginClass );
+        
+        handlePluginAnnotation( clazz, annotation, libraries, false, pluginClassFile.getFolder() );
       } catch ( Exception e ) {
         // Ignore for now, don't know if it's even possible.
         LogChannel.GENERAL.logError(
-          "Unexpected error registering jar plugin file: " + jarFilePlugin.getJarFile(), e );
+          "Unexpected error registering jar plugin file: " + pluginClassFile.getJarFile(), e );
       } finally {
-        if ( urlClassLoader != null && urlClassLoader instanceof HopURLClassLoader ) {
+        if ( urlClassLoader instanceof HopURLClassLoader ) {
           ( (HopURLClassLoader) urlClassLoader ).closeClassLoader();
         }
       }
@@ -804,9 +554,8 @@ public abstract class BasePluginType implements IPluginType {
    * @param pluginFolder     The plugin folder to use
    * @throws HopPluginException
    */
-  @Override
-  public void handlePluginAnnotation( Class<?> clazz, java.lang.annotation.Annotation annotation,
-                                      List<String> libraries, boolean nativePluginType, URL pluginFolder ) throws HopPluginException {
+  //@Override
+  public void handlePluginAnnotation( Class<?> clazz, T annotation, List<String> libraries, boolean nativePluginType, URL pluginFolder ) throws HopPluginException {
 
     String idList = extractID( annotation );
     if ( Utils.isEmpty( idList ) ) {
@@ -819,7 +568,7 @@ public abstract class BasePluginType implements IPluginType {
     String[] ids = idList.split( "," );
     String packageName = extractI18nPackageName( annotation );
     String altPackageName = clazz.getPackage().getName();
-    String name = getTranslation( extractName( annotation ), packageName, altPackageName, clazz );
+    String pluginName = getTranslation( extractName( annotation ), packageName, altPackageName, clazz );
     String description = getTranslation( extractDesc( annotation ), packageName, altPackageName, clazz );
     String category = getTranslation( extractCategory( annotation ), packageName, altPackageName, clazz );
     String imageFile = extractImageFile( annotation );
@@ -830,8 +579,6 @@ public abstract class BasePluginType implements IPluginType {
     String suggestion = getTranslation( extractSuggestion( annotation ), packageName, altPackageName, clazz );
     String classLoaderGroup = extractClassLoaderGroup( annotation );
     String[] keywords = getTranslations(extractKeywords( annotation ), packageName, altPackageName, clazz);
-
-    name += addDeprecation( category );
 
     Map<Class<?>, String> classMap = new HashMap<>();
 
@@ -845,10 +592,25 @@ public abstract class BasePluginType implements IPluginType {
     classMap.put( mainClass, clazz.getName() );
     addExtraClasses( classMap, clazz, annotation );
 
-    IPlugin plugin =
-      new Plugin(
-        ids, this.getClass(), mainClass, category, name, description, imageFile, separateClassLoader,
-        classLoaderGroup, nativePluginType, classMap, libraries, null, keywords, pluginFolder, documentationUrl,
+    
+    // Check if plugin main class is deprecated by annotation
+    //
+    Deprecated deprecated = clazz.getDeclaredAnnotation(Deprecated.class);
+    if ( deprecated!=null ) {
+      String str = BaseMessages.getString( classFromResourcesPackage, "System.Deprecated" ).toLowerCase();
+      pluginName += " (" + str + ")";
+    }
+        
+    // Add all the jar files in the extra library folders
+    //
+    List<String> extraJarFiles = addExtraJarFiles();
+    libraries.addAll(extraJarFiles);
+
+    // If there are extra classes somewhere else, don't use a plugin folder
+    //
+    boolean usingLibrariesOutsidePluginFolder = !extraJarFiles.isEmpty();
+    IPlugin plugin = new Plugin( ids, this.getClass(), mainClass, category, pluginName, description, imageFile, separateClassLoader,
+        classLoaderGroup, nativePluginType, classMap, libraries, null, keywords, pluginFolder, usingLibrariesOutsidePluginFolder, documentationUrl,
         casesUrl, forumUrl, suggestion );
 
     ParentFirst parentFirstAnnotation = clazz.getAnnotation( ParentFirst.class );
@@ -857,17 +619,35 @@ public abstract class BasePluginType implements IPluginType {
     }
     registry.registerPlugin( this.getClass(), plugin );
 
-    if ( libraries != null && libraries.size() > 0 ) {
+    if ( libraries != null && !libraries.isEmpty() ) {
       LogChannel.GENERAL.logDetailed( "Plugin with id ["
         + ids[ 0 ] + "] has " + libraries.size() + " libaries in its private class path" );
     }
   }
 
-  private String addDeprecation( String category ) {
-    String deprecated = BaseMessages.getString( PKG, "PluginRegistry.Category.Deprecated" );
-    if ( deprecated.equals( category ) ) {
-      return " (" + deprecated.toLowerCase() + ")";
-    }
-    return "";
+  /**
+   * Gets extraLibraryFolders
+   *
+   * @return value of extraLibraryFolders
+   */
+  public List<String> getExtraLibraryFolders() {
+    return extraLibraryFolders;
+  }
+
+  /**
+   * @param extraLibraryFolders The extraLibraryFolders to set
+   */
+  public void setExtraLibraryFolders( List<String> extraLibraryFolders ) {
+    this.extraLibraryFolders = extraLibraryFolders;
+  }
+
+  /**
+   * Register an extra plugin from the classpath. Useful for testing.
+   * @param clazz The class with the annotation to register to the plugin registry.
+   * @throws HopPluginException in case something goes wrong with the class or the annotation
+   */
+  public void registerClassPathPlugin(Class<?> clazz) throws HopPluginException {
+    T annotation = clazz.getAnnotation( pluginClass );
+    handlePluginAnnotation( clazz, annotation, new ArrayList<>(), true, null );
   }
 }

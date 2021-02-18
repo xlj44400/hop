@@ -1,30 +1,26 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.file.workflow.delegates;
 
 import org.apache.hop.core.Const;
 import org.apache.hop.core.Result;
 import org.apache.hop.core.gui.WorkflowTracker;
+import org.apache.hop.core.gui.plugin.GuiPlugin;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.ui.core.gui.GuiResource;
@@ -34,8 +30,6 @@ import org.apache.hop.ui.core.widget.TreeMemory;
 import org.apache.hop.ui.hopgui.HopGui;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabItem;
-import org.eclipse.swt.events.DisposeEvent;
-import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.widgets.Display;
@@ -48,9 +42,10 @@ import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
+@GuiPlugin(description = "Workflow Graph Grid Delegate")
 public class HopGuiWorkflowGridDelegate {
 
-  private static Class<?> PKG = HopGuiWorkflowGraph.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = HopGuiWorkflowGridDelegate.class; // For Translator
 
   private HopGui hopGui;
 
@@ -59,7 +54,7 @@ public class HopGuiWorkflowGridDelegate {
   private static final String STRING_CHEF_LOG_TREE_NAME = "Workflow Log Tree";
 
   private HopGuiWorkflowGraph workflowGraph;
-  private CTabItem jobGridTab;
+  private CTabItem workflowGridTab;
   private Tree wTree;
 
   public WorkflowTracker workflowTracker;
@@ -77,32 +72,32 @@ public class HopGuiWorkflowGridDelegate {
   }
 
   /**
-   * Add a grid with the execution metrics per transform in a table view
+   * Add a grid with the execution metrics per action in a table view
    */
-  public void addJobGrid() {
+  public void addWorkflowGrid() {
 
     // First, see if we need to add the extra view...
     //
     if ( workflowGraph.extraViewComposite == null || workflowGraph.extraViewComposite.isDisposed() ) {
       workflowGraph.addExtraView();
     } else {
-      if ( jobGridTab != null && !jobGridTab.isDisposed() ) {
+      if ( workflowGridTab != null && !workflowGridTab.isDisposed() ) {
         // just set this one active and get out...
         //
-        workflowGraph.extraViewTabFolder.setSelection( jobGridTab );
+        workflowGraph.extraViewTabFolder.setSelection( workflowGridTab );
         return;
       }
     }
 
-    jobGridTab = new CTabItem( workflowGraph.extraViewTabFolder, SWT.NONE );
-    jobGridTab.setImage( GuiResource.getInstance().getImageShowGrid() );
-    jobGridTab.setText( BaseMessages.getString( PKG, "HopGui.PipelineGraph.GridTab.Name" ) );
+    workflowGridTab = new CTabItem( workflowGraph.extraViewTabFolder, SWT.NONE );
+    workflowGridTab.setImage( GuiResource.getInstance().getImageShowGrid() );
+    workflowGridTab.setText( BaseMessages.getString( PKG, "HopGui.WorkflowGraph.GridTab.Name" ) );
 
     addControls();
 
-    jobGridTab.setControl( wTree );
+    workflowGridTab.setControl( wTree );
 
-    workflowGraph.extraViewTabFolder.setSelection( jobGridTab );
+    workflowGraph.extraViewTabFolder.setSelection( workflowGridTab );
   }
 
   /**
@@ -155,16 +150,14 @@ public class HopGuiWorkflowGridDelegate {
       public void run() {
         Display display = workflowGraph.getDisplay();
         if ( display != null && !display.isDisposed() ) {
-          display.asyncExec( new Runnable() {
-            public void run() {
-              // Check if the widgets are not disposed.
-              // This happens is the rest of the window is not yet disposed.
-              // We ARE running in a different thread after all.
-              //
-              // TODO: add a "auto refresh" check box somewhere
-              if ( !wTree.isDisposed() ) {
-                refreshTreeTable();
-              }
+          display.asyncExec( () -> {
+            // Check if the widgets are not disposed.
+            // This happens is the rest of the window is not yet disposed.
+            // We ARE running in a different thread after all.
+            //
+            // TODO: add a "auto refresh" check box somewhere
+            if ( !wTree.isDisposed() ) {
+              refreshTreeTable();
             }
           } );
         }
@@ -172,11 +165,7 @@ public class HopGuiWorkflowGridDelegate {
     };
     tim.schedule( timtask, 10L, 2000L ); // refresh every 2 seconds...
 
-    workflowGraph.workflowLogDelegate.getJobLogTab().addDisposeListener( new DisposeListener() {
-      public void widgetDisposed( DisposeEvent disposeEvent ) {
-        tim.cancel();
-      }
-    } );
+    workflowGraph.workflowLogDelegate.getJobLogTab().addDisposeListener( disposeEvent -> tim.cancel() );
 
   }
 
@@ -275,8 +264,8 @@ public class HopGuiWorkflowGridDelegate {
     }
   }
 
-  public CTabItem getJobGridTab() {
-    return jobGridTab;
+  public CTabItem getWorkflowGridTab() {
+    return workflowGridTab;
   }
 
   public void setWorkflowTracker( WorkflowTracker workflowTracker ) {

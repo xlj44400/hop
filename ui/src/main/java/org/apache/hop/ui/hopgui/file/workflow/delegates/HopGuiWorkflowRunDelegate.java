@@ -1,34 +1,30 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.file.workflow.delegates;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.hop.cluster.SlaveServer;
+import org.apache.hop.core.logging.LogChannel;
+import org.apache.hop.core.variables.IVariables;
+import org.apache.hop.server.HopServer;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.extension.ExtensionPointHandler;
 import org.apache.hop.core.extension.HopExtensionPoint;
 import org.apache.hop.core.logging.DefaultLogLevel;
-import org.apache.hop.core.logging.ILogChannel;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.ui.hopgui.file.workflow.HopGuiWorkflowGraph;
 import org.apache.hop.ui.workflow.dialog.WorkflowExecutionConfigurationDialog;
@@ -45,7 +41,7 @@ import java.util.List;
 import java.util.Map;
 
 public class HopGuiWorkflowRunDelegate {
-  private static Class<?> PKG = HopGui.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = HopGui.class; // For Translator
 
   private HopGuiWorkflowGraph workflowGraph;
   private HopGui hopGui;
@@ -71,7 +67,7 @@ public class HopGuiWorkflowRunDelegate {
     jobMap = new ArrayList<>();
   }
 
-  public void executeWorkflow( WorkflowMeta workflowMeta, boolean local, boolean remote, boolean safe, String startCopyName, int startCopyNr ) throws HopException {
+  public void executeWorkflow( IVariables variables, WorkflowMeta workflowMeta, String startActionName ) throws HopException {
 
     if ( workflowMeta == null ) {
       return;
@@ -84,9 +80,8 @@ public class HopGuiWorkflowRunDelegate {
     Map<String, String> variableMap = new HashMap<>();
     variableMap.putAll( executionConfiguration.getVariablesMap() ); // the default
     executionConfiguration.setVariablesMap( variableMap );
-    executionConfiguration.getUsedVariables( workflowMeta );
-    executionConfiguration.setStartCopyName( startCopyName );
-    executionConfiguration.setStartCopyNr( startCopyNr );
+    executionConfiguration.getUsedVariables( workflowMeta, variables );
+    executionConfiguration.setStartActionName( startActionName );
     executionConfiguration.setLogLevel( DefaultLogLevel.getLogLevel() );
 
     WorkflowExecutionConfigurationDialog dialog = newWorkflowExecutionConfigurationDialog( executionConfiguration, workflowMeta );
@@ -95,53 +90,9 @@ public class HopGuiWorkflowRunDelegate {
 
       workflowGraph.workflowLogDelegate.addJobLog();
 
-      // Set the variables that where specified...
-      //
-      for ( String varName : executionConfiguration.getVariablesMap().keySet() ) {
-        String varValue = executionConfiguration.getVariablesMap().get( varName );
-        workflowMeta.setVariable( varName, varValue );
-      }
+      ExtensionPointHandler.callExtensionPoint( LogChannel.UI, workflowGraph.getVariables(), HopExtensionPoint.HopGuiWorkflowExecutionConfiguration.id, executionConfiguration );
 
-      // Set and activate the parameters...
-      //
-      for ( String paramName : executionConfiguration.getParametersMap().keySet() ) {
-        String paramValue = executionConfiguration.getParametersMap().get( paramName );
-        workflowMeta.setParameterValue( paramName, paramValue );
-      }
-      workflowMeta.activateParameters();
-
-      // Set the log level
-      //
-      if ( executionConfiguration.getLogLevel() != null ) {
-        workflowMeta.setLogLevel( executionConfiguration.getLogLevel() );
-      }
-
-      // Set the start transform name
-      //
-      if ( executionConfiguration.getStartCopyName() != null ) {
-        workflowMeta.setStartCopyName( executionConfiguration.getStartCopyName() );
-      }
-
-      // Set the run options
-      //
-      workflowMeta.setClearingLog( executionConfiguration.isClearingLog() );
-
-      ILogChannel log = workflowGraph.getWorkflowMeta().getLogChannel();
-      ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.HopUiWorkflowMetaExecutionStart.id, workflowMeta );
-      ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.HopUiJobExecutionConfiguration.id, executionConfiguration );
-
-      try {
-        ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.HopUiPipelineBeforeStart.id, new Object[] { executionConfiguration, workflowMeta, workflowMeta } );
-      } catch ( HopException e ) {
-        log.logError( e.getMessage(), workflowMeta.getFilename() );
-        return;
-      }
-
-      if ( workflowMeta.hasChanged() ) {
-        workflowGraph.showSaveFileMessage();
-      }
-
-      workflowGraph.startJob( executionConfiguration );
+      workflowGraph.start( executionConfiguration );
     }
   }
 
@@ -158,18 +109,14 @@ public class HopGuiWorkflowRunDelegate {
     m.open();
   }
 
-  private void monitorRemoteJob( final WorkflowMeta workflowMeta, final String serverObjectId, final SlaveServer remoteSlaveServer ) {
+  private void monitorRemoteJob( final WorkflowMeta workflowMeta, final String serverObjectId, final HopServer remoteHopServer ) {
     // There is a workflow running in the background. When it finishes log the result on the console.
     // Launch in a separate thread to prevent GUI blocking...
     //
-    Thread thread = new Thread( new Runnable() {
-      public void run() {
-        remoteSlaveServer.monitorRemoteJob( hopGui.getLog(), serverObjectId, workflowMeta.toString() );
-      }
-    } );
+    Thread thread = new Thread( () -> remoteHopServer.monitorRemoteWorkflow( hopGui.getVariables(), hopGui.getLog(), serverObjectId, workflowMeta.toString() ) );
 
     thread.setName( "Monitor remote workflow '" + workflowMeta.getName() + "', carte object id=" + serverObjectId
-      + ", slave server: " + remoteSlaveServer.getName() );
+      + ", hop server: " + remoteHopServer.getName() );
     thread.start();
 
   }
@@ -228,14 +175,14 @@ public class HopGuiWorkflowRunDelegate {
    *
    * @return value of workflowMap
    */
-  public List<WorkflowMeta> getJobMap() {
+  public List<WorkflowMeta> getWorkflowMap() {
     return jobMap;
   }
 
   /**
    * @param jobMap The workflowMap to set
    */
-  public void setJobMap( List<WorkflowMeta> jobMap ) {
+  public void setWorkflowMap( List<WorkflowMeta> jobMap ) {
     this.jobMap = jobMap;
   }
 }

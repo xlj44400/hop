@@ -1,4 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~       http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~
+  -->
+
 <jsFunctions language="us">
   <jsFunction name="isNum">
     <help>Check if the given Value is a valid Numeric.</help>
@@ -143,34 +161,6 @@
     <type>3</type>
     <Arguments>
       <argument id="1">var</argument>
-    </Arguments>
-  </jsFunction>
-  <jsFunction name="sendMail">
-    <help>Sends an eMail to a given address.</help>
-    <sample>// Sends an eMail to an given Address.
-      // Be aware, this function could be a usefull spam task.
-      //
-      // Usage:
-      // sendMail(var, var, var, var, var);
-      // 1: String - SMTP-Server
-      // 2: String - The Address from which the mail shoud be send
-      // 3: String - The Address to which the mail should be send.
-      // For more Recipient's, please provide a list seperated by ','
-      // 4: String - Subject of the Mail
-      // 5: String - The Message Text of the mail.
-      //
-      // 2006-11-15
-      //
-      var xSMTP="Your SMTP Server";
-      var xSender = "Sender eMail";
-      var xRecipients = "Recipient1,Recipient2,...";
-      var xSubject = "Hello World!";
-      var xMessage = "This is the message";
-      sendMail(xSMTP,xSender,xRecipients,xSubject,xMessage);
-    </sample>
-    <type>4</type>
-    <Arguments>
-      <argument id="1">var,var,var,var,var</argument>
     </Arguments>
   </jsFunction>
   <jsFunction name="replace">
@@ -520,7 +510,7 @@
 
   <jsFunction name="setEnvironmentVar">
     <help>Sets the System Variable to the given Value.</help>
-    <sample>// Set a Value as Hop/Pentaho System Variable
+    <sample>// Set a Value as Hop System Variable
       //
       // Usage:
       // setEnvironmentVar(var,var);
@@ -545,7 +535,7 @@
   </jsFunction>
   <jsFunction name="getEnvironmentVar">
     <help>Returns Value of the given System Variable.</help>
-    <sample>// Retrieves the Value of a given Hop/Pentaho System Variable
+    <sample>// Retrieves the Value of a given Hop System Variable
       //
       // Usage:
       // getEnvironmentVar(var);
@@ -908,7 +898,7 @@
 
   <jsFunction name="fireToDB">
     <help>Sends a SQL-Statement to a valid DB-Connection.</help>
-    <sample>// Fires a SQL-Statement to a valid Pentaho / Hop connection
+    <sample>// Fires a SQL-Statement to a valid Hop connection
       // and returns, if possible, an array.
       // This should only be used for SELECT statements.
       //
@@ -1044,7 +1034,7 @@
       //
       // Usage:
       // getProcessCount(var);
-      // 1: String - The Pentaho/Hop Type:
+      // 1: String - The Hop Type:
       // u - Lines Update
       // i - Lines Insert
       // w - Lines Write
@@ -1190,7 +1180,7 @@
       //
       // 2007-01-25
       //
-      var str1= "Hello Pentaho!";
+      var str1= "Hello Hop!";
       var str2= substr(str1, 6);
       var str3= substr(str1, 6, 7);
       Alert("Input : " + str1);
@@ -1205,7 +1195,7 @@
   </jsFunction>
   <jsFunction name="setVariable">
     <help>Sets the PDI Variable to the given value.</help>
-    <sample>// Set a Value as Hop/Pentaho variable
+    <sample>// Set a Value as Hop variable
       //
       // Usage:
       // setVariable(var,var,var);
@@ -1234,7 +1224,7 @@
 
   <jsFunction name="getVariable">
     <help>Returns Value of the given PDI variable or the default.</help>
-    <sample>// Retrieves the value of a given Hop/Pentaho Variable
+    <sample>// Retrieves the value of a given Hop Variable
       //
       // Usage:
       // getVariable(var, var);
@@ -1333,11 +1323,11 @@
       //
       // 2007-09-25
       //
-      var str1= "Hello Pentaho!";
-      var str2= indexOf(str1, "Pentaho");
-      var str3= indexOf(str1, "o", 7);
+      var str1= "Hello Hop!";
+      var str2= indexOf(str1, "Hop");
+      var str3= indexOf(str1, "o", 3);
       Alert("Input : " + str1);
-      Alert("Index of 'Pentaho' : " + str2);
+      Alert("Index of 'Hop' : " + str2);
       Alert("index of 'o', search from position 7 : " + str3);
     </sample>
     <type>0</type>
@@ -1720,18 +1710,18 @@
       <argument id="1">var</argument>
     </Arguments>
   </jsFunction>
-  <jsFunction name="protectXMLCDATA">
+  <jsFunction name="protectXmlCdata">
     <help>Protect XML with CDATA.</help>
     <sample>// Returns protected String
       //
       // Usage:
-      // protectXMLCDATA(var);
+      // protectXmlCdata(var);
       // 1: var - The Variable to protect.
       //
       // 2007-09-11
       //
       var str1 = "my home";
-      Alert(protectXMLCDATA(str1));
+      Alert(protectXmlCdata(str1));
     </sample>
     <type>0</type>
     <Arguments>
@@ -1756,17 +1746,17 @@
       <argument id="1">var</argument>
     </Arguments>
   </jsFunction>
-  <jsFunction name="escapeSQL">
+  <jsFunction name="escapeSql">
     <help>Escapes the characters in a String to be suitable to pass to an SQL query</help>
     <sample>// Returns escaped String
       //
       // Usage:
-      // "escapeSQL"(var);
+      // "escapeSql"(var);
       // 1: var - The Variable to escape.
       //
       // 2007-09-11
       //
-      var str1 = "SELECT * FROM CUSTOMER WHERE NAME='" + escapeSQL("McHale's Navy") + "'";
+      var str1 = "SELECT * FROM CUSTOMER WHERE NAME='" + escapeSql("McHale's Navy") + "'";
       //At present, this method only turns single-quotes into doubled single-quotes
       // ("McHale's Navy" => "McHale''s Navy"
       Alert(str1);

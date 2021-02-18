@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.waitforsql;
 
@@ -42,7 +37,7 @@ import org.apache.hop.workflow.action.ActionBase;
 import org.apache.hop.workflow.action.IAction;
 import org.apache.hop.workflow.action.validator.ActionValidatorUtils;
 import org.apache.hop.workflow.action.validator.AndValidator;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.resource.ResourceEntry;
 import org.apache.hop.resource.ResourceEntry.ResourceType;
 import org.apache.hop.resource.ResourceReference;
@@ -60,14 +55,14 @@ import java.util.List;
 
 @Action(
   id = "WAIT_FOR_SQL",
-  i18nPackageName = "org.apache.hop.workflow.actions.waitforsql",
-  name = "ActionWaitForSQL.Name",
-  description = "ActionWaitForSQL.Description",
+  name = "i18n::ActionWaitForSQL.Name",
+  description = "i18n::ActionWaitForSQL.Description",
   image = "WaitForSQL.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Utility"
+  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Utility",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/waitforsql.html"
 )
 public class ActionWaitForSql extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionWaitForSql.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionWaitForSql.class; // For Translator
 
   public boolean isClearResultList;
 
@@ -75,15 +70,15 @@ public class ActionWaitForSql extends ActionBase implements Cloneable, IAction {
 
   public boolean isUseVars;
 
-  public boolean iscustomSql;
+  public boolean isCustomSql;
 
   public String customSql;
 
   private DatabaseMeta connection;
 
-  public String tablename;
+  public String tableName;
 
-  public String schemaname;
+  public String schemaName;
 
   private String maximumTimeout; // maximum timeout in seconds
   private String checkCycleTime; // cycle time in seconds
@@ -121,12 +116,12 @@ public class ActionWaitForSql extends ActionBase implements Cloneable, IAction {
     isClearResultList = true;
     rowsCountValue = "0";
     successCondition = SUCCESS_CONDITION_ROWS_COUNT_GREATER;
-    iscustomSql = false;
+    isCustomSql = false;
     isUseVars = false;
     isAddRowsResult = false;
     customSql = null;
-    schemaname = null;
-    tablename = null;
+    schemaName = null;
+    tableName = null;
     connection = null;
     maximumTimeout = DEFAULT_MAXIMUM_TIMEOUT;
     checkCycleTime = DEFAULT_CHECK_CYCLE_TIME;
@@ -169,12 +164,12 @@ public class ActionWaitForSql extends ActionBase implements Cloneable, IAction {
     retval.append( super.getXml() );
     retval.append( "      " ).append(
       XmlHandler.addTagValue( "connection", connection == null ? null : connection.getName() ) );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "schemaname", schemaname ) );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "tablename", tablename ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "schemaname", schemaName ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "tablename", tableName ) );
     retval.append( "      " ).append(
       XmlHandler.addTagValue( "success_condition", getSuccessConditionCode( successCondition ) ) );
     retval.append( "      " ).append( XmlHandler.addTagValue( "rows_count_value", rowsCountValue ) );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "is_custom_sql", iscustomSql) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "is_custom_sql", isCustomSql ) );
     retval.append( "      " ).append( XmlHandler.addTagValue( "is_usevars", isUseVars ) );
     retval.append( "      " ).append( XmlHandler.addTagValue( "custom_sql", customSql) );
     retval.append( "      " ).append( XmlHandler.addTagValue( "add_rows_result", isAddRowsResult ) );
@@ -212,48 +207,21 @@ public class ActionWaitForSql extends ActionBase implements Cloneable, IAction {
     return successConditionsDesc[ i ];
   }
 
-  public boolean isSuccessOnTimeout() {
-    return successOnTimeout;
-  }
 
-  public void setSuccessOnTimeout( boolean successOnTimeout ) {
-    this.successOnTimeout = successOnTimeout;
-  }
-
-  public String getCheckCycleTime() {
-    return checkCycleTime;
-  }
-
-  public void setCheckCycleTime( String checkCycleTime ) {
-    this.checkCycleTime = checkCycleTime;
-  }
-
-  public String getMaximumTimeout() {
-    return maximumTimeout;
-  }
-
-  /**
-   * Set how long the action may test the connection for a success result
-   *
-   * @param maximumTimeout Number of seconds to wait for success
-   */
-  public void setMaximumTimeout( String maximumTimeout ) {
-    this.maximumTimeout = maximumTimeout;
-  }
 
   @Override
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
       String dbname = XmlHandler.getTagValue( entrynode, "connection" );
-      connection = DatabaseMeta.loadDatabase( metaStore, dbname );
-      schemaname = XmlHandler.getTagValue( entrynode, "schemaname" );
-      tablename = XmlHandler.getTagValue( entrynode, "tablename" );
+      connection = DatabaseMeta.loadDatabase( metadataProvider, dbname );
+      schemaName = XmlHandler.getTagValue( entrynode, "schemaname" );
+      tableName = XmlHandler.getTagValue( entrynode, "tablename" );
       successCondition =
         getSucessConditionByCode( Const.NVL( XmlHandler.getTagValue( entrynode, "success_condition" ), "" ) );
       rowsCountValue = Const.NVL( XmlHandler.getTagValue( entrynode, "rows_count_value" ), "0" );
-      iscustomSql = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "is_custom_sql" ) );
+      isCustomSql = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "is_custom_sql" ) );
       isUseVars = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "is_usevars" ) );
       customSql = XmlHandler.getTagValue( entrynode, "custom_sql" );
       isAddRowsResult = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "add_rows_result" ) );
@@ -289,7 +257,7 @@ public class ActionWaitForSql extends ActionBase implements Cloneable, IAction {
   }
 
   @Override
-  public boolean evaluates() {
+  public boolean isEvaluation() {
     return true;
   }
 
@@ -304,8 +272,7 @@ public class ActionWaitForSql extends ActionBase implements Cloneable, IAction {
     // connect and disconnect
     Database dbchecked = null;
     try {
-      dbchecked = new Database( this, connection );
-      dbchecked.shareVariablesWith( this );
+      dbchecked = new Database( this, this, connection );
       dbchecked.connect( null );
     } finally {
       if ( dbchecked != null ) {
@@ -320,15 +287,15 @@ public class ActionWaitForSql extends ActionBase implements Cloneable, IAction {
     result.setResult( false );
     result.setNrErrors( 1 );
     String realCustomSql = null;
-    String realTablename = environmentSubstitute( tablename );
-    String realSchemaname = environmentSubstitute( schemaname );
+    String realTablename = resolve( tableName );
+    String realSchemaname = resolve( schemaName );
 
     if ( connection == null ) {
       logError( BaseMessages.getString( PKG, "ActionWaitForSQL.NoDbConnection" ) );
       return result;
     }
 
-    if (iscustomSql) {
+    if ( isCustomSql ) {
       // clear result list rows
       if ( isClearResultList ) {
         result.getRows().clear();
@@ -336,7 +303,7 @@ public class ActionWaitForSql extends ActionBase implements Cloneable, IAction {
 
       realCustomSql = customSql;
       if ( isUseVars ) {
-        realCustomSql = environmentSubstitute( realCustomSql );
+        realCustomSql = resolve( realCustomSql );
       }
       if ( log.isDebug() ) {
         logDebug( BaseMessages.getString( PKG, "ActionWaitForSQL.Log.EnteredCustomSQL", realCustomSql ) );
@@ -362,15 +329,15 @@ public class ActionWaitForSql extends ActionBase implements Cloneable, IAction {
       // starttime (in seconds)
       long timeStart = System.currentTimeMillis() / 1000;
 
-      int nrRowsLimit = Const.toInt( environmentSubstitute( rowsCountValue ), 0 );
+      int nrRowsLimit = Const.toInt( resolve( rowsCountValue ), 0 );
       if ( log.isDetailed() ) {
         logDetailed( BaseMessages.getString( PKG, "ActionWaitForSQL.Log.nrRowsLimit", "" + nrRowsLimit ) );
       }
 
       long iMaximumTimeout =
-        Const.toInt( environmentSubstitute( maximumTimeout ), Const.toInt( DEFAULT_MAXIMUM_TIMEOUT, 0 ) );
+        Const.toInt( resolve( maximumTimeout ), Const.toInt( DEFAULT_MAXIMUM_TIMEOUT, 0 ) );
       long iCycleTime =
-        Const.toInt( environmentSubstitute( checkCycleTime ), Const.toInt( DEFAULT_CHECK_CYCLE_TIME, 0 ) );
+        Const.toInt( resolve( checkCycleTime ), Const.toInt( DEFAULT_CHECK_CYCLE_TIME, 0 ) );
 
       //
       // Sanity check on some values, and complain on insanity
@@ -461,16 +428,15 @@ public class ActionWaitForSql extends ActionBase implements Cloneable, IAction {
     boolean successOK = false;
     List<Object[]> ar = null;
     IRowMeta rowMeta = null;
-    Database db = new Database( this, connection );
-    db.shareVariablesWith( this );
+    Database db = new Database( this, this, connection );
     try {
       db.connect();
-      if (iscustomSql) {
+      if ( isCustomSql ) {
         countStatement = customSql;
       } else {
         if ( !Utils.isEmpty( realSchemaName ) ) {
           countStatement =
-            selectCount + db.getDatabaseMeta().getQuotedSchemaTableCombination( realSchemaName, realTableName );
+            selectCount + db.getDatabaseMeta().getQuotedSchemaTableCombination( this, realSchemaName, realTableName );
         } else {
           countStatement = selectCount + db.getDatabaseMeta().quoteField( realTableName );
         }
@@ -481,7 +447,7 @@ public class ActionWaitForSql extends ActionBase implements Cloneable, IAction {
           logDetailed( BaseMessages.getString( PKG, "ActionWaitForSQL.Log.RunSQLStatement", countStatement ) );
         }
 
-        if (iscustomSql) {
+        if ( isCustomSql ) {
           ar = db.getRows( countStatement, 0 );
           if ( ar != null ) {
             rowsCount = ar.size();
@@ -529,7 +495,7 @@ public class ActionWaitForSql extends ActionBase implements Cloneable, IAction {
       logError( BaseMessages.getString( PKG, "ActionWaitForSQL.Error.RunningEntry", dbe.getMessage() ) );
     } finally {
       if ( db != null ) {
-        if ( isAddRowsResult && iscustomSql && ar != null ) {
+        if ( isAddRowsResult && isCustomSql && ar != null ) {
           rowMeta = db.getQueryFields( countStatement, false );
         }
         db.disconnect();
@@ -538,8 +504,8 @@ public class ActionWaitForSql extends ActionBase implements Cloneable, IAction {
 
     if ( successOK ) {
       // ad rows to result
-      if ( isAddRowsResult && iscustomSql && ar != null ) {
-        List<RowMetaAndData> rows = new ArrayList<RowMetaAndData>();
+      if ( isAddRowsResult && isCustomSql && ar != null ) {
+        List<RowMetaAndData> rows = new ArrayList<>();
         for ( int i = 0; i < ar.size(); i++ ) {
           rows.add( new RowMetaAndData( rowMeta, ar.get( i ) ) );
         }
@@ -558,8 +524,8 @@ public class ActionWaitForSql extends ActionBase implements Cloneable, IAction {
   }
 
   @Override
-  public List<ResourceReference> getResourceDependencies( WorkflowMeta workflowMeta ) {
-    List<ResourceReference> references = super.getResourceDependencies( workflowMeta );
+  public List<ResourceReference> getResourceDependencies( IVariables variables, WorkflowMeta workflowMeta ) {
+    List<ResourceReference> references = super.getResourceDependencies( variables, workflowMeta );
     if ( connection != null ) {
       ResourceReference reference = new ResourceReference( this );
       reference.getEntries().add( new ResourceEntry( connection.getHostname(), ResourceType.SERVER ) );
@@ -571,9 +537,234 @@ public class ActionWaitForSql extends ActionBase implements Cloneable, IAction {
 
   @Override
   public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     ActionValidatorUtils.andValidator().validate( this, "WaitForSQL", remarks,
       AndValidator.putValidators( ActionValidatorUtils.notBlankValidator() ) );
   }
 
+  /**
+   * Gets isClearResultList
+   *
+   * @return value of isClearResultList
+   */
+  public boolean isClearResultList() {
+    return isClearResultList;
+  }
+
+  /**
+   * @param isClearResultList The isClearResultList to set
+   */
+  public void setClearResultList( boolean isClearResultList ) {
+    this.isClearResultList = isClearResultList;
+  }
+
+  /**
+   * Gets isAddRowsResult
+   *
+   * @return value of isAddRowsResult
+   */
+  public boolean isAddRowsResult() {
+    return isAddRowsResult;
+  }
+
+  /**
+   * @param isAddRowsResult The isAddRowsResult to set
+   */
+  public void setAddRowsResult( boolean isAddRowsResult ) {
+    this.isAddRowsResult = isAddRowsResult;
+  }
+
+  /**
+   * Gets isUseVars
+   *
+   * @return value of isUseVars
+   */
+  public boolean isUseVars() {
+    return isUseVars;
+  }
+
+  /**
+   * @param isUseVars The isUseVars to set
+   */
+  public void setUseVars( boolean isUseVars ) {
+    this.isUseVars = isUseVars;
+  }
+
+  /**
+   * Gets isCustomSql
+   *
+   * @return value of isCustomSql
+   */
+  public boolean isCustomSql() {
+    return isCustomSql;
+  }
+
+  /**
+   * @param isCustomSql The isCustomSql to set
+   */
+  public void setCustomSql( boolean isCustomSql ) {
+    this.isCustomSql = isCustomSql;
+  }
+
+  /**
+   * Gets customSql
+   *
+   * @return value of customSql
+   */
+  public String getCustomSql() {
+    return customSql;
+  }
+
+  /**
+   * @param customSql The customSql to set
+   */
+  public void setCustomSql( String customSql ) {
+    this.customSql = customSql;
+  }
+
+  /**
+   * Gets connection
+   *
+   * @return value of connection
+   */
+  public DatabaseMeta getConnection() {
+    return connection;
+  }
+
+  /**
+   * @param connection The connection to set
+   */
+  public void setConnection( DatabaseMeta connection ) {
+    this.connection = connection;
+  }
+
+  /**
+   * Gets tableName
+   *
+   * @return value of tableName
+   */
+  public String getTableName() {
+    return tableName;
+  }
+
+  /**
+   * @param tableName The tableName to set
+   */
+  public void setTableName( String tableName ) {
+    this.tableName = tableName;
+  }
+
+  /**
+   * Gets schemaName
+   *
+   * @return value of schemaName
+   */
+  public String getSchemaName() {
+    return schemaName;
+  }
+
+  /**
+   * @param schemaName The schemaName to set
+   */
+  public void setSchemaName( String schemaName ) {
+    this.schemaName = schemaName;
+  }
+
+  /**
+   * Gets maximumTimeout
+   *
+   * @return value of maximumTimeout
+   */
+  public String getMaximumTimeout() {
+    return maximumTimeout;
+  }
+
+  /**
+   * @param maximumTimeout The maximumTimeout to set
+   */
+  public void setMaximumTimeout( String maximumTimeout ) {
+    this.maximumTimeout = maximumTimeout;
+  }
+
+  /**
+   * Gets checkCycleTime
+   *
+   * @return value of checkCycleTime
+   */
+  public String getCheckCycleTime() {
+    return checkCycleTime;
+  }
+
+  /**
+   * @param checkCycleTime The checkCycleTime to set
+   */
+  public void setCheckCycleTime( String checkCycleTime ) {
+    this.checkCycleTime = checkCycleTime;
+  }
+
+  /**
+   * Gets successOnTimeout
+   *
+   * @return value of successOnTimeout
+   */
+  public boolean isSuccessOnTimeout() {
+    return successOnTimeout;
+  }
+
+  /**
+   * @param successOnTimeout The successOnTimeout to set
+   */
+  public void setSuccessOnTimeout( boolean successOnTimeout ) {
+    this.successOnTimeout = successOnTimeout;
+  }
+
+  /**
+   * Gets selectCount
+   *
+   * @return value of selectCount
+   */
+  public static String getSelectCount() {
+    return selectCount;
+  }
+
+  /**
+   * Gets successConditionsDesc
+   *
+   * @return value of successConditionsDesc
+   */
+  public static String[] getSuccessConditionsDesc() {
+    return successConditionsDesc;
+  }
+
+  /**
+   * Gets successConditionsCode
+   *
+   * @return value of successConditionsCode
+   */
+  public static String[] getSuccessConditionsCode() {
+    return successConditionsCode;
+  }
+
+  /**
+   * Gets rowsCountValue
+   *
+   * @return value of rowsCountValue
+   */
+  public String getRowsCountValue() {
+    return rowsCountValue;
+  }
+
+  /**
+   * @param rowsCountValue The rowsCountValue to set
+   */
+  public void setRowsCountValue( String rowsCountValue ) {
+    this.rowsCountValue = rowsCountValue;
+  }
+
+  /**
+   * @param successCondition The successCondition to set
+   */
+  public void setSuccessCondition( int successCondition ) {
+    this.successCondition = successCondition;
+  }
 }

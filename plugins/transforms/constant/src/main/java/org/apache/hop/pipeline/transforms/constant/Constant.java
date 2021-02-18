@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.constant;
 
@@ -53,7 +48,7 @@ import java.util.List;
  * @since 4-apr-2003
  */
 public class Constant extends BaseTransform<ConstantMeta, ConstantData> implements ITransform<ConstantMeta, ConstantData> {
-  private static Class<?> PKG = ConstantMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ConstantMeta.class; // For Translator
 
   public Constant( TransformMeta transformMeta, ConstantMeta meta, ConstantData data, int copyNr, PipelineMeta pipelineMeta,
                    Pipeline pipeline ) {
@@ -228,7 +223,7 @@ public class Constant extends BaseTransform<ConstantMeta, ConstantData> implemen
 
       data.firstRow = false;
       data.outputMeta = getInputRowMeta().clone();
-      meta.getFields( data.outputMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputMeta, getTransformName(), null, null, this, metadataProvider );
     }
 
     // Add the constant data to the end of the row.
@@ -257,7 +252,7 @@ public class Constant extends BaseTransform<ConstantMeta, ConstantData> implemen
 
     if ( super.init() ) {
       // Create a row (constants) with all the values in it...
-      List<ICheckResult> remarks = new ArrayList<ICheckResult>(); // stores the errors...
+      List<ICheckResult> remarks = new ArrayList<>(); // stores the errors...
       data.constants = buildRow( meta, data, remarks );
       if ( remarks.isEmpty() ) {
         return true;

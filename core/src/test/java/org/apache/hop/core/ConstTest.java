@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core;
 
@@ -607,6 +602,19 @@ public class ConstTest {
     assertEquals( result[ 0 ], "Hello\\, world" );
     assertEquals( result[ 1 ], "Hello\\, planet" );
     assertEquals( result[ 2 ], "Hello\\, 3rd rock" );
+  }
+
+  @Test
+  public void testSplitStringWithEscapeString() {
+    String string = "aaa:123.4:c:ddd-dd:eeee\\\\:\\\\:eee:fff";
+    String chunks[] = new String[] { "aaa", "123.4", "c", "ddd-dd", "eeee::eee", "fff", };
+    String parts[] = Const.splitString( string, ":", null, false, "\\\\" );
+    assertSplit( chunks, parts );
+
+    string = "cpe:2.3:a:lemonldap-ng:lemonldap\\\\:\\\\::2.0.3:*:*:*:*:*:*:*";
+    chunks = new String[] { "cpe", "2.3", "a", "lemonldap-ng", "lemonldap::", "2.0.3", "*", "*", "*", "*", "*", "*", "*" };
+    parts = Const.splitString( string, ":", null, false, "\\\\" );
+    assertSplit( chunks, parts );
   }
 
   /**
@@ -1855,7 +1863,7 @@ public class ConstTest {
     final String key = "os.name";
     final String os = System.getProperty( key );
     System.setProperty( key, "BeOS" );
-    assertEquals( "BeOS", Const.getOS() );
+    assertEquals( "BeOS", Const.getSystemOs() );
     System.setProperty( key, os );
   }
 
@@ -1903,12 +1911,7 @@ public class ConstTest {
 
   @Test
   public void testGetHostnameReal() {
-    doWithModifiedSystemProperty( "HOP_SYSTEM_HOSTNAME", "MyHost", new Runnable() {
-      @Override
-      public void run() {
-        assertEquals( "MyHost", Const.getHostnameReal() );
-      }
-    } );
+    doWithModifiedSystemProperty( "HOP_SYSTEM_HOSTNAME", "MyHost", () -> assertEquals( "MyHost", Const.getHostnameReal() ) );
   }
 
   @Test
@@ -2024,11 +2027,6 @@ public class ConstTest {
     assertEquals( dateFormats.size() + numberFormats.size(), conversionFormats.size() );
     assertTrue( conversionFormats.containsAll( dateFormats ) );
     assertTrue( conversionFormats.containsAll( numberFormats ) );
-  }
-
-  @Test
-  public void testNanoTime() {
-    assertTrue( String.valueOf( Const.nanoTime() ).endsWith( "000" ) );
   }
 
   @Test
@@ -2171,7 +2169,7 @@ public class ConstTest {
   }
 
   @Test
-  public void testProtectXMLCDATA() {
+  public void testProtectXmlCdata() {
     assertEquals( null, Const.protectXmlCdata( null ) );
     assertEquals( "", Const.protectXmlCdata( "" ) );
     assertEquals( "<![CDATA[foo]]>", Const.protectXmlCdata( "foo" ) );

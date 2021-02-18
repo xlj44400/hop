@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.www;
 
@@ -43,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PipelineMap {
   private final Map<HopServerObjectEntry, PipelineData> pipelineMap;
 
-  private SlaveServerConfig slaveServerConfig;
+  private HopServerConfig hopServerConfig;
 
   public PipelineMap() {
     pipelineMap = new ConcurrentHashMap<>();
@@ -65,7 +60,7 @@ public class PipelineMap {
 
   public void registerPipeline( Pipeline pipeline, PipelineConfiguration pipelineConfiguration ) {
     pipeline.setContainerId( UUID.randomUUID().toString() );
-    HopServerObjectEntry entry = new HopServerObjectEntry( pipeline.getPipelineMeta().getName(), pipeline.getContainerObjectId() );
+    HopServerObjectEntry entry = new HopServerObjectEntry( pipeline.getPipelineMeta().getName(), pipeline.getContainerId() );
     pipelineMap.put( entry, new PipelineData( pipeline, pipelineConfiguration ) );
   }
 
@@ -89,7 +84,11 @@ public class PipelineMap {
    * @return the pipeline with the specified entry
    */
   public IPipelineEngine<PipelineMeta> getPipeline( HopServerObjectEntry entry ) {
-    return pipelineMap.get( entry ).getPipeline();
+    PipelineData pipelineData = pipelineMap.get( entry );
+    if (pipelineData!=null) {
+      return pipelineData.getPipeline();
+    }
+    return null;
   }
 
   /**
@@ -135,41 +134,41 @@ public class PipelineMap {
   }
 
   /**
-   * @return the slaveServerConfig
+   * @return the hopServerConfig
    */
-  public SlaveServerConfig getSlaveServerConfig() {
-    return slaveServerConfig;
+  public HopServerConfig getHopServerConfig() {
+    return hopServerConfig;
   }
 
   /**
-   * @param slaveServerConfig the slaveServerConfig to set
+   * @param hopServerConfig the hopServerConfig to set
    */
-  public void setSlaveServerConfig( SlaveServerConfig slaveServerConfig ) {
-    this.slaveServerConfig = slaveServerConfig;
+  public void setHopServerConfig( HopServerConfig hopServerConfig ) {
+    this.hopServerConfig = hopServerConfig;
   }
 
-  public SlaveSequence getSlaveSequence( String name ) {
-    return SlaveSequence.findSlaveSequence( name, slaveServerConfig.getSlaveSequences() );
+  public HopServerSequence getServerSequence( String name ) {
+    return HopServerSequence.findServerSequence( name, hopServerConfig.getHopServerSequences() );
   }
 
-  public boolean isAutomaticSlaveSequenceCreationAllowed() {
-    return slaveServerConfig.isAutomaticCreationAllowed();
+  public boolean isAutomaticServerSequenceCreationAllowed() {
+    return hopServerConfig.isAutomaticCreationAllowed();
   }
 
-  public SlaveSequence createSlaveSequence( String name ) throws HopException {
-    SlaveSequence auto = slaveServerConfig.getAutoSequence();
+  public HopServerSequence createServerSequence( String name ) throws HopException {
+    HopServerSequence auto = hopServerConfig.getAutoSequence();
     if ( auto == null ) {
-      throw new HopException( "No auto-sequence information found in the slave server config.  "
-        + "Slave sequence could not be created automatically." );
+      throw new HopException( "No auto-sequence information found in the hop server config.  "
+        + "Server sequence could not be created automatically." );
     }
 
-    SlaveSequence slaveSequence =
-      new SlaveSequence( name, auto.getStartValue(), auto.getDatabaseMeta(), auto.getSchemaName(), auto
+    HopServerSequence hopServerSequence =
+      new HopServerSequence( name, auto.getStartValue(), auto.getDatabaseMeta(), auto.getSchemaName(), auto
         .getTableName(), auto.getSequenceNameField(), auto.getValueField() );
 
-    slaveServerConfig.getSlaveSequences().add( slaveSequence );
+    hopServerConfig.getHopServerSequences().add( hopServerSequence );
 
-    return slaveSequence;
+    return hopServerSequence;
   }
 
   private static class PipelineData {

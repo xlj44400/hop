@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.excelinput;
 
@@ -39,103 +34,31 @@ public class ExcelInputMetaInjectionTest extends BaseMetadataInjectionTest<Excel
 
   @Test
   public void test() throws Exception {
-    check( "NAME", new IStringGetter() {
-      public String get() {
-        return meta.getField()[ 0 ].getName();
-      }
-    } );
-    check( "LENGTH", new IIntGetter() {
-      public int get() {
-        return meta.getField()[ 0 ].getLength();
-      }
-    } );
-    check( "PRECISION", new IIntGetter() {
-      public int get() {
-        return meta.getField()[ 0 ].getPrecision();
-      }
-    } );
+    check( "NAME", () -> meta.getField()[ 0 ].getName() );
+    check( "LENGTH", () -> meta.getField()[ 0 ].getLength() );
+    check( "PRECISION", () -> meta.getField()[ 0 ].getPrecision() );
     int[] trimInts = new int[ ValueMetaBase.trimTypeCode.length ];
     for ( int i = 0; i < trimInts.length; i++ ) {
       trimInts[ i ] = i;
     }
-    checkStringToInt( "TRIM_TYPE", new IIntGetter() {
-      public int get() {
-        return meta.getField()[ 0 ].getTrimType();
-      }
-    }, ValueMetaBase.trimTypeCode, trimInts );
-    check( "FORMAT", new IStringGetter() {
-      public String get() {
-        return meta.getField()[ 0 ].getFormat();
-      }
-    } );
-    check( "CURRENCY", new IStringGetter() {
-      public String get() {
-        return meta.getField()[ 0 ].getCurrencySymbol();
-      }
-    } );
-    check( "DECIMAL", new IStringGetter() {
-      public String get() {
-        return meta.getField()[ 0 ].getDecimalSymbol();
-      }
-    } );
-    check( "GROUP", new IStringGetter() {
-      public String get() {
-        return meta.getField()[ 0 ].getGroupSymbol();
-      }
-    } );
-    check( "REPEAT", new IBooleanGetter() {
-      public boolean get() {
-        return meta.getField()[ 0 ].isRepeated();
-      }
-    } );
+    checkStringToInt( "TRIM_TYPE", () -> meta.getField()[ 0 ].getTrimType(), ValueMetaBase.trimTypeCode, trimInts );
+    check( "FORMAT", () -> meta.getField()[ 0 ].getFormat() );
+    check( "CURRENCY", () -> meta.getField()[ 0 ].getCurrencySymbol() );
+    check( "DECIMAL", () -> meta.getField()[ 0 ].getDecimalSymbol() );
+    check( "GROUP", () -> meta.getField()[ 0 ].getGroupSymbol() );
+    check( "REPEAT", () -> meta.getField()[ 0 ].isRepeated() );
 
     // TODO check field type plugins
     skipPropertyTest( "TYPE" );
 
-    check( "SHEET_NAME", new IStringGetter() {
-      public String get() {
-        return meta.getSheetName()[ 0 ];
-      }
-    } );
-    check( "SHEET_START_ROW", new IIntGetter() {
-      public int get() {
-        return meta.getStartRow()[ 0 ];
-      }
-    } );
-    check( "SHEET_START_COL", new IIntGetter() {
-      public int get() {
-        return meta.getStartColumn()[ 0 ];
-      }
-    } );
-    check( "FILENAME", new IStringGetter() {
-      public String get() {
-        return meta.getFileName()[ 0 ];
-      }
-    } );
-    check( "FILEMASK", new IStringGetter() {
-      public String get() {
-        return meta.getFileMask()[ 0 ];
-      }
-    } );
-    check( "EXCLUDE_FILEMASK", new IStringGetter() {
-      public String get() {
-        return meta.getExludeFileMask()[ 0 ];
-      }
-    } );
-    check( "FILE_REQUIRED", new IStringGetter() {
-      public String get() {
-        return meta.getFileRequired()[ 0 ];
-      }
-    } );
-    check( "INCLUDE_SUBFOLDERS", new IStringGetter() {
-      public String get() {
-        return meta.getIncludeSubFolders()[ 0 ];
-      }
-    } );
-    check( "SPREADSHEET_TYPE", new IEnumGetter() {
-      public SpreadSheetType get() {
-        return meta.getSpreadSheetType();
-      }
-    }, SpreadSheetType.class );
+    check( "SHEET_NAME", () -> meta.getSheetName()[ 0 ] );
+    check( "SHEET_START_ROW", () -> meta.getStartRow()[ 0 ] );
+    check( "SHEET_START_COL", () -> meta.getStartColumn()[ 0 ] );
+    check( "FILENAME", () -> meta.getFileName()[ 0 ] );
+    check( "FILEMASK", () -> meta.getFileMask()[ 0 ] );
+    check( "EXCLUDE_FILEMASK", () -> meta.getExcludeFileMask()[ 0 ] );
+    check( "FILE_REQUIRED", () -> meta.getFileRequired()[ 0 ] );
+    check( "INCLUDE_SUBFOLDERS", () -> meta.getIncludeSubFolders()[ 0 ] );
+    check( "SPREADSHEET_TYPE", () -> meta.getSpreadSheetType(), SpreadSheetType.class );
   }
 }

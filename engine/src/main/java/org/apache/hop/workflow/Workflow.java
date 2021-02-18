@@ -1,25 +1,20 @@
 //CHECKSTYLE:FileLength:OFF
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow;
 
@@ -31,8 +26,6 @@ import org.apache.hop.core.IExecutor;
 import org.apache.hop.core.IExtensionData;
 import org.apache.hop.core.Result;
 import org.apache.hop.core.RowMetaAndData;
-import org.apache.hop.core.database.Database;
-import org.apache.hop.core.database.DatabaseMeta;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.exception.HopWorkflowException;
 import org.apache.hop.core.extension.ExtensionPointHandler;
@@ -49,8 +42,9 @@ import org.apache.hop.core.logging.LoggingBuffer;
 import org.apache.hop.core.logging.LoggingObjectType;
 import org.apache.hop.core.logging.Metrics;
 import org.apache.hop.core.parameters.DuplicateParamException;
-import org.apache.hop.core.parameters.INamedParams;
-import org.apache.hop.core.parameters.NamedParamsDefault;
+import org.apache.hop.core.parameters.INamedParameterDefinitions;
+import org.apache.hop.core.parameters.INamedParameters;
+import org.apache.hop.core.parameters.NamedParameters;
 import org.apache.hop.core.parameters.UnknownParamException;
 import org.apache.hop.core.util.EnvUtil;
 import org.apache.hop.core.util.Utils;
@@ -58,15 +52,15 @@ import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.variables.Variables;
 import org.apache.hop.core.vfs.HopVfs;
 import org.apache.hop.i18n.BaseMessages;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.pipeline.IExecutionFinishedListener;
 import org.apache.hop.pipeline.IExecutionStartedListener;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.engine.IPipelineEngine;
-import org.apache.hop.workflow.action.ActionCopy;
+import org.apache.hop.workflow.action.ActionMeta;
 import org.apache.hop.workflow.action.IAction;
 import org.apache.hop.workflow.actions.pipeline.ActionPipeline;
-import org.apache.hop.workflow.actions.special.ActionSpecial;
+import org.apache.hop.workflow.actions.start.ActionStart;
 import org.apache.hop.workflow.actions.workflow.ActionWorkflow;
 import org.apache.hop.workflow.config.WorkflowRunConfiguration;
 import org.apache.hop.workflow.engine.IWorkflowEngine;
@@ -93,9 +87,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Matt Casters
  * @since 07-apr-2003
  */
-public abstract class Workflow extends Variables implements IVariables, INamedParams, IHasLogChannel, ILoggingObject,
+public abstract class Workflow extends Variables implements IVariables, INamedParameters, IHasLogChannel, ILoggingObject,
   IExecutor, IExtensionData, IWorkflowEngine<WorkflowMeta> {
-  protected static Class<?> PKG = Workflow.class; // for i18n purposes, needed by Translator!!
+  protected static Class<?> PKG = Workflow.class; // For Translator
 
   public static final String CONFIGURATION_IN_EXPORT_FILENAME = "__workflow_execution_configuration__.xml";
 
@@ -135,7 +129,7 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
   /**
    * A flat list of results in THIS workflow, in the order of execution of actions
    */
-  protected final LinkedList<ActionResult> actionResults = new LinkedList<ActionResult>();
+  protected final LinkedList<ActionResult> actionResults = new LinkedList<>();
 
   protected Date executionStartDate;
 
@@ -159,18 +153,18 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
 
   protected List<IActionListener> actionListeners;
 
-  protected Map<ActionCopy, ActionPipeline> activeActionPipeline;
+  protected Map<ActionMeta, ActionPipeline> activeActionPipeline;
 
-  protected Map<ActionCopy, ActionWorkflow> activeActionWorkflows;
+  protected Map<ActionMeta, ActionWorkflow> activeActionWorkflows;
 
   /**
    * Parameters of the workflow.
    */
-  protected INamedParams namedParams = new NamedParamsDefault();
+  protected INamedParameters namedParams = new NamedParameters();
 
-  protected int maxJobEntriesLogged;
+  protected int maxActionsLogged;
 
-  protected ActionCopy startActionCopy;
+  protected ActionMeta startActionMeta;
   protected Result startActionResult;
 
   protected String executingServer;
@@ -184,7 +178,9 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
    */
   protected AtomicInteger status;
 
-  protected IMetaStore metaStore;
+  protected IHopMetadataProvider metadataProvider;
+
+  protected boolean initializingVariablesOnStart;
 
   /**
    * <p>
@@ -213,18 +209,20 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
     activeActionPipeline = new ConcurrentHashMap<>();
     activeActionWorkflows = new ConcurrentHashMap<>();
 
-    extensionDataMap = new HashMap<String, Object>();
+    extensionDataMap = new HashMap<>();
 
     workflowTracker = new WorkflowTracker( workflowMeta );
     synchronized ( actionResults ) {
       actionResults.clear();
     }
     errors = new AtomicInteger( 0 );
-    maxJobEntriesLogged = Const.toInt( EnvUtil.getSystemProperty( Const.HOP_MAX_ACTIONS_LOGGED ), 1000 );
+    maxActionsLogged = Const.toInt( EnvUtil.getSystemProperty( Const.HOP_MAX_ACTIONS_LOGGED ), 1000 );
 
     result = null;
-    startActionCopy = null;
+    startActionMeta = null;
     startActionResult = null;
+
+    initializingVariablesOnStart = true;
   }
 
   public Workflow( WorkflowMeta workflowMeta ) {
@@ -234,7 +232,7 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
   public Workflow( WorkflowMeta workflowMeta, ILoggingObject parentLogging ) {
     super();
     this.workflowMeta = workflowMeta;
-    this.containerObjectId = workflowMeta.getContainerObjectId();
+    this.containerObjectId = workflowMeta.getContainerId();
     this.parentLoggingObject = parentLogging;
 
     init();
@@ -252,8 +250,8 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
   public Workflow() {
     super();
     init();
-    this.log = new LogChannel( this );
-    this.logLevel = log.getLogLevel();
+    // Don't spam the logging backend for nothing. Don't create this.log here.
+    this.logLevel = LogLevel.BASIC;
   }
 
   /**
@@ -286,13 +284,15 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
       setFinished( false );
       setInitialized( true );
 
-      // Create a new variable name space as we want workflows to have their own set of variables.
-      // initialize from parentWorkflow or null
-      //
-      initializeVariablesFrom( parentWorkflow );
-      setInternalHopVariables();
-      copyParametersFrom( workflowMeta );
-      activateParameters();
+      if (initializingVariablesOnStart) {
+        // Create a new variable name variables as we want workflows to have their own set of variables.
+        // initialize from parentWorkflow or null
+        //
+        initializeFrom(parentWorkflow);
+        setInternalHopVariables();
+        copyParametersFromDefinitions(workflowMeta);
+        activateParameters(this);
+      }
 
       // Run the workflow
       //
@@ -318,7 +318,7 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
       setStopped( false );
     } finally {
       try {
-        ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.WorkflowFinish.id, this );
+        ExtensionPointHandler.callExtensionPoint( log, this, HopExtensionPoint.WorkflowFinish.id, this );
 
         executionEndDate = new Date();
 
@@ -342,7 +342,7 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
   private void emergencyWriteJobTracker( Result res ) {
     ActionResult jerFinalResult =
       new ActionResult( res, this.getLogChannelId(), BaseMessages.getString( PKG, "Workflow.Comment.WorkflowFinished" ), null,
-        null, 0, null );
+        null, null );
     WorkflowTracker finalTrack = new WorkflowTracker( this.getWorkflowMeta(), jerFinalResult );
     // workflowTracker is up to date too.
     this.workflowTracker.addWorkflowTracker( finalTrack );
@@ -357,25 +357,25 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
    */
   private Result executeFromStart() throws HopException {
     try {
-      log.snap( Metrics.METRIC_JOB_START );
+      log.snap( Metrics.METRIC_WORKFLOW_START );
 
       setFinished( false );
       setStopped( false );
       HopEnvironment.setExecutionInformation( this );
 
-      log.logMinimal( BaseMessages.getString( PKG, "Workflow.Comment.WorkflowStarted" ) );
+      log.logBasic( BaseMessages.getString( PKG, "Workflow.Comment.WorkflowStarted" ) );
 
-      ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.WorkflowStart.id, this );
+      ExtensionPointHandler.callExtensionPoint( log, this, HopExtensionPoint.WorkflowStart.id, this );
 
       // Start the tracking...
       ActionResult jerStart =
         new ActionResult( null, null, BaseMessages.getString( PKG, "Workflow.Comment.WorkflowStarted" ), BaseMessages
-          .getString( PKG, "Workflow.Reason.Started" ), null, 0, null );
+          .getString( PKG, "Workflow.Reason.Started" ), null, null );
       workflowTracker.addWorkflowTracker( new WorkflowTracker( workflowMeta, jerStart ) );
 
       setActive( true );
       // Where do we start?
-      ActionCopy startpoint;
+      ActionMeta startpoint;
 
       // synchronize this to a parent workflow if needed.
       //
@@ -390,10 +390,10 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
 
       Result res = null;
 
-      if ( startActionCopy == null ) {
-        startpoint = workflowMeta.findAction( WorkflowMeta.STRING_SPECIAL_START, 0 );
+      if ( startActionMeta == null ) {
+        startpoint = workflowMeta.findStart();
       } else {
-        startpoint = startActionCopy;
+        startpoint = startActionMeta;
         res = startActionResult;
       }
       if ( startpoint == null ) {
@@ -408,23 +408,23 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
         // long iteration = 0;
 
         boolean isFirst = true;
-        ActionSpecial jes = (ActionSpecial) startpoint.getAction();
+        ActionStart jes = (ActionStart) startpoint.getAction();
         while ( ( jes.isRepeat() || isFirst ) && !isStopped() ) {
           isFirst = false;
           res = executeFromStart( 0, null, startpoint, null, BaseMessages.getString( PKG, "Workflow.Reason.Started" ) );
         }
         jerEnd =
           new ActionResult( res, jes.getLogChannelId(), BaseMessages.getString( PKG, "Workflow.Comment.WorkflowFinished" ),
-            BaseMessages.getString( PKG, "Workflow.Reason.Finished" ), null, 0, null );
+            BaseMessages.getString( PKG, "Workflow.Reason.Finished" ), null, null );
       } else {
         res = executeFromStart( 0, res, startpoint, null, BaseMessages.getString( PKG, "Workflow.Reason.Started" ) );
         jerEnd =
           new ActionResult( res, startpoint.getAction().getLogChannel().getLogChannelId(), BaseMessages.getString(
-            PKG, "Workflow.Comment.WorkflowFinished" ), BaseMessages.getString( PKG, "Workflow.Reason.Finished" ), null, 0, null );
+            PKG, "Workflow.Comment.WorkflowFinished" ), BaseMessages.getString( PKG, "Workflow.Reason.Finished" ), null, null );
       }
       // Save this result...
       workflowTracker.addWorkflowTracker( new WorkflowTracker( workflowMeta, jerEnd ) );
-      log.logMinimal( BaseMessages.getString( PKG, "Workflow.Comment.WorkflowFinished" ) );
+      log.logBasic( BaseMessages.getString( PKG, "Workflow.Comment.WorkflowFinished" ) );
 
       setActive( false );
       if ( !isStopped() ) {
@@ -432,7 +432,7 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
       }
       return res;
     } finally {
-      log.snap( Metrics.METRIC_JOB_STOP );
+      log.snap( Metrics.METRIC_WORKFLOW_STOP );
     }
   }
 
@@ -453,19 +453,19 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
     HopEnvironment.setExecutionInformation( this );
 
     // Where do we start?
-    ActionCopy startpoint;
+    ActionMeta startpoint;
 
     // Perhaps there is already a list of input rows available?
     if ( getSourceRows() != null ) {
       result.setRows( getSourceRows() );
     }
 
-    startpoint = workflowMeta.findAction( WorkflowMeta.STRING_SPECIAL_START, 0 );
+    startpoint = workflowMeta.findStart();
     if ( startpoint == null ) {
       throw new HopWorkflowException( BaseMessages.getString( PKG, "Workflow.Log.CounldNotFindStartingPoint" ) );
     }
 
-    ActionSpecial jes = (ActionSpecial) startpoint.getAction();
+    ActionStart jes = (ActionStart) startpoint.getAction();
     Result res;
     do {
       res = executeFromStart( nr, result, startpoint, null, BaseMessages.getString( PKG, "Workflow.Reason.StartOfAction" ) );
@@ -507,14 +507,14 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
    * Uses a back-tracking algorithm.<br>
    *
    * @param nr
-   * @param prev_result
-   * @param actionCopy
+   * @param previousResult
+   * @param actionMeta
    * @param previous
    * @param reason
    * @return
    * @throws HopException
    */
-  private Result executeFromStart( final int nr, Result prev_result, final ActionCopy actionCopy, ActionCopy previous,
+  private Result executeFromStart( final int nr, Result previousResult, final ActionMeta actionMeta, ActionMeta previous,
                                    String reason ) throws HopException {
     Result res = null;
 
@@ -528,80 +528,75 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
     //
     final Result newResult;
     Result prevResult = null;
-    if ( prev_result != null ) {
-      prevResult = prev_result.clone();
+    if ( previousResult != null ) {
+      prevResult = previousResult.clone();
     } else {
       prevResult = new Result();
     }
 
-    WorkflowExecutionExtension extension = new WorkflowExecutionExtension( this, prevResult, actionCopy, true );
-    ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.WorkflowBeforeActionExecution.id, extension );
+    WorkflowExecutionExtension extension = new WorkflowExecutionExtension( this, prevResult, actionMeta, true );
+    ExtensionPointHandler.callExtensionPoint( log, this, HopExtensionPoint.WorkflowBeforeActionExecution.id, extension );
 
     if ( extension.result != null ) {
       prevResult = extension.result;
     }
 
-    if ( !extension.executeEntry ) {
+    if ( !extension.executeAction ) {
       newResult = prevResult;
     } else {
       if ( log.isDetailed() ) {
-        log.logDetailed( "exec(" + nr + ", " + ( prev_result != null ? prev_result.getNrErrors() : 0 ) + ", "
-          + ( actionCopy != null ? actionCopy.toString() : "null" ) + ")" );
+        log.logDetailed( "exec(" + nr + ", " + ( prevResult != null ? prevResult.getNrErrors() : 0 ) + ", "
+          + ( actionMeta != null ? actionMeta.toString() : "null" ) + ")" );
       }
 
       // Which entry is next?
-      IAction action = actionCopy.getAction();
+      IAction action = actionMeta.getAction();
       action.getLogChannel().setLogLevel( logLevel );
 
       // Track the fact that we are going to launch the next action...
       ActionResult jerBefore = new ActionResult( null, null, BaseMessages.getString( PKG, "Workflow.Comment.WorkflowStarted" ), reason,
-        actionCopy.getName(), actionCopy.getNr(), environmentSubstitute( actionCopy.getAction().getFilename() ) );
+        actionMeta.getName(), resolve( actionMeta.getAction().getFilename() ) );
       workflowTracker.addWorkflowTracker( new WorkflowTracker( workflowMeta, jerBefore ) );
 
       ClassLoader cl = Thread.currentThread().getContextClassLoader();
       Thread.currentThread().setContextClassLoader( action.getClass().getClassLoader() );
       // Execute this entry...
       IAction cloneJei = (IAction) action.clone();
-      ( (IVariables) cloneJei ).copyVariablesFrom( this );
-      cloneJei.setMetaStore( metaStore );
+      cloneJei.copyFrom( this );
+      cloneJei.getLogChannel().setLogLevel( getLogLevel() );
+      cloneJei.setMetadataProvider( metadataProvider );
       cloneJei.setParentWorkflow( this );
       cloneJei.setParentWorkflowMeta( this.getWorkflowMeta() );
       final long start = System.currentTimeMillis();
 
       cloneJei.getLogChannel().logDetailed( "Starting action" );
-      for ( IActionListener jobEntryListener : actionListeners ) {
-        jobEntryListener.beforeExecution( this, actionCopy, cloneJei );
+      for ( IActionListener actionListener : actionListeners ) {
+        actionListener.beforeExecution( this, actionMeta, cloneJei );
       }
       if ( interactive ) {
-        if ( actionCopy.isPipeline() ) {
-          getActiveActionPipeline().put( actionCopy, (ActionPipeline) cloneJei );
+        if ( actionMeta.isPipeline() ) {
+          getActiveActionPipeline().put( actionMeta, (ActionPipeline) cloneJei );
         }
-        if ( actionCopy.isJob() ) {
-          getActiveActionWorkflows().put( actionCopy, (ActionWorkflow) cloneJei );
+        if ( actionMeta.isWorkflow() ) {
+          getActiveActionWorkflows().put( actionMeta, (ActionWorkflow) cloneJei );
         }
       }
-      log.snap( Metrics.METRIC_JOBENTRY_START, cloneJei.toString() );
+      log.snap( Metrics.METRIC_ACTION_START, cloneJei.toString() );
       newResult = cloneJei.execute( prevResult, nr );
-      log.snap( Metrics.METRIC_JOBENTRY_STOP, cloneJei.toString() );
+      log.snap( Metrics.METRIC_ACTION_STOP, cloneJei.toString() );
 
       final long end = System.currentTimeMillis();
       if ( interactive ) {
-        if ( actionCopy.isPipeline() ) {
-          getActiveActionPipeline().remove( actionCopy );
+        if ( actionMeta.isPipeline() ) {
+          getActiveActionPipeline().remove( actionMeta );
         }
-        if ( actionCopy.isJob() ) {
-          getActiveActionWorkflows().remove( actionCopy );
+        if ( actionMeta.isWorkflow() ) {
+          getActiveActionWorkflows().remove( actionMeta );
         }
       }
 
-      if ( cloneJei instanceof ActionPipeline ) {
-        String throughput = newResult.getReadWriteThroughput( (int) ( ( end - start ) / 1000 ) );
-        if ( throughput != null ) {
-          log.logMinimal( throughput );
-        }
-      }
-      for ( IActionListener jobEntryListener : actionListeners ) {
-        jobEntryListener.afterExecution( this, actionCopy, cloneJei, newResult );
+      for ( IActionListener actionListener : actionListeners ) {
+        actionListener.afterExecution( this, actionMeta, cloneJei, newResult );
       }
 
       Thread.currentThread().setContextClassLoader( cl );
@@ -617,16 +612,16 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
       //
       ActionResult jerAfter =
         new ActionResult( newResult, cloneJei.getLogChannel().getLogChannelId(), BaseMessages.getString( PKG,
-          "Workflow.Comment.WorkflowFinished" ), null, actionCopy.getName(), actionCopy.getNr(), environmentSubstitute(
-          actionCopy.getAction().getFilename() ) );
+          "Workflow.Comment.WorkflowFinished" ), null, actionMeta.getName(), resolve(
+          actionMeta.getAction().getFilename() ) );
       workflowTracker.addWorkflowTracker( new WorkflowTracker( workflowMeta, jerAfter ) );
       synchronized ( actionResults ) {
         actionResults.add( jerAfter );
 
         // Only keep the last X action results in memory
         //
-        if ( maxJobEntriesLogged > 0 ) {
-          while ( actionResults.size() > maxJobEntriesLogged ) {
+        if ( maxActionsLogged > 0 ) {
+          while ( actionResults.size() > maxActionsLogged ) {
             // Remove the oldest.
             actionResults.removeFirst();
           }
@@ -634,29 +629,29 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
       }
     }
 
-    extension = new WorkflowExecutionExtension( this, prevResult, actionCopy, extension.executeEntry );
-    ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.WorkflowAfterActionExecution.id, extension );
+    extension = new WorkflowExecutionExtension( this, prevResult, actionMeta, extension.executeAction );
+    ExtensionPointHandler.callExtensionPoint( log, this, HopExtensionPoint.WorkflowAfterActionExecution.id, extension );
 
     // Try all next actions.
     //
     // Keep track of all the threads we fired in case of parallel execution...
     // Keep track of the results of these executions too.
     //
-    final List<Thread> threads = new ArrayList<Thread>();
+    final List<Thread> threads = new ArrayList<>();
     // next 2 lists is being modified concurrently so must be synchronized for this case.
-    final Queue<Result> threadResults = new ConcurrentLinkedQueue<Result>();
-    final Queue<HopException> threadExceptions = new ConcurrentLinkedQueue<HopException>();
-    final List<ActionCopy> threadEntries = new ArrayList<ActionCopy>();
+    final Queue<Result> threadResults = new ConcurrentLinkedQueue<>();
+    final Queue<HopException> threadExceptions = new ConcurrentLinkedQueue<>();
+    final List<ActionMeta> threadActions = new ArrayList<>();
 
     // Launch only those where the hop indicates true or false
     //
-    int nrNext = workflowMeta.findNrNextActions( actionCopy );
+    int nrNext = workflowMeta.findNrNextActions( actionMeta );
     for ( int i = 0; i < nrNext && !isStopped(); i++ ) {
       // The next entry is...
-      final ActionCopy nextEntry = workflowMeta.findNextAction( actionCopy, i );
+      final ActionMeta nextAction = workflowMeta.findNextAction( actionMeta, i );
 
       // See if we need to execute this...
-      final WorkflowHopMeta hi = workflowMeta.findWorkflowHop( actionCopy, nextEntry );
+      final WorkflowHopMeta hi = workflowMeta.findWorkflowHop( actionMeta, nextAction );
 
       // The next comment...
       final String nextComment;
@@ -675,16 +670,16 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
       // If the start point was an evaluation and the link color is correct:
       // green or red, execute the next action...
       //
-      if ( hi.isUnconditional() || ( actionCopy.evaluates() && ( !( hi.getEvaluation() ^ newResult.getResult() ) ) ) ) {
+      if ( hi.isUnconditional() || ( actionMeta.isEvaluation() && ( !( hi.getEvaluation() ^ newResult.getResult() ) ) ) ) {
         // Start this next transform!
         if ( log.isBasic() ) {
-          log.logBasic( BaseMessages.getString( PKG, "Workflow.Log.StartingEntry", nextEntry.getName() ) );
+          log.logBasic( BaseMessages.getString( PKG, "Workflow.Log.StartingAction", nextAction.getName() ) );
         }
 
         // Pass along the previous result, perhaps the next workflow can use it...
         // However, set the number of errors back to 0 (if it should be reset)
         // When an evaluation is executed the errors e.g. should not be reset.
-        if ( nextEntry.resetErrorsBeforeExecution() ) {
+        if ( nextAction.resetErrorsBeforeExecution() ) {
           newResult.setNrErrors( 0 );
         }
 
@@ -692,43 +687,41 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
         //
         // if (we launch in parallel, fire the execution off in a new thread...
         //
-        if ( actionCopy.isLaunchingInParallel() ) {
-          threadEntries.add( nextEntry );
+        if ( actionMeta.isLaunchingInParallel() ) {
+          threadActions.add( nextAction );
 
-          Runnable runnable = new Runnable() {
-            @Override public void run() {
-              try {
-                Result threadResult = executeFromStart( nr + 1, newResult, nextEntry, actionCopy, nextComment );
-                threadResults.add( threadResult );
-              } catch ( Throwable e ) {
-                log.logError( Const.getStackTracker( e ) );
-                threadExceptions.add( new HopException( BaseMessages.getString( PKG, "Workflow.Log.UnexpectedError",
-                  nextEntry.toString() ), e ) );
-                Result threadResult = new Result();
-                threadResult.setResult( false );
-                threadResult.setNrErrors( 1L );
-                threadResults.add( threadResult );
-              }
+          Runnable runnable = () -> {
+            try {
+              Result threadResult = executeFromStart( nr + 1, newResult, nextAction, actionMeta, nextComment );
+              threadResults.add( threadResult );
+            } catch ( Throwable e ) {
+              log.logError( Const.getStackTracker( e ) );
+              threadExceptions.add( new HopException( BaseMessages.getString( PKG, "Workflow.Log.UnexpectedError",
+                nextAction.toString() ), e ) );
+              Result threadResult = new Result();
+              threadResult.setResult( false );
+              threadResult.setNrErrors( 1L );
+              threadResults.add( threadResult );
             }
           };
           Thread thread = new Thread( runnable );
           threads.add( thread );
           thread.start();
           if ( log.isBasic() ) {
-            log.logBasic( BaseMessages.getString( PKG, "Workflow.Log.LaunchedActionInParallel", nextEntry.getName() ) );
+            log.logBasic( BaseMessages.getString( PKG, "Workflow.Log.LaunchedActionInParallel", nextAction.getName() ) );
           }
         } else {
           try {
             // Same as before: blocks until it's done
             //
-            res = executeFromStart( nr + 1, newResult, nextEntry, actionCopy, nextComment );
+            res = executeFromStart( nr + 1, newResult, nextAction, actionMeta, nextComment );
           } catch ( Throwable e ) {
             log.logError( Const.getStackTracker( e ) );
-            throw new HopException( BaseMessages.getString( PKG, "Workflow.Log.UnexpectedError", nextEntry.toString() ),
+            throw new HopException( BaseMessages.getString( PKG, "Workflow.Log.UnexpectedError", nextAction.toString() ),
               e );
           }
           if ( log.isBasic() ) {
-            log.logBasic( BaseMessages.getString( PKG, "Workflow.Log.FinishedAction", nextEntry.getName(), res.getResult()
+            log.logBasic( BaseMessages.getString( PKG, "Workflow.Log.FinishedAction", nextAction.getName(), res.getResult()
               + "" ) );
           }
         }
@@ -738,18 +731,18 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
     // OK, if we run in parallel, we need to wait for all the actions to
     // finish...
     //
-    if ( actionCopy.isLaunchingInParallel() ) {
+    if ( actionMeta.isLaunchingInParallel() ) {
       for ( int i = 0; i < threads.size(); i++ ) {
         Thread thread = threads.get( i );
-        ActionCopy nextEntry = threadEntries.get( i );
+        ActionMeta nextAction = threadActions.get( i );
 
         try {
           thread.join();
         } catch ( InterruptedException e ) {
           log.logError( workflowMeta.toString(), BaseMessages.getString( PKG,
-            "Workflow.Log.UnexpectedErrorWhileWaitingForAction", nextEntry.getName() ) );
+            "Workflow.Log.UnexpectedErrorWhileWaitingForAction", nextAction.getName() ) );
           threadExceptions.add( new HopException( BaseMessages.getString( PKG,
-            "Workflow.Log.UnexpectedErrorWhileWaitingForAction", nextEntry.getName() ), e ) );
+            "Workflow.Log.UnexpectedErrorWhileWaitingForAction", nextAction.getName() ), e ) );
         }
       }
     }
@@ -830,13 +823,9 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
     resetErrors();
 
     WorkflowExecutionExtension extension = new WorkflowExecutionExtension( this, result, null, false );
-    ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.WorkflowBeginProcessing.id, extension );
+    ExtensionPointHandler.callExtensionPoint( log, this, HopExtensionPoint.WorkflowBeginProcessing.id, extension );
 
     return true;
-  }
-
-  protected Database createDataBase( DatabaseMeta databaseMeta ) {
-    return new Database( this, databaseMeta );
   }
 
   public boolean isInitialized() {
@@ -898,6 +887,12 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
    */
   @Override public void setWorkflowMeta( WorkflowMeta workflowMeta ) {
     this.workflowMeta = workflowMeta;
+
+    // We change the topic in other words.
+    // This means we need to create a new Logging Object
+    //
+    this.log = new LogChannel( this, parentLoggingObject );
+    this.logLevel = log.getLogLevel();
   }
 
   public WorkflowTracker getWorkflowTracker() {
@@ -957,41 +952,41 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
     if (workflowMeta==null) {
       setInternalHopVariables( this, null, null );
     } else {
-      setInternalHopVariables( this, workflowMeta.getFilename(), workflowMeta.getName() );
+      workflowMeta.setInternalHopVariables( this );
     }
   }
 
     /**
      * Sets the internal hop variables.
      *
-     * @param space the space in which we want to set the internal variables
+     * @param variables the variables in which we want to set the internal variables
      * @param filename the filename if there is any
      * @param name the name of the workflow
      */
-  public static final void setInternalHopVariables( IVariables space, String filename, String name ) {
+  public static final void setInternalHopVariables( IVariables variables, String filename, String name ) {
     boolean hasFilename = !Utils.isEmpty( filename );
     if ( hasFilename ) { // we have a filename that's defined.
       try {
-        FileObject fileObject = HopVfs.getFileObject( filename, space );
+        FileObject fileObject = HopVfs.getFileObject( filename );
         FileName fileName = fileObject.getName();
 
         // The filename of the pipeline
-        space.setVariable( Const.INTERNAL_VARIABLE_WORKFLOW_FILENAME_NAME, fileName.getBaseName() );
+        variables.setVariable( Const.INTERNAL_VARIABLE_WORKFLOW_FILENAME_NAME, fileName.getBaseName() );
 
         // The directory of the pipeline
         FileName fileDir = fileName.getParent();
-        space.setVariable( Const.INTERNAL_VARIABLE_WORKFLOW_FILENAME_DIRECTORY, fileDir.getURI() );
+        variables.setVariable( Const.INTERNAL_VARIABLE_WORKFLOW_FILENAME_FOLDER, fileDir.getURI() );
       } catch ( Exception e ) {
-        space.setVariable( Const.INTERNAL_VARIABLE_WORKFLOW_FILENAME_DIRECTORY, "" );
-        space.setVariable( Const.INTERNAL_VARIABLE_WORKFLOW_FILENAME_NAME, "" );
+        variables.setVariable( Const.INTERNAL_VARIABLE_WORKFLOW_FILENAME_FOLDER, "" );
+        variables.setVariable( Const.INTERNAL_VARIABLE_WORKFLOW_FILENAME_NAME, "" );
       }
     } else {
-      space.setVariable( Const.INTERNAL_VARIABLE_WORKFLOW_FILENAME_DIRECTORY, "" );
-      space.setVariable( Const.INTERNAL_VARIABLE_WORKFLOW_FILENAME_NAME, "" );
+      variables.setVariable( Const.INTERNAL_VARIABLE_WORKFLOW_FILENAME_FOLDER, "" );
+      variables.setVariable( Const.INTERNAL_VARIABLE_WORKFLOW_FILENAME_NAME, "" );
     }
 
     // The name of the workflow
-    space.setVariable( Const.INTERNAL_VARIABLE_WORKFLOW_NAME, Const.NVL( name, "" ) );
+    variables.setVariable( Const.INTERNAL_VARIABLE_WORKFLOW_NAME, Const.NVL( name, "" ) );
   }
 
 
@@ -1036,7 +1031,7 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.hop.core.parameters.INamedParams#addParameterDefinition(java.lang.String, java.lang.String,
+   * @see org.apache.hop.core.parameters.INamedParameters#addParameterDefinition(java.lang.String, java.lang.String,
    * java.lang.String)
    */
   @Override public void addParameterDefinition( String key, String defValue, String description ) throws DuplicateParamException {
@@ -1046,7 +1041,7 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.hop.core.parameters.INamedParams#getParameterDescription(java.lang.String)
+   * @see org.apache.hop.core.parameters.INamedParameters#getParameterDescription(java.lang.String)
    */
   @Override public String getParameterDescription( String key ) throws UnknownParamException {
     return namedParams.getParameterDescription( key );
@@ -1055,7 +1050,7 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.hop.core.parameters.INamedParams#getParameterDefault(java.lang.String)
+   * @see org.apache.hop.core.parameters.INamedParameters#getParameterDefault(java.lang.String)
    */
   @Override public String getParameterDefault( String key ) throws UnknownParamException {
     return namedParams.getParameterDefault( key );
@@ -1064,7 +1059,7 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.hop.core.parameters.INamedParams#getParameterValue(java.lang.String)
+   * @see org.apache.hop.core.parameters.INamedParameters#getParameterValue(java.lang.String)
    */
   @Override public String getParameterValue( String key ) throws UnknownParamException {
     return namedParams.getParameterValue( key );
@@ -1073,7 +1068,7 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.hop.core.parameters.INamedParams#listParameters()
+   * @see org.apache.hop.core.parameters.INamedParameters#listParameters()
    */
   @Override public String[] listParameters() {
     return namedParams.listParameters();
@@ -1082,7 +1077,7 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.hop.core.parameters.INamedParams#setParameterValue(java.lang.String, java.lang.String)
+   * @see org.apache.hop.core.parameters.INamedParameters#setParameterValue(java.lang.String, java.lang.String)
    */
   @Override public void setParameterValue( String key, String value ) throws UnknownParamException {
     namedParams.setParameterValue( key, value );
@@ -1091,69 +1086,32 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.hop.core.parameters.INamedParams#eraseParameters()
+   * @see org.apache.hop.core.parameters.INamedParameters#eraseParameters()
    */
-  public void eraseParameters() {
-    namedParams.eraseParameters();
+  public void removeAllParameters() {
+    namedParams.removeAllParameters();
   }
 
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.hop.core.parameters.INamedParams#clearParameters()
+   * @see org.apache.hop.core.parameters.INamedParameters#clearParameters()
    */
-  public void clearParameters() {
-    namedParams.clearParameters();
+  public void clearParameterValues() {
+    namedParams.clearParameterValues();
   }
 
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.hop.core.parameters.INamedParams#activateParameters()
+   * @see org.apache.hop.core.parameters.INamedParameters#activateParameters()
    */
-  public void activateParameters() {
-    String[] keys = listParameters();
-
-    for ( String key : keys ) {
-      String value;
-      try {
-        value = getParameterValue( key );
-      } catch ( UnknownParamException e ) {
-        value = "";
-      }
-      String defValue;
-      try {
-        defValue = getParameterDefault( key );
-      } catch ( UnknownParamException e ) {
-        defValue = "";
-      }
-
-      if ( Utils.isEmpty( value ) ) {
-        setVariable( key, Const.NVL( defValue, "" ) );
-      } else {
-        setVariable( key, Const.NVL( value, "" ) );
-      }
-    }
+  public void activateParameters(IVariables variables) {
+    namedParams.activateParameters( variables );
   }
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.parameters.INamedParams#copyParametersFrom(org.apache.hop.core.parameters.INamedParams)
-   */
-  public void copyParametersFrom( INamedParams params ) {
-    namedParams.copyParametersFrom( params );
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.parameters.INamedParams#mergeParametersWith(org.apache.hop.core.parameters.INamedParams,
-   * boolean replace)
-   */
-  @Override
-  public void mergeParametersWith( INamedParams params, boolean replace ) {
-    namedParams.mergeParametersWith( params, replace );
+  @Override public void copyParametersFromDefinitions( INamedParameterDefinitions definitions ) {
+    namedParams.copyParametersFromDefinitions( definitions );
   }
 
   /**
@@ -1201,7 +1159,7 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
    * @return the logChannelId
    */
   public String getLogChannelId() {
-    return log.getLogChannelId();
+    return log==null ? null : log.getLogChannelId();
   }
 
   /**
@@ -1238,6 +1196,7 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
    */
   public void setLogLevel( LogLevel logLevel ) {
     this.logLevel = logLevel;
+    log.setLogLevel( logLevel );
   }
 
   /**
@@ -1263,7 +1222,7 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
    *
    * @return the activeJobEntryPipelines
    */
-  public Map<ActionCopy, ActionPipeline> getActiveActionPipeline() {
+  public Map<ActionMeta, ActionPipeline> getActiveActionPipeline() {
     return activeActionPipeline;
   }
 
@@ -1272,7 +1231,7 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
    *
    * @return the activeJobEntryWorkflows
    */
-  public Map<ActionCopy, ActionWorkflow> getActiveActionWorkflows() {
+  public Map<ActionMeta, ActionWorkflow> getActiveActionWorkflows() {
     return activeActionWorkflows;
   }
 
@@ -1283,7 +1242,7 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
    */
   public List<ActionResult> getActionResults() {
     synchronized ( actionResults ) {
-      return new ArrayList<ActionResult>( actionResults );
+      return new ArrayList<>( actionResults );
     }
   }
 
@@ -1292,17 +1251,17 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
    *
    * @return the serverObjectId
    */
-  public String getContainerObjectId() {
+  public String getContainerId() {
     return containerObjectId;
   }
 
   /**
    * Sets the execution container object id (containerObjectId).
    *
-   * @param containerObjectId the execution container object id to set
+   * @param containerId the execution container object id to set
    */
-  public void setContainerObjectId( String containerObjectId ) {
-    this.containerObjectId = containerObjectId;
+  public void setContainerId( String containerId ) {
+    this.containerObjectId = containerId;
   }
 
   /**
@@ -1315,6 +1274,13 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
   }
 
   /**
+   * @param parentLoggingObject The parentLoggingObject to set
+   */
+  public void setParentLoggingObject( ILoggingObject parentLoggingObject ) {
+    this.parentLoggingObject = parentLoggingObject;
+  }
+
+  /**
    * Gets the registration date. For workflow, this always returns null
    *
    * @return null
@@ -1324,21 +1290,21 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
   }
 
   /**
-   * Gets the start action copy.
+   * Gets the start action meta.
    *
-   * @return the startActionCopy
+   * @return the startActionMeta
    */
-  public ActionCopy getStartActionCopy() {
-    return startActionCopy;
+  public ActionMeta getStartActionMeta() {
+    return startActionMeta;
   }
 
   /**
-   * Sets the start action copy.
+   * Sets the start action meta.
    *
-   * @param startActionCopy the startActionCopy to set
+   * @param actionMeta the startActionMeta to set
    */
-  public void setStartActionCopy( ActionCopy startActionCopy ) {
-    this.startActionCopy = startActionCopy;
+  public void setStartActionMeta( ActionMeta actionMeta ) {
+    this.startActionMeta = actionMeta;
   }
 
   /**
@@ -1507,18 +1473,34 @@ public abstract class Workflow extends Variables implements IVariables, INamedPa
   }
 
   /**
-   * Gets metaStore
+   * Gets metadataProvider
    *
-   * @return value of metaStore
+   * @return value of metadataProvider
    */
-  @Override public IMetaStore getMetaStore() {
-    return metaStore;
+  @Override public IHopMetadataProvider getMetadataProvider() {
+    return metadataProvider;
   }
 
   /**
-   * @param metaStore The metaStore to set
+   * @param metadataProvider The metadataProvider to set
    */
-  @Override public void setMetaStore( IMetaStore metaStore ) {
-    this.metaStore = metaStore;
+  @Override public void setMetadataProvider( IHopMetadataProvider metadataProvider ) {
+    this.metadataProvider = metadataProvider;
+  }
+
+  /**
+   * Gets initializingVariablesOnStart
+   *
+   * @return value of initializingVariablesOnStart
+   */
+  public boolean isInitializingVariablesOnStart() {
+    return initializingVariablesOnStart;
+  }
+
+  /**
+   * @param initializingVariablesOnStart The initializingVariablesOnStart to set
+   */
+  public void setInitializingVariablesOnStart( boolean initializingVariablesOnStart ) {
+    this.initializingVariablesOnStart = initializingVariablesOnStart;
   }
 }

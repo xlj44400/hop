@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.snmptrap;
 
@@ -29,11 +24,12 @@ import org.apache.hop.core.encryption.Encr;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.exception.HopXmlException;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.xml.XmlHandler;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.workflow.action.ActionBase;
 import org.apache.hop.workflow.action.IAction;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.snmp4j.CommunityTarget;
 import org.snmp4j.PDU;
 import org.snmp4j.PDUv1;
@@ -68,14 +64,14 @@ import java.net.InetAddress;
 
 @Action(
   id = "SNMP_TRAP",
-  i18nPackageName = "org.apache.hop.workflow.actions.snmptrap",
-  name = "ActionSNMPTrap.Name",
-  description = "ActionSNMPTrap.Description",
+  name = "i18n::ActionSNMPTrap.Name",
+  description = "i18n::ActionSNMPTrap.Description",
   image = "SNMP.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Utility"
+  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Utility",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/snmptrap.html"
 )
 public class ActionSNMPTrap extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionSNMPTrap.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionSNMPTrap.class; // For Translator
 
   private String serverName;
   private String port;
@@ -104,10 +100,10 @@ public class ActionSNMPTrap extends ActionBase implements Cloneable, IAction {
    */
   public static int DEFAULT_PORT = 162;
 
-  public static final String[] target_type_Desc = new String[] {
+  public static final String[] targetTypeDesc = new String[] {
     BaseMessages.getString( PKG, "JobSNMPTrap.TargetType.Community" ),
     BaseMessages.getString( PKG, "JobSNMPTrap.TargetType.User" ) };
-  public static final String[] target_type_Code = new String[] { "community", "user" };
+  public static final String[] targetTypeCode = new String[] { "community", "user" };
 
   public ActionSNMPTrap( String n ) {
     super( n, "" );
@@ -118,7 +114,7 @@ public class ActionSNMPTrap extends ActionBase implements Cloneable, IAction {
     timeout = "" + DEFAULT_TIME_OUT;
     message = null;
     oid = null;
-    targettype = target_type_Code[ 0 ];
+    targettype = targetTypeCode[ 0 ];
     user = null;
     passphrase = null;
     engineid = null;
@@ -135,23 +131,23 @@ public class ActionSNMPTrap extends ActionBase implements Cloneable, IAction {
 
   public String getTargetTypeDesc( String tt ) {
     if ( Utils.isEmpty( tt ) ) {
-      return target_type_Desc[ 0 ];
+      return targetTypeDesc[ 0 ];
     }
-    if ( tt.equalsIgnoreCase( target_type_Code[ 1 ] ) ) {
-      return target_type_Desc[ 1 ];
+    if ( tt.equalsIgnoreCase( targetTypeCode[ 1 ] ) ) {
+      return targetTypeDesc[ 1 ];
     } else {
-      return target_type_Desc[ 0 ];
+      return targetTypeDesc[ 0 ];
     }
   }
 
   public String getTargetTypeCode( String tt ) {
     if ( tt == null ) {
-      return target_type_Code[ 0 ];
+      return targetTypeCode[ 0 ];
     }
-    if ( tt.equals( target_type_Desc[ 1 ] ) ) {
-      return target_type_Code[ 1 ];
+    if ( tt.equals( targetTypeDesc[ 1 ] ) ) {
+      return targetTypeCode[ 1 ];
     } else {
-      return target_type_Code[ 0 ];
+      return targetTypeCode[ 0 ];
     }
   }
 
@@ -174,7 +170,7 @@ public class ActionSNMPTrap extends ActionBase implements Cloneable, IAction {
   }
 
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
       port = XmlHandler.getTagValue( entrynode, "port" );
@@ -348,12 +344,12 @@ public class ActionSNMPTrap extends ActionBase implements Cloneable, IAction {
     result.setNrErrors( 1 );
     result.setResult( false );
 
-    String servername = environmentSubstitute( serverName );
-    int nrPort = Const.toInt( environmentSubstitute( "" + port ), DEFAULT_PORT );
-    String Oid = environmentSubstitute( oid );
-    int timeOut = Const.toInt( environmentSubstitute( "" + timeout ), DEFAULT_TIME_OUT );
-    int retry = Const.toInt( environmentSubstitute( "" + nrretry ), 1 );
-    String messageString = environmentSubstitute( message );
+    String servername = resolve( serverName );
+    int nrPort = Const.toInt( resolve( "" + port ), DEFAULT_PORT );
+    String Oid = resolve( oid );
+    int timeOut = Const.toInt( resolve( "" + timeout ), DEFAULT_TIME_OUT );
+    int retry = Const.toInt( resolve( "" + nrretry ), 1 );
+    String messageString = resolve( message );
 
     Snmp snmp = null;
 
@@ -363,9 +359,9 @@ public class ActionSNMPTrap extends ActionBase implements Cloneable, IAction {
 
       UdpAddress udpAddress = new UdpAddress( InetAddress.getByName( servername ), nrPort );
       ResponseEvent response = null;
-      if ( targettype.equals( target_type_Code[ 0 ] ) ) {
+      if ( targettype.equals( targetTypeCode[ 0 ] ) ) {
         // Community target
-        String community = environmentSubstitute( comString );
+        String community = resolve( comString );
 
         CommunityTarget target = new CommunityTarget();
         PDUv1 pdu1 = new PDUv1();
@@ -394,9 +390,9 @@ public class ActionSNMPTrap extends ActionBase implements Cloneable, IAction {
 
       } else {
         // User target
-        String userName = environmentSubstitute( user );
-        String passPhrase = environmentSubstitute( passphrase );
-        String engineID = environmentSubstitute( engineid );
+        String userName = resolve( user );
+        String passPhrase = resolve( passphrase );
+        String engineID = resolve( engineid );
 
         UserTarget usertarget = new UserTarget();
         transMap.listen();
@@ -469,7 +465,7 @@ public class ActionSNMPTrap extends ActionBase implements Cloneable, IAction {
     return result;
   }
 
-  public boolean evaluates() {
+  @Override public boolean isEvaluation() {
     return true;
   }
 

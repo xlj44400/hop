@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui;
 
@@ -26,23 +21,23 @@ import org.apache.hop.core.HopClientEnvironment;
 import org.apache.hop.core.action.GuiContextAction;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.exception.HopPluginException;
-import org.apache.hop.core.gui.plugin.key.GuiKeyboardShortcut;
-import org.apache.hop.core.gui.plugin.menu.GuiMenuElement;
-import org.apache.hop.core.gui.plugin.GuiMetaStoreElement;
-import org.apache.hop.core.gui.plugin.key.GuiOsxKeyboardShortcut;
 import org.apache.hop.core.gui.plugin.GuiPluginType;
 import org.apache.hop.core.gui.plugin.GuiRegistry;
-import org.apache.hop.core.gui.plugin.toolbar.GuiToolbarElement;
 import org.apache.hop.core.gui.plugin.GuiWidgetElement;
+import org.apache.hop.core.gui.plugin.key.GuiKeyboardShortcut;
+import org.apache.hop.core.gui.plugin.key.GuiOsxKeyboardShortcut;
+import org.apache.hop.core.gui.plugin.menu.GuiMenuElement;
+import org.apache.hop.core.gui.plugin.toolbar.GuiToolbarElement;
 import org.apache.hop.core.plugins.IPlugin;
 import org.apache.hop.core.plugins.IPluginType;
 import org.apache.hop.core.plugins.PluginRegistry;
-import org.apache.hop.metastore.IHopMetaStoreElement;
-import org.apache.hop.ui.cluster.IGuiMetaStorePlugin;
-import org.apache.hop.ui.hopgui.file.IHopFileType;
+import org.apache.hop.core.search.SearchableAnalyserPluginType;
 import org.apache.hop.ui.hopgui.file.HopFileTypePluginType;
 import org.apache.hop.ui.hopgui.file.HopFileTypeRegistry;
+import org.apache.hop.ui.hopgui.file.IHopFileType;
 import org.apache.hop.ui.hopgui.perspective.HopPerspectivePluginType;
+import org.apache.hop.ui.util.EnvironmentUtils;
+import org.eclipse.swt.SWT;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -55,7 +50,8 @@ public class HopGuiEnvironment extends HopClientEnvironment {
     init( Arrays.asList(
       GuiPluginType.getInstance(),
       HopPerspectivePluginType.getInstance(),
-      HopFileTypePluginType.getInstance()
+      HopFileTypePluginType.getInstance(),
+      SearchableAnalyserPluginType.getInstance()
     ) );
   }
 
@@ -115,10 +111,18 @@ public class HopGuiEnvironment extends HopClientEnvironment {
           }
           GuiKeyboardShortcut shortcut = method.getAnnotation( GuiKeyboardShortcut.class );
           if ( shortcut != null ) {
+            // RAP does not support ESC as a shortcut key.
+            if (EnvironmentUtils.getInstance().isWeb() && shortcut.key() == SWT.ESC) {
+              continue;
+            }
             guiRegistry.addKeyboardShortcut( guiPluginClassName, method, shortcut );
           }
           GuiOsxKeyboardShortcut osxShortcut = method.getAnnotation( GuiOsxKeyboardShortcut.class );
           if ( osxShortcut != null ) {
+            // RAP does not support ESC as a shortcut key.
+            if (EnvironmentUtils.getInstance().isWeb() && osxShortcut.key() == SWT.ESC) {
+              continue;
+            }
             guiRegistry.addKeyboardShortcut( guiPluginClassName, method, osxShortcut );
           }
           GuiContextAction contextAction = method.getAnnotation( GuiContextAction.class );
@@ -126,23 +130,6 @@ public class HopGuiEnvironment extends HopClientEnvironment {
             guiRegistry.addGuiContextAction( guiPluginClassName, method, contextAction, classLoader );
           }
         }
-
-
-        // Is this class annotated with @GuiMetaStoreElement ?
-        //
-        GuiMetaStoreElement guiMetaStoreElement = guiPluginClass.getAnnotation( GuiMetaStoreElement.class );
-        if (guiMetaStoreElement!=null) {
-          // The parent class is capable of serializing to a metastore
-          //
-          try {
-            IGuiMetaStorePlugin guiMetaStorePlugin = (IGuiMetaStorePlugin) guiPluginClass.newInstance();
-            Class<? extends IHopMetaStoreElement> managedClass = guiMetaStorePlugin.getMetaStoreElementClass();
-            guiRegistry.addMetaStoreElementType( managedClass, guiMetaStoreElement, classLoader );
-          } catch(ClassCastException e) {
-            System.err.println( "Classes annotated with @"+GuiMetaStoreElement.class.getSimpleName()+" need to implement interface "+IHopMetaStoreElement.class.getSimpleName() );
-          }
-        }
-
       }
 
       // Sort all GUI elements once.

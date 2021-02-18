@@ -1,27 +1,23 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.sort;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.hop.core.Const;
@@ -54,7 +50,7 @@ import java.util.zip.GZIPOutputStream;
  * @since 29-apr-2003
  */
 public class SortRows extends BaseTransform<SortRowsMeta, SortRowsData> implements ITransform<SortRowsMeta, SortRowsData> {
-  private static Class<?> PKG = SortRows.class; // for i18n
+  private static final Class<?> PKG = SortRows.class; // For Translator
 
   public SortRows( TransformMeta transformMeta, SortRowsMeta meta, SortRowsData data,
                    int copyNr, PipelineMeta pipelineMeta, Pipeline pipeline ) {
@@ -124,8 +120,7 @@ public class SortRows extends BaseTransform<SortRowsMeta, SortRowsData> implemen
 
     try {
       FileObject fileObject =
-        HopVfs.createTempFile( meta.getPrefix(), ".tmp", environmentSubstitute( meta.getDirectory() ),
-          getPipelineMeta() );
+        HopVfs.createTempFile( meta.getPrefix(), ".tmp", resolve( meta.getDirectory() ));
 
       data.files.add( fileObject ); // Remember the files!
       OutputStream outputStream = HopVfs.getOutputStream( fileObject, false );
@@ -138,7 +133,7 @@ public class SortRows extends BaseTransform<SortRowsMeta, SortRowsData> implemen
       }
 
       // Just write the data, nothing else
-      List<Integer> duplicates = new ArrayList<Integer>();
+      List<Integer> duplicates = new ArrayList<>();
       Object[] previousRow = null;
       if ( meta.isOnlyPassingUniqueRows() ) {
         int index = 0;
@@ -165,19 +160,16 @@ public class SortRows extends BaseTransform<SortRowsMeta, SortRowsData> implemen
       int duplicatesIndex = 0;
       for ( p = 0; p < data.buffer.size(); p++ ) {
         boolean skip = false;
-        if ( duplicatesIndex < duplicates.size() ) {
-          if ( p == duplicates.get( duplicatesIndex ) ) {
+        if ( duplicatesIndex < duplicates.size() && p == duplicates.get( duplicatesIndex ) ) {
             skip = true;
             duplicatesIndex++;
-          }
         }
         if ( !skip ) {
           data.outputRowMeta.writeData( dos, data.buffer.get( p ) );
         }
       }
 
-      if ( data.sortSize < 0 ) {
-        if ( data.buffer.size() > data.minSortSize ) {
+      if ( data.sortSize < 0 && data.buffer.size() > data.minSortSize ) {
           data.minSortSize = data.buffer.size(); // if we did it once, we can do
           // it again.
 
@@ -186,7 +178,6 @@ public class SortRows extends BaseTransform<SortRowsMeta, SortRowsData> implemen
           // As such, we're going to lower the min sort size a bit
           //
           data.minSortSize = (int) Math.round( data.minSortSize * 0.90 );
-        }
       }
 
       // Clear the list
@@ -203,10 +194,8 @@ public class SortRows extends BaseTransform<SortRowsMeta, SortRowsData> implemen
       //
       data.freeMemoryPct = Const.getPercentageFreeMemory();
       data.freeCounter = 0;
-      if ( data.sortSize <= 0 ) {
-        if ( log.isDetailed() ) {
+      if ( data.sortSize <= 0 && log.isDetailed() ) {
           logDetailed( BaseMessages.getString( PKG, "SortRows.Detailed.AvailableMemory", data.freeMemoryPct ) );
-        }
       }
 
     } catch ( Exception e ) {
@@ -229,7 +218,7 @@ public class SortRows extends BaseTransform<SortRowsMeta, SortRowsData> implemen
     Object[] retval;
 
     // Open all files at once and read one row from each file...
-    if ( data.files.size() > 0 && ( data.dis.size() == 0 || data.fis.size() == 0 ) ) {
+    if ( CollectionUtils.isNotEmpty(data.files) && ( data.dis.isEmpty() || data.fis.isEmpty() ) ) {
       if ( log.isBasic() ) {
         logBasic( BaseMessages.getString( PKG, "SortRows.Basic.OpeningTempFiles", data.files.size() ) );
       }
@@ -273,7 +262,7 @@ public class SortRows extends BaseTransform<SortRowsMeta, SortRowsData> implemen
       }
     }
 
-    if ( data.files.size() == 0 ) {
+    if ( data.files.isEmpty() ) {
       // read from in-memory processing
 
       if ( data.getBufferIndex < data.buffer.size() ) {
@@ -285,7 +274,7 @@ public class SortRows extends BaseTransform<SortRowsMeta, SortRowsData> implemen
     } else {
       // read from disk processing
 
-      if ( data.rowbuffer.size() == 0 ) {
+      if ( data.rowbuffer.isEmpty() ) {
         retval = null;
       } else {
         // We now have "filenr" rows waiting: which one is the smallest?
@@ -399,11 +388,11 @@ public class SortRows extends BaseTransform<SortRowsMeta, SortRowsData> implemen
 
       String[] fieldNames = meta.getFieldName();
       data.fieldnrs = new int[ fieldNames.length ];
-      List<Integer> toConvert = new ArrayList<Integer>();
+      List<Integer> toConvert = new ArrayList<>();
 
       // Metadata
       data.outputRowMeta = inputRowMeta.clone();
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
       data.comparator = new RowTemapFileComparator( data.outputRowMeta, data.fieldnrs );
 
       for ( int i = 0; i < fieldNames.length; i++ ) {
@@ -535,7 +524,7 @@ public class SortRows extends BaseTransform<SortRowsMeta, SortRowsData> implemen
       return false;
     }
 
-    data.sortSize = Const.toInt( environmentSubstitute( meta.getSortSize() ), -1 );
+    data.sortSize = Const.toInt( resolve( meta.getSortSize() ), -1 );
     data.freeMemoryPctLimit = Const.toInt( meta.getFreeMemoryLimit(), -1 );
     if ( data.sortSize <= 0 && data.freeMemoryPctLimit <= 0 ) {
       // Prefer the memory limit as it should never fail
@@ -545,15 +534,15 @@ public class SortRows extends BaseTransform<SortRowsMeta, SortRowsData> implemen
 
     // In memory buffer
     //
-    data.buffer = new ArrayList<Object[]>( 5000 );
+    data.buffer = new ArrayList<>( 5000 );
 
     // Buffer for reading from disk
     //
-    data.rowbuffer = new ArrayList<Object[]>( 5000 );
+    data.rowbuffer = new ArrayList<>( 5000 );
 
-    data.compressFiles = getBooleanValueOfVariable( meta.getCompressFilesVariable(), meta.getCompressFiles() );
+    data.compressFiles = getVariableBoolean( meta.getCompressFilesVariable(), meta.getCompressFiles() );
 
-    data.tempRows = new ArrayList<RowTempFile>();
+    data.tempRows = new ArrayList<>();
 
     data.minSortSize = 5000;
 
@@ -574,13 +563,13 @@ public class SortRows extends BaseTransform<SortRowsMeta, SortRowsData> implemen
     data.rowbuffer.clear();
 
     // close any open DataInputStream objects
-    if ( ( data.dis != null ) && ( data.dis.size() > 0 ) ) {
+    if ( CollectionUtils.isNotEmpty(data.dis) ) {
       for ( DataInputStream dis : data.dis ) {
         BaseTransform.closeQuietly( dis );
       }
     }
     // close any open InputStream objects
-    if ( ( data.fis != null ) && ( data.fis.size() > 0 ) ) {
+    if ( CollectionUtils.isNotEmpty(data.fis) ) {
       for ( InputStream is : data.fis ) {
         BaseTransform.closeQuietly( is );
       }
@@ -601,8 +590,8 @@ public class SortRows extends BaseTransform<SortRowsMeta, SortRowsData> implemen
   /**
    * Sort the entire vector, if it is not empty.
    */
-  void quickSort( List<Object[]> elements ) throws HopException {
-    if ( elements.size() > 0 ) {
+  void quickSort( List<Object[]> elements ) {
+    if (  CollectionUtils.isNotEmpty(elements) ) {
       Collections.sort( elements, data.rowComparator );
 
       long nrConversions = 0L;

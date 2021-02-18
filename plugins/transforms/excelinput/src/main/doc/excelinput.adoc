@@ -1,13 +1,29 @@
+////
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+  http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+////
 :documentationPath: /plugins/transforms/
 :language: en_US
-:page-alternativeEditUrl: https://github.com/project-hop/hop/edit/master/plugins/transforms/excelinput/src/main/doc/excelinput.adoc
-= Excel input
+:page-alternativeEditUrl: https://github.com/apache/incubator-hop/edit/master/plugins/transforms/excelinput/src/main/doc/excelinput.adoc
+= Microsoft Excel input
 
 == Description
 
 The Microsoft Excel Input transform provides you with the ability to read data from Microsoft Excel. The following sections describe each of the available features for configuring this transform.
 
-The default spreadsheet type (engine) is set to Excel 97-2003 XLS. When you are reading other file types like OpenOffice ODS or Excel 2007 and using special functions like protected worksheets, you need to change the Spread sheet type (engine) in the Content tab accordingly.
+The default spreadsheet type (engine) is set to Excel XLSX, XLS. When you are reading other file types like OpenOffice ODS and using special functions like protected worksheets, you need to change the Spread sheet type (engine) in the Content tab accordingly.
 
 == Options
 
@@ -17,11 +33,10 @@ The default spreadsheet type (engine) is set to Excel 97-2003 XLS. When you are 
 |===
 |Option|Description
 |transform Name|Name of the transform; the name has to be unique in a single transform.
-|Spread sheet type (engine) a|This field allows you to specify the spreadsheet type. (since version 4.1.0)  Currently the following are supported:
+|Spread sheet type (engine) a|This field allows you to specify the spreadsheet type. Currently the following are supported:
 
-* Excel 97-2003 XLS: this is the default, backward compatible type provided for by the JXL software backend.
-* Excel 2007 XLSX (Apache POI): If you select this spread sheet type you can read all known Excel file types.  Functionality provided by the Apache POI project.
-* Excel 2007 XLSX (Apache POI Streaming): This spread sheet type allows to read in large Excel files (Experimental in 5.1).
+* Excel XLSX, XLS: This is the default, if you select this spread sheet type you can read all known Excel file types.  Functionality provided by the Apache POI project.
+* Excel XLSX (Streaming): This spread sheet type allows to read in large Excel files.
 * Open Office ODS: By selecting this type you can read OpenOffice spreadsheet using the ODFDOM engine.
 |File or directory|Specifies the location and/or name of the input text file. Note: Click Add to add the file/directory/wildcard combination to the list of selected files (grid) below.
 |Regular expression|Specify the regular expression you want to use to select the files in the directory specified in the previous option. For example, you want to process all files that have a .txt extension. (For further details see the Text File Input transform and the section "Selecting file using Regular Expressions")
@@ -51,9 +66,9 @@ In this tab you can specify the names of the sheets in the Excel workbook to rea
 
 |===
 |Option|Description
-|Strict types?|If checked, PDI will report data type errors in the input.
+|Strict types?|If checked, Hop will report data type errors in the input.
 |Ignore errors?|Enable if you want to ignore errors during parsing
-|Skip error lines?|If checked, PDI will skip lines that contain errors. These lines can be dumped to a separate file by specifying a path in the Failing line numbers files directory field below. If this is not checked, lines with errors will appear as NULL values in the output.
+|Skip error lines?|If checked, Hop will skip lines that contain errors. These lines can be dumped to a separate file by specifying a path in the Failing line numbers files directory field below. If this is not checked, lines with errors will appear as NULL values in the output.
 |Warnings file directory|When warnings are generated, they are placed in this directory. The name of that file is <warning dir>/filename.<date_time>.<warning extension>
 |Error files directory|When errors occur, they are placed in this directory. The name of that file is <errorfile_dir>/filename.<date_time>.<errorfile_extension>
 |Failing line numbers files directory|When a parsing error occurs on a line, the line number is placed in this directory. The name of that file is <errorline dir>/filename.<date_time>.<errorline extension>

@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.dialog;
 
@@ -51,9 +46,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Spinner;
 
@@ -64,8 +57,7 @@ import org.eclipse.swt.widgets.Spinner;
  * @since 20-04-2009
  */
 public class NotePadDialog extends Dialog {
-
-  private static Class<?> PKG = NotePadDialog.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = NotePadDialog.class; // For Translator
 
   private NotePadMeta notePadMeta;
 
@@ -74,7 +66,6 @@ public class NotePadDialog extends Dialog {
   private FormData fdlDesc, fdDesc;
 
   private Button wOk, wCancel;
-  private Listener lsOk, lsCancel;
 
   private Shell shell;
   private String title;
@@ -130,11 +121,11 @@ public class NotePadDialog extends Dialog {
   private Label wlBorderColor;
   private FormData fdlBorderColor;
 
-  private static GuiResource guiresource = GuiResource.getInstance();
+  private GuiResource guiresource = GuiResource.getInstance();
 
-  public static RGB COLOR_RGB_BLACK = guiresource.getColorBlack().getRGB();
-  public static RGB COLOR_RGB_YELLOW = guiresource.getColorYellow().getRGB();
-  public static RGB COLOR_RGB_GRAY = guiresource.getColorGray().getRGB();
+  public RGB COLOR_RGB_BLACK = guiresource.getColorBlack().getRGB();
+  public RGB COLOR_RGB_YELLOW = guiresource.getColorYellow().getRGB();
+  public RGB COLOR_RGB_GRAY = guiresource.getColorGray().getRGB();
 
   private Color fontColor;
   private Color bgColor;
@@ -168,7 +159,7 @@ public class NotePadDialog extends Dialog {
 
     shell = new Shell( parent, SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MAX | SWT.MIN | SWT.NONE );
     props.setLook( shell );
-    shell.setImage( guiresource.getImageNoteSmall() );
+    shell.setImage( guiresource.getImageNote() );
 
     FormLayout formLayout = new FormLayout();
     formLayout.marginWidth = Const.FORM_MARGIN;
@@ -179,6 +170,17 @@ public class NotePadDialog extends Dialog {
 
     int margin = props.getMargin();
     int middle = 30;
+
+    // Some buttons at the bottom
+    //
+    wOk = new Button( shell, SWT.PUSH );
+    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
+    wOk.addListener( SWT.Selection, e -> ok() );
+    wCancel = new Button( shell, SWT.PUSH );
+    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
+    wCancel.addListener( SWT.Selection, e -> cancel() );
+    BaseTransformDialog.positionBottomButtons( shell, new Button[] { wOk, wCancel }, margin, null );
+
 
     wNoteFolder = new CTabFolder( shell, SWT.BORDER );
     props.setLook( wNoteFolder, PropsUi.WIDGET_STYLE_TAB );
@@ -206,7 +208,7 @@ public class NotePadDialog extends Dialog {
     wlDesc.setLayoutData( fdlDesc );
     wDesc =
       new StyledTextComp( variables, wNoteContentComp, SWT.MULTI
-        | SWT.LEFT | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL, "" );
+        | SWT.LEFT | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL );
 
     wDesc.setText( "" );
     // props.setLook(wDesc, PropsUi.WIDGET_STYLE_FIXED);
@@ -305,7 +307,7 @@ public class NotePadDialog extends Dialog {
     props.setLook( wFontBold );
     fdFontBold = new FormData();
     fdFontBold.left = new FormAttachment( middle, 0 );
-    fdFontBold.top = new FormAttachment( wFontSize, margin );
+    fdFontBold.top = new FormAttachment( wlFontBold, 0, SWT.CENTER );
     fdFontBold.right = new FormAttachment( 100, -margin );
     wFontBold.setLayoutData( fdFontBold );
     wFontBold.addSelectionListener( new SelectionAdapter() {
@@ -319,14 +321,14 @@ public class NotePadDialog extends Dialog {
     props.setLook( wlFontItalic );
     fdlFontItalic = new FormData();
     fdlFontItalic.left = new FormAttachment( margin, margin );
-    fdlFontItalic.top = new FormAttachment( wFontBold, margin );
+    fdlFontItalic.top = new FormAttachment( wlFontBold, margin );
     fdlFontItalic.right = new FormAttachment( middle, -margin );
     wlFontItalic.setLayoutData( fdlFontItalic );
     wFontItalic = new Button( wNoteFontComp, SWT.CHECK );
     props.setLook( wFontItalic );
     fdFontItalic = new FormData();
     fdFontItalic.left = new FormAttachment( middle, 0 );
-    fdFontItalic.top = new FormAttachment( wFontBold, margin );
+    fdFontItalic.top = new FormAttachment( wlFontItalic, 0, SWT.CENTER );
     fdFontItalic.right = new FormAttachment( 100, -margin );
     wFontItalic.setLayoutData( fdFontItalic );
     wFontItalic.addSelectionListener( new SelectionAdapter() {
@@ -350,7 +352,7 @@ public class NotePadDialog extends Dialog {
     wbFontColorChange.setToolTipText( BaseMessages.getString( PKG, "NotePadDialog.Font.Color.Change.Tooltip" ) );
     props.setLook( wbFontColorChange );
     fdFontColorChange = new FormData();
-    fdFontColorChange.top = new FormAttachment( wFontItalic, 2 * margin );
+    fdFontColorChange.top = new FormAttachment( wlFontItalic, 2 * margin );
     fdFontColorChange.right = new FormAttachment( 100, -margin );
     wbFontColorChange.setLayoutData( fdFontColorChange );
     wbFontColorChange.addSelectionListener( new SelectionAdapter() {
@@ -491,32 +493,9 @@ public class NotePadDialog extends Dialog {
     fdNoteFolder.left = new FormAttachment( 0, 0 );
     fdNoteFolder.top = new FormAttachment( 0, margin );
     fdNoteFolder.right = new FormAttachment( 100, 0 );
-    fdNoteFolder.bottom = new FormAttachment( 100, -50 );
+    fdNoteFolder.bottom = new FormAttachment( wOk, -2*margin );
     wNoteFolder.setLayoutData( fdNoteFolder );
 
-    // Some buttons
-
-    wOk = new Button( shell, SWT.PUSH );
-    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
-    wCancel = new Button( shell, SWT.PUSH );
-    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
-
-    BaseTransformDialog.positionBottomButtons( shell, new Button[] { wOk, wCancel }, margin, wNoteFolder );
-
-    // Add listeners
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
-
-    wOk.addListener( SWT.Selection, lsOk );
-    wCancel.addListener( SWT.Selection, lsCancel );
 
     // Detect [X] or ALT-F4 or something that kills this window...
     shell.addShellListener( new ShellAdapter() {
@@ -559,13 +538,13 @@ public class NotePadDialog extends Dialog {
       wFontBold.setSelection( notePadMeta.isFontBold() );
       wFontItalic.setSelection( notePadMeta.isFontItalic() );
       fontColor =
-        new Color( shell.getDisplay(), new RGB(
+        new Color( shell.getDisplay(), props.contrastColor(
           notePadMeta.getFontColorRed(), notePadMeta.getFontColorGreen(), notePadMeta.getFontColorBlue() ) );
       bgColor =
-        new Color( shell.getDisplay(), new RGB( notePadMeta.getBackGroundColorRed(), notePadMeta
+        new Color( shell.getDisplay(), props.contrastColor( notePadMeta.getBackGroundColorRed(), notePadMeta
           .getBackGroundColorGreen(), notePadMeta.getBackGroundColorBlue() ) );
       borderColor =
-        new Color( shell.getDisplay(), new RGB( notePadMeta.getBorderColorRed(), notePadMeta
+        new Color( shell.getDisplay(), props.contrastColor( notePadMeta.getBorderColorRed(), notePadMeta
           .getBorderColorGreen(), notePadMeta.getBorderColorBlue() ) );
     } else {
       wFontName.setText( props.getNoteFont().getName() );
@@ -574,15 +553,15 @@ public class NotePadDialog extends Dialog {
       wFontItalic.setSelection( false );
       fontColor =
         new Color(
-          shell.getDisplay(), new RGB(
+          shell.getDisplay(), props.contrastColor(
           NotePadMeta.COLOR_RGB_BLACK_RED, NotePadMeta.COLOR_RGB_BLACK_GREEN,
           NotePadMeta.COLOR_RGB_BLACK_BLUE ) );
       bgColor =
-        new Color( shell.getDisplay(), new RGB(
+        new Color( shell.getDisplay(), props.contrastColor(
           NotePadMeta.COLOR_RGB_DEFAULT_BG_RED, NotePadMeta.COLOR_RGB_DEFAULT_BG_GREEN,
           NotePadMeta.COLOR_RGB_DEFAULT_BG_BLUE ) );
       borderColor =
-        new Color( shell.getDisplay(), new RGB(
+        new Color( shell.getDisplay(), props.contrastColor(
           NotePadMeta.COLOR_RGB_DEFAULT_BORDER_RED, NotePadMeta.COLOR_RGB_DEFAULT_BORDER_GREEN,
           NotePadMeta.COLOR_RGB_DEFAULT_BORDER_BLUE ) );
     }

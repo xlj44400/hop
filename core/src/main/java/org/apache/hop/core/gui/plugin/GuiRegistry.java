@@ -1,27 +1,23 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.gui.plugin;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hop.core.action.GuiContextAction;
 import org.apache.hop.core.gui.plugin.action.GuiAction;
 import org.apache.hop.core.gui.plugin.key.GuiKeyboardShortcut;
@@ -29,14 +25,13 @@ import org.apache.hop.core.gui.plugin.key.GuiOsxKeyboardShortcut;
 import org.apache.hop.core.gui.plugin.key.KeyboardShortcut;
 import org.apache.hop.core.gui.plugin.menu.GuiMenuElement;
 import org.apache.hop.core.gui.plugin.menu.GuiMenuItem;
-import org.apache.hop.core.gui.plugin.metastore.HopMetaStoreGuiPluginDetails;
 import org.apache.hop.core.gui.plugin.toolbar.GuiToolbarElement;
 import org.apache.hop.core.gui.plugin.toolbar.GuiToolbarItem;
-import org.apache.hop.metastore.IHopMetaStoreElement;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -62,7 +57,12 @@ public class GuiRegistry {
   private Map<String, Map<String, GuiElements>> dataElementsMap;
   private Map<String, List<KeyboardShortcut>> shortCutsMap;
   private Map<String, List<GuiAction>> contextActionsMap;
-  private Map<Class<? extends IHopMetaStoreElement>, HopMetaStoreGuiPluginDetails> metaStoreTypeMap;
+
+  /**
+   * The first entry in this map is the HopGui ID
+   * Then the maps found are GuiPlugin class names and their instances.  It's used to get the methods and fields for toolbars, components, ...
+   */
+  private Map<String, Map<String, Map<String, Object>>> guiPluginObjectsMap;
 
   private GuiRegistry() {
     guiMenuMap = new HashMap<>();
@@ -70,7 +70,7 @@ public class GuiRegistry {
     dataElementsMap = new HashMap<>();
     shortCutsMap = new HashMap<>();
     contextActionsMap = new HashMap<>();
-    metaStoreTypeMap = new HashMap<>();
+    guiPluginObjectsMap = new HashMap<>();
   }
 
   public static final GuiRegistry getInstance() {
@@ -180,9 +180,6 @@ public class GuiRegistry {
     }
     return items;
   }
-
-
-
 
 
   /**
@@ -385,6 +382,9 @@ public class GuiRegistry {
    */
   public void addGuiContextAction( String guiPluginClassName, Method method, GuiContextAction ca, ClassLoader classLoader ) {
     GuiAction action = new GuiAction( ca.id(), ca.type(), ca.name(), ca.tooltip(), ca.image(), guiPluginClassName, method.getName() );
+    action.setCategory( StringUtils.isEmpty(ca.category()) ? null : ca.category() );
+    action.setCategoryOrder( StringUtils.isEmpty(ca.categoryOrder()) ? null : ca.categoryOrder() );
+    action.setKeywords( Arrays.asList(ca.keywords()) );
     action.setClassLoader( classLoader );
 
     List<GuiAction> actions = contextActionsMap.get( ca.parentId() );
@@ -399,16 +399,77 @@ public class GuiRegistry {
     return contextActionsMap.get( parentContextId );
   }
 
-  public void addMetaStoreElementType( Class<? extends IHopMetaStoreElement> elementClass, GuiMetaStoreElement guiMetaStoreElement, ClassLoader classLoader ) {
-    HopMetaStoreGuiPluginDetails details = new HopMetaStoreGuiPluginDetails(
-      guiMetaStoreElement.name(),
-      guiMetaStoreElement.description(),
-      guiMetaStoreElement.iconImage(),
-      classLoader
-    );
-    metaStoreTypeMap.put( elementClass, details );
+  /**
+   * @param hopGuiId           The HopGui ID
+   * @param guiPluginClassname
+   * @param instanceId
+   * @param guiPluginObject
+   */
+  public void registerGuiPluginObject( String hopGuiId, String guiPluginClassname, String instanceId, Object guiPluginObject ) {
+    Map<String, Map<String, Object>> instanceObjectsMap = guiPluginObjectsMap.get( hopGuiId );
+    if ( instanceObjectsMap == null ) {
+      instanceObjectsMap = new HashMap<>();
+      guiPluginObjectsMap.put( hopGuiId, instanceObjectsMap );
+    }
+    Map<String, Object> objectsMap = instanceObjectsMap.get( instanceId );
+    if ( objectsMap == null ) {
+      objectsMap = new HashMap<>();
+      instanceObjectsMap.put( instanceId, objectsMap );
+    }
+    objectsMap.put( guiPluginClassname, guiPluginObject );
   }
 
+  /**
+   * @param hopGuiId           The HopGui ID
+   * @param guiPluginClassname
+   * @param instanceId
+   * @return
+   */
+  public Object findGuiPluginObject( String hopGuiId, String guiPluginClassname, String instanceId ) {
+
+    Map<String, Map<String, Object>> instanceObjectsMap = guiPluginObjectsMap.get( hopGuiId );
+    if ( instanceObjectsMap == null ) {
+      return null;
+    }
+    Map<String, Object> objectsMap = instanceObjectsMap.get( instanceId );
+    if ( objectsMap == null ) {
+      return null;
+    }
+    return objectsMap.get( guiPluginClassname );
+  }
+
+  /**
+   * Remove the GuiPlugin object once it's disposed.
+   *
+   * @param hopGuiId
+   * @param guiPluginClassname
+   * @param instanceId
+   */
+  public void removeGuiPluginObject( String hopGuiId, String guiPluginClassname, String instanceId ) {
+    Map<String, Map<String, Object>> instanceObjectsMap = guiPluginObjectsMap.get( hopGuiId );
+    if ( instanceObjectsMap == null ) {
+      return;
+    }
+    Map<String, Object> objectsMap = instanceObjectsMap.get( instanceId );
+    if ( objectsMap == null ) {
+      return;
+    }
+    objectsMap.remove( guiPluginClassname );
+  }
+
+  /**
+   * Remove all objects with the given instanceId
+   *
+   * @param hopGuiId
+   * @param instanceId
+   */
+  public void removeGuiPluginObjects( String hopGuiId, String instanceId ) {
+    Map<String, Map<String, Object>> instanceObjectsMap = guiPluginObjectsMap.get( hopGuiId );
+    if ( instanceObjectsMap == null ) {
+      return;
+    }
+    instanceObjectsMap.remove( instanceId );
+  }
 
   /**
    * Gets dataElementsMap
@@ -491,19 +552,19 @@ public class GuiRegistry {
   }
 
   /**
-   * Gets metaStoreTypeMap
+   * Gets guiPluginObjectsMap
    *
-   * @return value of metaStoreTypeMap
+   * @return value of guiPluginObjectsMap
    */
-  public Map<Class<? extends IHopMetaStoreElement>, HopMetaStoreGuiPluginDetails> getMetaStoreTypeMap() {
-    return metaStoreTypeMap;
+  public Map<String, Map<String, Map<String, Object>>> getGuiPluginObjectsMap() {
+    return guiPluginObjectsMap;
   }
 
   /**
-   * @param metaStoreTypeMap The metaStoreTypeMap to set
+   * @param guiPluginObjectsMap The guiPluginObjectsMap to set
    */
-  public void setMetaStoreTypeMap(
-    Map<Class<? extends IHopMetaStoreElement>, HopMetaStoreGuiPluginDetails> metaStoreTypeMap ) {
-    this.metaStoreTypeMap = metaStoreTypeMap;
+  public void setGuiPluginObjectsMap( Map<String, Map<String, Map<String, Object>>> guiPluginObjectsMap ) {
+    this.guiPluginObjectsMap = guiPluginObjectsMap;
   }
+
 }

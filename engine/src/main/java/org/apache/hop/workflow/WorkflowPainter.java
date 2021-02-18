@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow;
 
@@ -31,57 +26,57 @@ import org.apache.hop.core.gui.AreaOwner;
 import org.apache.hop.core.gui.AreaOwner.AreaType;
 import org.apache.hop.core.gui.BasePainter;
 import org.apache.hop.core.gui.IGc;
-import org.apache.hop.core.gui.IPrimitiveGc.EColor;
-import org.apache.hop.core.gui.IPrimitiveGc.EFont;
-import org.apache.hop.core.gui.IPrimitiveGc.EImage;
-import org.apache.hop.core.gui.IPrimitiveGc.ELineStyle;
+import org.apache.hop.core.gui.IGc.EColor;
+import org.apache.hop.core.gui.IGc.EFont;
+import org.apache.hop.core.gui.IGc.EImage;
+import org.apache.hop.core.gui.IGc.ELineStyle;
 import org.apache.hop.core.gui.IScrollBar;
 import org.apache.hop.core.gui.Point;
 import org.apache.hop.core.gui.Rectangle;
 import org.apache.hop.core.logging.LogChannel;
-import org.apache.hop.workflow.action.ActionCopy;
+import org.apache.hop.core.variables.IVariables;
+import org.apache.hop.workflow.action.ActionMeta;
 
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
+public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionMeta> {
 
   private WorkflowMeta workflowMeta;
 
-  private ActionCopy startHopEntry;
+  private ActionMeta startHopAction;
   private Point endHopLocation;
-  private ActionCopy endHopEntry;
-  private ActionCopy noInputEntry;
-  private List<ActionCopy> activeJobEntries;
+  private ActionMeta endHopAction;
+  private ActionMeta noInputAction;
+  private List<ActionMeta> activeActions;
   private List<ActionResult> actionResults;
 
-  public WorkflowPainter( IGc gc, WorkflowMeta workflowMeta, Point area, IScrollBar hori,
-                          IScrollBar vert, WorkflowHopMeta candidate, Point drop_candidate, Rectangle selrect,
+  public WorkflowPainter( IGc gc, IVariables variables, WorkflowMeta workflowMeta, Point area, IScrollBar hori,
+                          IScrollBar vert, WorkflowHopMeta candidate, Rectangle selrect,
                           List<AreaOwner> areaOwners, int iconSize, int lineWidth, int gridSize,
-                          String noteFontName, int noteFontHeight, double zoomFactor ) {
-    super( gc, workflowMeta, area, hori, vert, drop_candidate, selrect, areaOwners, iconSize, lineWidth, gridSize,
-      noteFontName, noteFontHeight, zoomFactor );
+                          String noteFontName, int noteFontHeight, double zoomFactor, boolean drawingEditIcons ) {
+    super( gc, variables, workflowMeta, area, hori, vert, selrect, areaOwners, iconSize, lineWidth, gridSize,
+      noteFontName, noteFontHeight, zoomFactor, drawingEditIcons );
     this.workflowMeta = workflowMeta;
 
     this.candidate = candidate;
 
   }
 
-  public void drawJob() {
+  public void drawWorkflow() throws HopException {
 
     Point max = workflowMeta.getMaximum();
     Point thumb = getThumb( area, max );
-    offset = getOffset( thumb, area );
+    if (offset==null) {
+      offset = getOffset( thumb, area );
+    }
 
+    // Make sure the canvas is scaled 100%
+    gc.setTransform( 0.0f, 0.0f, 1.0f );
+    // First clear the image in the background color
     gc.setBackground( EColor.BACKGROUND );
-
-    if ( hori != null ) {
-      hori.setThumb( thumb.x );
-    }
-    if ( vert != null ) {
-      vert.setThumb( thumb.y );
-    }
+    gc.fillRectangle( 0, 0, area.x, area.y );
 
     // Draw the pipeline onto the image
     //
@@ -94,13 +89,13 @@ public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
 
   }
 
-  private void drawActions() {
+  private void drawActions() throws HopException {
     if ( gridSize > 1 ) {
       drawGrid();
     }
 
     try {
-      ExtensionPointHandler.callExtensionPoint( LogChannel.GENERAL, HopExtensionPoint.WorkflowPainterStart.id, this );
+      ExtensionPointHandler.callExtensionPoint( LogChannel.GENERAL, variables, HopExtensionPoint.WorkflowPainterStart.id, this );
     } catch ( HopException e ) {
       LogChannel.GENERAL.logError( "Error in JobPainterStart extension point", e );
     }
@@ -125,10 +120,10 @@ public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
     if ( candidate != null ) {
       drawWorkflowHop( candidate, true );
     } else {
-      if ( startHopEntry != null && endHopLocation != null ) {
-        Point fr = startHopEntry.getLocation();
+      if ( startHopAction != null && endHopLocation != null ) {
+        Point fr = startHopAction.getLocation();
         Point to = endHopLocation;
-        if ( endHopEntry == null ) {
+        if ( endHopAction == null ) {
           gc.setForeground( EColor.GRAY );
           arrow = EImage.ARROW_DISABLED;
         } else {
@@ -137,12 +132,12 @@ public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
         }
         Point start = real2screen( fr.x + iconSize / 2, fr.y + iconSize / 2 );
         Point end = real2screen( to.x, to.y );
-        drawArrow( arrow, start.x, start.y, end.x, end.y, theta, calcArrowLength(), 1.2, null, startHopEntry,
-          endHopEntry == null ? endHopLocation : endHopEntry );
-      } else if ( endHopEntry != null && endHopLocation != null ) {
+        drawArrow( arrow, start.x, start.y, end.x, end.y, theta, calcArrowLength(), 1.2, null, startHopAction,
+        	endHopAction == null ? endHopLocation : endHopAction );
+      } else if ( endHopAction != null && endHopLocation != null ) {
         Point fr = endHopLocation;
-        Point to = endHopEntry.getLocation();
-        if ( startHopEntry == null ) {
+        Point to = endHopAction.getLocation();
+        if ( startHopAction == null ) {
           gc.setForeground( EColor.GRAY );
           arrow = EImage.ARROW_DISABLED;
         } else {
@@ -152,36 +147,29 @@ public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
         Point start = real2screen( fr.x, fr.y );
         Point end = real2screen( to.x + iconSize / 2, to.y + iconSize / 2 );
         drawArrow( arrow, start.x, start.y, end.x, end.y + iconSize / 2, theta, calcArrowLength(), 1.2, null,
-          startHopEntry == null ? endHopLocation : startHopEntry, endHopEntry );
+          startHopAction == null ? endHopLocation : startHopAction, endHopAction );
       }
     }
 
     for ( int j = 0; j < workflowMeta.nrActions(); j++ ) {
-      ActionCopy je = workflowMeta.getAction( j );
-      drawActionCopy( je );
+      ActionMeta je = workflowMeta.getAction( j );
+      drawAction( je );
     }
 
     // Display an icon on the indicated location signaling to the user that the transform in question does not accept input
     //
-    if ( noInputEntry != null ) {
+    if ( noInputAction != null ) {
       gc.setLineWidth( 2 );
       gc.setForeground( EColor.RED );
-      Point n = noInputEntry.getLocation();
+      Point n = noInputAction.getLocation();
       gc.drawLine( offset.x + n.x - 5, offset.y + n.y - 5, offset.x + n.x + iconSize + 5, offset.y
         + n.y + iconSize + 5 );
       gc.drawLine( offset.x + n.x - 5, offset.y + n.y + iconSize + 5, offset.x + n.x + iconSize + 5, offset.y
         + n.y - 5 );
     }
 
-    if ( dropCandidate != null ) {
-      gc.setLineStyle( ELineStyle.SOLID );
-      gc.setForeground( EColor.BLACK );
-      Point screen = real2screen( dropCandidate.x, dropCandidate.y );
-      gc.drawRectangle( screen.x, screen.y, iconSize, iconSize );
-    }
-
     try {
-      ExtensionPointHandler.callExtensionPoint( LogChannel.GENERAL, HopExtensionPoint.WorkflowPainterEnd.id, this );
+      ExtensionPointHandler.callExtensionPoint( LogChannel.GENERAL, variables, HopExtensionPoint.WorkflowPainterEnd.id, this );
     } catch ( HopException e ) {
       LogChannel.GENERAL.logError( "Error in JobPainterEnd extension point", e );
     }
@@ -189,10 +177,10 @@ public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
     drawRect( selectionRectangle );
   }
 
-  protected void drawActionCopy( ActionCopy actionCopy ) {
+  protected void drawAction( ActionMeta actionMeta ) throws HopException {
     int alpha = gc.getAlpha();
 
-    Point pt = actionCopy.getLocation();
+    Point pt = actionMeta.getLocation();
     if ( pt == null ) {
       pt = new Point( 50, 50 );
     }
@@ -201,8 +189,8 @@ public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
     int x = screen.x;
     int y = screen.y;
 
-    String name = actionCopy.getName();
-    if ( actionCopy.isSelected() ) {
+    String name = actionMeta.getName();
+    if ( actionMeta.isSelected() ) {
       gc.setLineWidth( 3 );
     } else {
       gc.setLineWidth( 1 );
@@ -210,13 +198,13 @@ public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
 
     gc.setBackground( EColor.BACKGROUND );
     gc.fillRoundRectangle( x - 1, y - 1, iconSize + 1, iconSize + 1, 7, 7 );
-    gc.drawJobEntryIcon( x, y, actionCopy, magnification );
+    gc.drawActionIcon( x, y, actionMeta, magnification );
 
-    areaOwners.add( new AreaOwner( AreaType.ACTION_ICON, x, y, iconSize, iconSize, offset, subject, actionCopy ) );
+    areaOwners.add( new AreaOwner( AreaType.ACTION_ICON, x, y, iconSize, iconSize, offset, subject, actionMeta ) );
 
-    if ( actionCopy.isMissing() ) {
+    if ( actionMeta.isMissing() ) {
       gc.setForeground( EColor.RED );
-    } else if ( actionCopy.isDeprecated() ) {
+    } else if ( actionMeta.isDeprecated() ) {
       gc.setForeground( EColor.DEPRECATED );
     } else {
       gc.setForeground( EColor.CRYSTAL );
@@ -228,50 +216,84 @@ public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
     gc.setBackground( EColor.BACKGROUND );
     gc.setLineWidth( 1 );
 
-    int xpos = x + ( iconSize / 2 ) - ( textsize.x / 2 );
-    int ypos = y + iconSize + 5;
+    int xPos = x + ( iconSize / 2 ) - ( textsize.x / 2 );
+    int yPos = y + iconSize + 5;
 
     gc.setForeground( EColor.BLACK );
-    gc.drawText( name, xpos, ypos, true );
 
-    if ( activeJobEntries != null && activeJobEntries.contains( actionCopy ) ) {
+    // Help out the user working in single-click mode by allowing the name to be clicked to edit
+    //
+    if (isDrawingEditIcons()) {
+
+      Point nameExtent = gc.textExtent( name );
+
+      int tmpAlpha = gc.getAlpha();
+      gc.setAlpha(230);
+
+      gc.drawImage( EImage.EDIT, xPos - 6, yPos-2, magnification );
+
+      gc.setBackground(240, 240, 240);
+      gc.fillRoundRectangle(
+        xPos - 8,
+        yPos - 2,
+        nameExtent.x + 15,
+        nameExtent.y + 8,
+        BasePainter.CORNER_RADIUS_5 + 15,
+        BasePainter.CORNER_RADIUS_5 + 15);
+      gc.setAlpha(tmpAlpha);
+
+      areaOwners.add(
+        new AreaOwner(
+          AreaType.ACTION_NAME,
+          xPos - 8,
+          yPos - 2,
+          nameExtent.x + 15,
+          nameExtent.y + 4,
+          offset,
+          actionMeta,
+          name));
+    }
+
+    gc.drawText( name, xPos, yPos, true );
+
+    if ( activeActions != null && activeActions.contains( actionMeta ) ) {
       gc.setForeground( EColor.BLUE );
-      int iconX = ( x + iconSize ) - ( MINI_ICON_SIZE / 2 );
-      int iconY = y - ( MINI_ICON_SIZE / 2 );
+      int iconX = ( x + iconSize ) - ( miniIconSize / 2 );
+      int iconY = y - ( miniIconSize / 2 );
       gc.drawImage( EImage.BUSY, iconX, iconY, magnification );
-      areaOwners.add( new AreaOwner( AreaType.ACTION_BUSY, iconX, iconY, MINI_ICON_SIZE, MINI_ICON_SIZE, offset, subject, actionCopy ) );
+      areaOwners.add( new AreaOwner( AreaType.ACTION_BUSY, iconX, iconY, miniIconSize, miniIconSize, offset, subject, actionMeta ) );
     } else {
       gc.setForeground( EColor.BLACK );
     }
 
-    ActionResult actionResult = findJobEntryResult( actionCopy );
+    ActionResult actionResult = findActionResult( actionMeta );
     if ( actionResult != null ) {
       Result result = actionResult.getResult();
-      int iconX = ( x + iconSize ) - ( MINI_ICON_SIZE / 2 );
-      int iconY = y - ( MINI_ICON_SIZE / 2 );
+      int iconX = ( x + iconSize ) - ( miniIconSize / 2 );
+      int iconY = y - ( miniIconSize / 2 );
 
       // Draw an execution result on the top right corner...
       //
       if ( actionResult.isCheckpoint() ) {
         gc.drawImage( EImage.CHECKPOINT, iconX, iconY, magnification );
-        areaOwners.add( new AreaOwner( AreaType.ACTION_RESULT_CHECKPOINT, iconX, iconY, MINI_ICON_SIZE,
-          MINI_ICON_SIZE, offset, actionCopy, actionResult ) );
+        areaOwners.add( new AreaOwner( AreaType.ACTION_RESULT_CHECKPOINT, iconX, iconY, miniIconSize,
+          miniIconSize, offset, actionMeta, actionResult ) );
       } else {
         if ( result.getResult() ) {
-          gc.drawImage( EImage.TRUE, iconX, iconY, magnification );
-          areaOwners.add( new AreaOwner( AreaType.ACTION_RESULT_SUCCESS, iconX, iconY, MINI_ICON_SIZE,
-            MINI_ICON_SIZE, offset, actionCopy, actionResult ) );
+          gc.drawImage( EImage.SUCCESS, iconX, iconY, magnification );
+          areaOwners.add( new AreaOwner( AreaType.ACTION_RESULT_SUCCESS, iconX, iconY, miniIconSize,
+            miniIconSize, offset, actionMeta, actionResult ) );
         } else {
-          gc.drawImage( EImage.FALSE, iconX, iconY, magnification );
-          areaOwners.add( new AreaOwner( AreaType.ACTION_RESULT_FAILURE, iconX, iconY, MINI_ICON_SIZE,
-            MINI_ICON_SIZE, offset, actionCopy, actionResult ) );
+          gc.drawImage( EImage.FAILURE, iconX, iconY, magnification );
+          areaOwners.add( new AreaOwner( AreaType.ACTION_RESULT_FAILURE, iconX, iconY, miniIconSize,
+            miniIconSize, offset, actionMeta, actionResult ) );
         }
       }
     }
 
-    WorkflowPainterExtension extension = new WorkflowPainterExtension( gc, areaOwners, workflowMeta, null, actionCopy, x, y, 0, 0, 0, 0, offset, iconSize );
+    WorkflowPainterExtension extension = new WorkflowPainterExtension( gc, areaOwners, workflowMeta, null, actionMeta, x, y, 0, 0, 0, 0, offset, iconSize );
     try {
-      ExtensionPointHandler.callExtensionPoint( LogChannel.GENERAL, HopExtensionPoint.WorkflowPainterAction.id, extension );
+      ExtensionPointHandler.callExtensionPoint( LogChannel.GENERAL, variables, HopExtensionPoint.WorkflowPainterAction.id, extension );
     } catch ( Exception e ) {
       LogChannel.GENERAL.logError( "Error calling extension point(s) for the workflow painter action", e );
     }
@@ -281,7 +303,7 @@ public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
     gc.setAlpha( alpha );
   }
 
-  private ActionResult findJobEntryResult( ActionCopy actionCopy ) {
+  private ActionResult findActionResult( ActionMeta actionMeta ) {
     if ( actionResults == null ) {
       return null;
     }
@@ -290,8 +312,7 @@ public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
     while ( iterator.hasNext() ) {
       ActionResult actionResult = iterator.next();
 
-      if ( actionResult.getActionName().equals( actionCopy.getName() )
-        && actionResult.getActionNr() == actionCopy.getNr() ) {
+      if ( actionResult.getActionName().equals( actionMeta.getName() ) ) {
         return actionResult;
       }
     }
@@ -299,7 +320,7 @@ public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
     return null;
   }
 
-  protected void drawWorkflowHop( WorkflowHopMeta hop, boolean candidate ) {
+  protected void drawWorkflowHop( WorkflowHopMeta hop, boolean candidate ) throws HopException {
     if ( hop == null || hop.getFromAction() == null || hop.getToAction() == null ) {
       return;
     }
@@ -310,13 +331,13 @@ public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
   /**
    * Calculates line coordinates from center to center.
    */
-  protected void drawLine( WorkflowHopMeta jobHop, boolean is_candidate ) {
-    int[] line = getLine( jobHop.getFromAction(), jobHop.getToAction() );
+  protected void drawLine( WorkflowHopMeta workflowHop, boolean is_candidate ) throws HopException {
+    int[] line = getLine( workflowHop.getFromAction(), workflowHop.getToAction() );
 
     gc.setLineWidth( lineWidth );
-    EColor col;
+    EColor color;
 
-    if ( jobHop.getFromAction().isLaunchingInParallel() ) {
+    if ( workflowHop.getFromAction().isLaunchingInParallel() ) {
       gc.setLineStyle( ELineStyle.PARALLEL );
     } else {
       gc.setLineStyle( ELineStyle.SOLID );
@@ -324,34 +345,34 @@ public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
 
     EImage arrow;
     if ( is_candidate ) {
-      col = EColor.BLUE;
+      color = EColor.BLUE;
       arrow = EImage.ARROW_CANDIDATE;
-    } else if ( jobHop.isEnabled() ) {
-      if ( jobHop.isUnconditional() ) {
-        col = EColor.HOP_DEFAULT;
+    } else if ( workflowHop.isEnabled() ) {
+      if ( workflowHop.isUnconditional() ) {
+        color = EColor.HOP_DEFAULT;
         arrow = EImage.ARROW_DEFAULT;
       } else {
-        if ( jobHop.getEvaluation() ) {
-          col = EColor.HOP_OK;
-          arrow = EImage.ARROW_OK;
+        if ( workflowHop.getEvaluation() ) {
+          color = EColor.HOP_TRUE;
+          arrow = EImage.ARROW_TRUE;
         } else {
-          col = EColor.RED;
-          arrow = EImage.ARROW_ERROR;
-          gc.setLineStyle( ELineStyle.DASH );
+          color = EColor.HOP_FALSE;
+          arrow = EImage.ARROW_FALSE;
+          //gc.setLineStyle( ELineStyle.DASH );
         }
       }
     } else {
-      col = EColor.GRAY;
+      color = EColor.GRAY;
       arrow = EImage.ARROW_DISABLED;
     }
 
-    gc.setForeground( col );
+    gc.setForeground( color );
 
-    if ( jobHop.isSplit() ) {
+    if ( workflowHop.isSplit() ) {
       gc.setLineWidth( lineWidth + 2 );
     }
-    drawArrow( arrow, line, jobHop );
-    if ( jobHop.isSplit() ) {
+    drawArrow( arrow, line, workflowHop );
+    if ( workflowHop.isSplit() ) {
       gc.setLineWidth( lineWidth );
     }
 
@@ -360,13 +381,13 @@ public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
     gc.setLineStyle( ELineStyle.SOLID );
   }
 
-  private void drawArrow( EImage arrow, int[] line, WorkflowHopMeta jobHop ) {
-    drawArrow( arrow, line, jobHop, jobHop.getFromAction(), jobHop.getToAction() );
+  private void drawArrow( EImage arrow, int[] line, WorkflowHopMeta workflowHop ) throws HopException {
+    drawArrow( arrow, line, workflowHop, workflowHop.getFromAction(), workflowHop.getToAction() );
   }
 
   @Override
   protected void drawArrow( EImage arrow, int x1, int y1, int x2, int y2, double theta, int size, double factor,
-                            WorkflowHopMeta jobHop, Object startObject, Object endObject ) {
+                            WorkflowHopMeta workflowHop, Object startObject, Object endObject ) throws HopException {
     int mx, my;
     int a, b, dist;
     double angle;
@@ -398,81 +419,80 @@ public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
     // calculate points for arrowhead
     angle = Math.atan2( y2 - y1, x2 - x1 ) + ( Math.PI / 2 );
 
-    boolean q1 = Math.toDegrees( angle ) >= 0 && Math.toDegrees( angle ) <= 90;
-    boolean q2 = Math.toDegrees( angle ) > 90 && Math.toDegrees( angle ) <= 180;
-    boolean q3 = Math.toDegrees( angle ) > 180 && Math.toDegrees( angle ) <= 270;
-    boolean q4 = Math.toDegrees( angle ) > 270 || Math.toDegrees( angle ) < 0;
+    boolean q1 = Math.toDegrees(angle) >= 0 && Math.toDegrees(angle) < 90;
+    boolean q2 = Math.toDegrees(angle) >= 90 && Math.toDegrees(angle) < 180;
+    boolean q3 = Math.toDegrees(angle) >= 180 && Math.toDegrees(angle) < 270;
+    boolean q4 = Math.toDegrees(angle) >= 270 || Math.toDegrees(angle) < 0;
 
     if ( q1 || q3 ) {
-      gc.drawImage( arrow, mx + 1, my, magnification, angle );
+      gc.drawImage( arrow, mx , my+1, magnification, angle );
     } else if ( q2 || q4 ) {
       gc.drawImage( arrow, mx, my, magnification, angle );
     }
+
     // Display an icon above the hop...
     //
     factor = 0.8;
 
     // in between 2 points
-    mx = (int) ( x1 + factor * ( x2 - x1 ) / 2 ) - 8;
-    my = (int) ( y1 + factor * ( y2 - y1 ) / 2 ) - 8;
+    mx = (int) ( x1 + factor * ( x2 - x1 ) / 2 ) - miniIconSize / 2;
+    my = (int) ( y1 + factor * ( y2 - y1 ) / 2 ) - miniIconSize / 2;
 
-    if ( jobHop != null ) {
-      EImage hopsIcon;
-      if ( jobHop.isUnconditional() ) {
-        hopsIcon = EImage.UNCONDITIONAL;
-      } else {
-        if ( jobHop.getEvaluation() ) {
-          hopsIcon = EImage.TRUE;
+    if ( workflowHop != null ) {
+
+      if ( workflowHop.getFromAction().isLaunchingInParallel() ) {
+
+         // in between 2 points
+         mx = (int) ( x1 + factor * ( x2 - x1 ) / 2 );
+         my = (int) ( y1 + factor * ( y2 - y1 ) / 2 );
+
+         gc.drawImage( EImage.PARALLEL, mx, my, magnification, angle );
+         areaOwners.add( new AreaOwner( AreaType.WORKFLOW_HOP_PARALLEL_ICON, mx, my, miniIconSize, miniIconSize, offset, subject, workflowHop ) );
+       }
+      else {
+        EImage hopsIcon;
+        if ( workflowHop.isUnconditional() ) {
+          hopsIcon = EImage.UNCONDITIONAL;
         } else {
-          hopsIcon = EImage.FALSE;
+          if ( workflowHop.getEvaluation() ) {
+            hopsIcon = EImage.TRUE;
+          } else {
+            hopsIcon = EImage.FALSE;
+          }
         }
-      }
-
-      Point bounds = gc.getImageBounds( hopsIcon );
-      gc.drawImage( hopsIcon, mx, my, magnification );
-      areaOwners.add( new AreaOwner( AreaType.WORKFLOW_HOP_ICON, mx, my, bounds.x, bounds.y, offset, subject, jobHop ) );
-
-      if ( jobHop.getFromAction().isLaunchingInParallel() ) {
-
-        factor = 1;
-
-        // in between 2 points
-        mx = (int) ( x1 + factor * ( x2 - x1 ) / 2 ) - 8;
-        my = (int) ( y1 + factor * ( y2 - y1 ) / 2 ) - 8;
-
-        hopsIcon = EImage.PARALLEL;
+        
         gc.drawImage( hopsIcon, mx, my, magnification );
-        areaOwners.add( new AreaOwner( AreaType.WORKFLOW_HOP_PARALLEL_ICON, mx, my, bounds.x, bounds.y, offset, subject, jobHop ) );
+        areaOwners.add( new AreaOwner( AreaType.WORKFLOW_HOP_ICON, mx, my, miniIconSize, miniIconSize, offset, subject, workflowHop ) );
       }
 
-      WorkflowPainterExtension extension = new WorkflowPainterExtension( gc, areaOwners, workflowMeta, jobHop, null, x1, y1, x2, y2, mx, my, offset, iconSize );
+      WorkflowPainterExtension extension = new WorkflowPainterExtension( gc, areaOwners, workflowMeta, workflowHop, null, x1, y1, x2, y2, mx, my, offset, iconSize );
       try {
         ExtensionPointHandler.callExtensionPoint(
-          LogChannel.GENERAL, HopExtensionPoint.WorkflowPainterArrow.id, extension );
+          LogChannel.GENERAL, variables, HopExtensionPoint.WorkflowPainterArrow.id, extension );
       } catch ( Exception e ) {
         LogChannel.GENERAL.logError( "Error calling extension point(s) for the workflow painter arrow", e );
       }
     }
   }
 
-  public void setStartHopEntry( ActionCopy startHopEntry ) {
-    this.startHopEntry = startHopEntry;
+  public void setStartHopAction( ActionMeta action ) {
+    this.startHopAction = action;
   }
 
-  public void setEndHopLocation( Point endHopLocation ) {
-    this.endHopLocation = endHopLocation;
+  public void setEndHopLocation( Point location ) {
+    this.endHopLocation = location;
   }
 
-  public void setEndHopEntry( ActionCopy endHopEntry ) {
-    this.endHopEntry = endHopEntry;
+  public void setEndHopAction( ActionMeta action ) {
+    this.endHopAction = action;
   }
 
-  public void setNoInputEntry( ActionCopy noInputEntry ) {
-    this.noInputEntry = noInputEntry;
+  public void setNoInputAction( ActionMeta action ) {
+    this.noInputAction = action;
   }
 
-  public void setActiveJobEntries( List<ActionCopy> activeJobEntries ) {
-    this.activeJobEntries = activeJobEntries;
+  public void setActiveActions( List<ActionMeta> activeActions ) {
+    this.activeActions = activeActions;
   }
 
   /**
@@ -498,24 +518,24 @@ public class WorkflowPainter extends BasePainter<WorkflowHopMeta, ActionCopy> {
     this.workflowMeta = workflowMeta;
   }
 
-  public ActionCopy getStartHopEntry() {
-    return startHopEntry;
+  public ActionMeta getStartHopAction() {
+    return startHopAction;
   }
 
   public Point getEndHopLocation() {
     return endHopLocation;
   }
 
-  public ActionCopy getEndHopEntry() {
-    return endHopEntry;
+  public ActionMeta getEndHopAction() {
+    return endHopAction;
   }
 
-  public ActionCopy getNoInputEntry() {
-    return noInputEntry;
+  public ActionMeta getNoInputAction() {
+    return noInputAction;
   }
 
-  public List<ActionCopy> getActiveJobEntries() {
-    return activeJobEntries;
+  public List<ActionMeta> getActiveActions() {
+    return activeActions;
   }
 
 }

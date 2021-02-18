@@ -1,6 +1,22 @@
+////
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+  http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+////
 :documentationPath: /plugins/transforms/
 :language: en_US
-:page-alternativeEditUrl: https://github.com/project-hop/hop/edit/master/plugins/transforms/http/src/main/doc/http.adoc
+:page-alternativeEditUrl: https://github.com/apache/incubator-hop/edit/master/plugins/transforms/http/src/main/doc/http.adoc
 = HTTP client
 
 == Description
@@ -8,7 +24,7 @@
 The HTTP client transform performs a simple call to a base URL with options appended as shown below:
 
 ====
-http://<URL>?param1=value1&param2=value2&..
+http://<URL>?param1=value1&amp;param2=value2&amp;param3..
 ====
 
 The result is stored in a String field with the specified name. 
@@ -48,4 +64,4 @@ Enabling this will also allow you to specify the name of the input field.
 
 *Q*: Does the HTTP client support SOAP?
 
-*A*: No, it just calls an URL with arguments. Future transforms may provide SOAP functionality, Work is underway on a WebService transform supporting WSDL. The first experimental version appeared in PDI v2.5.0
+*A*: No, it just calls an URL with arguments. Future transforms may provide SOAP functionality, Work is underway on a WebService transform supporting WSDL.

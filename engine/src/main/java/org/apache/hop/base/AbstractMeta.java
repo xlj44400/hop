@@ -1,30 +1,27 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.base;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hop.cluster.SlaveServer;
+import org.apache.hop.core.parameters.INamedParameterDefinitions;
+import org.apache.hop.core.parameters.INamedParameters;
+import org.apache.hop.server.HopServer;
 import org.apache.hop.core.Const;
 import org.apache.hop.core.IAttributes;
 import org.apache.hop.core.IEngineMeta;
@@ -33,7 +30,7 @@ import org.apache.hop.core.changed.ChangedFlag;
 import org.apache.hop.core.changed.IChanged;
 import org.apache.hop.core.changed.IHopObserver;
 import org.apache.hop.core.database.DatabaseMeta;
-import org.apache.hop.core.exception.HopValueException;
+import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.gui.IUndo;
 import org.apache.hop.core.gui.Point;
 import org.apache.hop.core.listeners.IContentChangedListener;
@@ -44,17 +41,12 @@ import org.apache.hop.core.logging.DefaultLogLevel;
 import org.apache.hop.core.logging.ILoggingObject;
 import org.apache.hop.core.logging.LogLevel;
 import org.apache.hop.core.parameters.DuplicateParamException;
-import org.apache.hop.core.parameters.INamedParams;
-import org.apache.hop.core.parameters.NamedParamsDefault;
+import org.apache.hop.core.parameters.NamedParameters;
 import org.apache.hop.core.parameters.UnknownParamException;
-import org.apache.hop.core.row.IRowMeta;
-import org.apache.hop.core.row.value.ValueMetaString;
 import org.apache.hop.core.undo.ChangeAction;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.variables.IVariables;
-import org.apache.hop.core.variables.Variables;
-import org.apache.hop.metastore.api.IMetaStore;
-import org.apache.hop.metastore.api.exceptions.MetaStoreException;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -66,9 +58,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
-  IEngineMeta, INamedParams, IAttributes,
-  ILoggingObject {
+public abstract class AbstractMeta implements IChanged, IUndo, IEngineMeta, INamedParameterDefinitions, IAttributes, ILoggingObject {
 
   /**
    * Constant = 1
@@ -102,13 +92,13 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
 
   protected String filename;
 
-  protected Set<INameChangedListener> nameChangedListeners = Collections.newSetFromMap( new ConcurrentHashMap<INameChangedListener, Boolean>() );
+  protected Set<INameChangedListener> nameChangedListeners = Collections.newSetFromMap( new ConcurrentHashMap<>() );
 
-  protected Set<IFilenameChangedListener> filenameChangedListeners = Collections.newSetFromMap( new ConcurrentHashMap<IFilenameChangedListener, Boolean>() );
+  protected Set<IFilenameChangedListener> filenameChangedListeners = Collections.newSetFromMap( new ConcurrentHashMap<>() );
 
-  protected Set<IContentChangedListener> contentChangedListeners = Collections.newSetFromMap( new ConcurrentHashMap<IContentChangedListener, Boolean>() );
+  protected Set<IContentChangedListener> contentChangedListeners = Collections.newSetFromMap( new ConcurrentHashMap<>() );
 
-  protected Set<ICurrentDirectoryChangedListener> currentDirectoryChangedListeners = Collections.newSetFromMap( new ConcurrentHashMap<ICurrentDirectoryChangedListener, Boolean>() );
+  protected Set<ICurrentDirectoryChangedListener> currentDirectoryChangedListeners = Collections.newSetFromMap( new ConcurrentHashMap<>() );
 
   protected List<NotePadMeta> notes;
 
@@ -118,13 +108,11 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
 
   protected Map<String, Map<String, String>> attributesMap;
 
-  protected IVariables variables = new Variables();
-
-  protected INamedParams namedParams = new NamedParamsDefault();
+  protected INamedParameters namedParams = new NamedParameters();
 
   protected LogLevel logLevel = DefaultLogLevel.getLogLevel();
 
-  protected IMetaStore metaStore;
+  protected IHopMetadataProvider metadataProvider;
 
   protected String createdUser, modifiedUser;
 
@@ -132,9 +120,9 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
 
   protected final ChangedFlag changedFlag = new ChangedFlag();
 
-  protected int max_undo;
+  protected int maxUndo;
 
-  protected int undo_position;
+  protected int undoPosition;
 
   protected RunOptions runOptions = new RunOptions();
 
@@ -165,7 +153,7 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
    * @return the serverObjectId
    */
   @Override
-  public String getContainerObjectId() {
+  public String getContainerId() {
     return containerObjectId;
   }
 
@@ -187,30 +175,30 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
    */
   @Override
   public String getName() {
-    return extractNameFromFilename(nameSynchronizedWithFilename, name, filename, getExtension());
+    return extractNameFromFilename( nameSynchronizedWithFilename, name, filename, getExtension() );
   }
 
   public static final String extractNameFromFilename( boolean sync, String name, String filename, String extension ) {
-    if (filename==null) {
+    if ( filename == null ) {
       return name;
     } else {
-      if (sync) {
+      if ( sync ) {
         int lastExtIndex = filename.toLowerCase().lastIndexOf( extension );
-        if (lastExtIndex<0) {
-          lastExtIndex=filename.length();
+        if ( lastExtIndex < 0 ) {
+          lastExtIndex = filename.length();
         }
 
         // Get the last / or \ in a filename
         //
         int lastSlashIndex = filename.lastIndexOf( '/' );
-        if (lastSlashIndex<0) {
+        if ( lastSlashIndex < 0 ) {
           lastSlashIndex = filename.lastIndexOf( '\\' );
         }
-        if (lastSlashIndex<0) {
+        if ( lastSlashIndex < 0 ) {
           lastSlashIndex = -1;
         }
 
-        return filename.substring( lastSlashIndex+1, lastExtIndex );
+        return filename.substring( lastSlashIndex + 1, lastExtIndex );
 
       } else {
         return name;
@@ -226,7 +214,6 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
   public void setName( String newName ) {
     fireNameChangedListeners( this.name, newName );
     this.name = newName;
-    setInternalNameHopVariable( variables );
   }
 
   /**
@@ -311,16 +298,8 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
   public void setFilename( String newFilename ) {
     fireFilenameChangedListeners( this.filename, newFilename );
     this.filename = newFilename;
-    setInternalFilenameHopVariables( variables );
   }
 
-  /**
-   * Calls setInternalHopVariables on the default object.
-   */
-  @Override
-  public void setInternalHopVariables() {
-    setInternalHopVariables( variables );
-  }
 
   /**
    * This method sets various internal hop variables.
@@ -341,23 +320,22 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
    * @return The database connection or null if nothing was found.
    */
   public DatabaseMeta findDatabase( String name ) {
-    if ( metaStore == null || StringUtils.isEmpty( name ) ) {
+    if ( metadataProvider == null || StringUtils.isEmpty( name ) ) {
       return null;
     }
     try {
-      DatabaseMeta databaseMeta = DatabaseMeta.createFactory( metaStore ).loadElement( name );
-      databaseMeta.initializeVariablesFrom( this );
+      DatabaseMeta databaseMeta = metadataProvider.getSerializer( DatabaseMeta.class ).load( name );
       return databaseMeta;
-    } catch ( MetaStoreException e ) {
-      throw new RuntimeException( "Unable to load database with name '" + name + "' from the metastore", e );
+    } catch ( HopException e ) {
+      throw new RuntimeException( "Unable to load database with name '" + name + "' from the metadata", e );
     }
   }
 
   public int nrDatabases() {
     try {
-      return DatabaseMeta.createFactory( metaStore ).getElementNames().size();
-    } catch ( MetaStoreException e ) {
-      throw new RuntimeException( "Unable to load database with name '" + name + "' from the metastore", e );
+      return metadataProvider.getSerializer( DatabaseMeta.class ).listObjectNames().size();
+    } catch ( HopException e ) {
+      throw new RuntimeException( "Unable to load database with name '" + name + "' from the metadata", e );
     }
   }
 
@@ -516,34 +494,34 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
 
 
   /**
-   * Find a slave server using the name
+   * Find a hop server using the name
    *
-   * @param serverString the name of the slave server
-   * @return the slave server or null if we couldn't spot an approriate entry.
+   * @param serverString the name of the hop server
+   * @return the hop server or null if we couldn't spot an approriate entry.
    */
-  public SlaveServer findSlaveServer( String serverString ) {
-    if ( metaStore == null || StringUtils.isEmpty( name ) ) {
+  public HopServer findHopServer( String serverString ) {
+    if ( metadataProvider == null || StringUtils.isEmpty( name ) ) {
       return null;
     }
     try {
-      return SlaveServer.createFactory( metaStore ).loadElement( name );
-    } catch ( MetaStoreException e ) {
-      throw new RuntimeException( "Unable to load slave server with name '" + name + "' from the metastore", e );
+      return metadataProvider.getSerializer( HopServer.class ).load( name );
+    } catch ( HopException e ) {
+      throw new RuntimeException( "Unable to load hop server with name '" + name + "' from the metadata", e );
     }
   }
 
   /**
-   * Gets an array of slave server names.
+   * Gets an array of hop server names.
    *
-   * @return An array list slave server names
+   * @return An array list hop server names
    */
-  public String[] getSlaveServerNames() {
+  public String[] getHopServerNames() {
     try {
-      List<String> names = SlaveServer.createFactory( metaStore ).getElementNames();
+      List<String> names = metadataProvider.getSerializer( HopServer.class ).listObjectNames();
       Collections.sort( names );
       return names.toArray( new String[ 0 ] );
-    } catch ( MetaStoreException e ) {
-      throw new RuntimeException( "Unable to get slave server names from the metastore", e );
+    } catch ( HopException e ) {
+      throw new RuntimeException( "Unable to get hop server names from the metadata", e );
     }
   }
 
@@ -554,7 +532,7 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
    * org.apache.hop.core.gui.Point[], org.apache.hop.core.gui.Point[], int, boolean)
    */
   @Override
-  public void addUndo( Object[] from, Object[] to, int[] pos, Point[] prev, Point[] curr, int type_of_change,
+  public void addUndo( Object[] from, Object[] to, int[] pos, Point[] prev, Point[] curr, int typeOfChange,
                        boolean nextAlso ) {
     // First clean up after the current position.
     // Example: position at 3, size=5
@@ -564,13 +542,13 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
     // Add 4
     // 01234
 
-    while ( undo.size() > undo_position + 1 && undo.size() > 0 ) {
+    while ( undo.size() > undoPosition + 1 && undo.size() > 0 ) {
       int last = undo.size() - 1;
       undo.remove( last );
     }
 
     ChangeAction ta = new ChangeAction();
-    switch ( type_of_change ) {
+    switch ( typeOfChange ) {
       case TYPE_UNDO_CHANGE:
         ta.setChanged( from, to, pos );
         break;
@@ -587,11 +565,11 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
         break;
     }
     undo.add( ta );
-    undo_position++;
+    undoPosition++;
 
-    if ( undo.size() > max_undo ) {
+    if ( undo.size() > maxUndo ) {
       undo.remove( 0 );
-      undo_position--;
+      undoPosition--;
     }
   }
 
@@ -599,8 +577,8 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
    * Clear undo.
    */
   public void clearUndo() {
-    undo = new ArrayList<ChangeAction>();
-    undo_position = -1;
+    undo = new ArrayList<>();
+    undoPosition = -1;
   }
 
   /*
@@ -611,13 +589,13 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
   @Override
   public ChangeAction nextUndo() {
     int size = undo.size();
-    if ( size == 0 || undo_position >= size - 1 ) {
+    if ( size == 0 || undoPosition >= size - 1 ) {
       return null; // no redo left...
     }
 
-    undo_position++;
+    undoPosition++;
 
-    ChangeAction retval = undo.get( undo_position );
+    ChangeAction retval = undo.get( undoPosition );
 
     return retval;
   }
@@ -630,11 +608,11 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
   @Override
   public ChangeAction viewNextUndo() {
     int size = undo.size();
-    if ( size == 0 || undo_position >= size - 1 ) {
+    if ( size == 0 || undoPosition >= size - 1 ) {
       return null; // no redo left...
     }
 
-    ChangeAction retval = undo.get( undo_position + 1 );
+    ChangeAction retval = undo.get( undoPosition + 1 );
 
     return retval;
   }
@@ -647,13 +625,13 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
    */
   @Override
   public ChangeAction previousUndo() {
-    if ( undo.isEmpty() || undo_position < 0 ) {
+    if ( undo.isEmpty() || undoPosition < 0 ) {
       return null; // No undo left!
     }
 
-    ChangeAction retval = undo.get( undo_position );
+    ChangeAction retval = undo.get( undoPosition );
 
-    undo_position--;
+    undoPosition--;
 
     return retval;
   }
@@ -665,11 +643,11 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
    */
   @Override
   public ChangeAction viewThisUndo() {
-    if ( undo.isEmpty() || undo_position < 0 ) {
+    if ( undo.isEmpty() || undoPosition < 0 ) {
       return null; // No undo left!
     }
 
-    ChangeAction retval = undo.get( undo_position );
+    ChangeAction retval = undo.get( undoPosition );
 
     return retval;
   }
@@ -682,11 +660,11 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
    */
   @Override
   public ChangeAction viewPreviousUndo() {
-    if ( undo.isEmpty() || undo_position < 0 ) {
+    if ( undo.isEmpty() || undoPosition < 0 ) {
       return null; // No undo left!
     }
 
-    ChangeAction retval = undo.get( undo_position );
+    ChangeAction retval = undo.get( undoPosition );
 
     return retval;
   }
@@ -698,7 +676,7 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
    */
   @Override
   public int getMaxUndo() {
-    return max_undo;
+    return maxUndo;
   }
 
   /*
@@ -708,7 +686,7 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
    */
   @Override
   public void setMaxUndo( int mu ) {
-    max_undo = mu;
+    maxUndo = mu;
     while ( undo.size() > mu && undo.size() > 0 ) {
       undo.remove( 0 );
     }
@@ -835,7 +813,7 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
    * @return A list of all the selected notes.
    */
   public List<NotePadMeta> getSelectedNotes() {
-    List<NotePadMeta> selection = new ArrayList<NotePadMeta>();
+    List<NotePadMeta> selection = new ArrayList<>();
     for ( NotePadMeta note : notes ) {
       if ( note.isSelected() ) {
         selection.add( note );
@@ -948,9 +926,9 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
    */
   public List<DatabaseMeta> getDatabases() {
     try {
-      return DatabaseMeta.createFactory( metaStore ).getElements();
-    } catch ( MetaStoreException e ) {
-      throw new RuntimeException( "Unable to load databases from the metastore", e );
+      return metadataProvider.getSerializer( DatabaseMeta.class ).loadAll();
+    } catch ( HopException e ) {
+      throw new RuntimeException( "Unable to load databases from the metadata", e );
     }
   }
 
@@ -961,162 +939,18 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
    */
   public String[] getDatabaseNames() {
     try {
-      List<String> names = DatabaseMeta.createFactory( metaStore ).getElementNames();
+      List<String> names = metadataProvider.getSerializer( DatabaseMeta.class ).listObjectNames();
       Collections.sort( names );
       return names.toArray( new String[ 0 ] );
-    } catch ( MetaStoreException e ) {
-      throw new RuntimeException( "Unable to get database names from the metastore", e );
+    } catch ( HopException e ) {
+      throw new RuntimeException( "Unable to get database names from the metadata", e );
     }
   }
 
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.hop.core.variables.IVariables#copyVariablesFrom(org.apache.hop.core.variables.IVariables)
-   */
-
-  @Override
-  public void copyVariablesFrom( IVariables variables ) {
-    this.variables.copyVariablesFrom( variables );
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.variables.IVariables#environmentSubstitute(java.lang.String)
-   */
-  @Override
-  public String environmentSubstitute( String aString ) {
-    return variables.environmentSubstitute( aString );
-  }
-
-  /*
-   * (non-javadoc)
-   *
-   * @see org.apache.hop.core.variables.IVariables#environmentSubstitute(java.lang.String[])
-   */
-  @Override
-  public String[] environmentSubstitute( String[] aString ) {
-    return variables.environmentSubstitute( aString );
-  }
-
-  @Override
-  public String fieldSubstitute( String aString, IRowMeta rowMeta, Object[] rowData ) throws HopValueException {
-    return variables.fieldSubstitute( aString, rowMeta, rowData );
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.variables.IVariables#getParentVariableSpace()
-   */
-  @Override
-  public IVariables getParentVariableSpace() {
-    return variables.getParentVariableSpace();
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see
-   * org.apache.hop.core.variables.IVariables#setParentVariableSpace(org.apache.hop.core.variables.IVariables)
-   */
-  @Override
-  public void setParentVariableSpace( IVariables parent ) {
-    variables.setParentVariableSpace( parent );
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.variables.IVariables#getVariable(java.lang.String, java.lang.String)
-   */
-  @Override
-  public String getVariable( String variableName, String defaultValue ) {
-    return variables.getVariable( variableName, defaultValue );
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.variables.IVariables#getVariable(java.lang.String)
-   */
-  @Override
-  public String getVariable( String variableName ) {
-    return variables.getVariable( variableName );
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.variables.IVariables#getBooleanValueOfVariable(java.lang.String, boolean)
-   */
-  @Override
-  public boolean getBooleanValueOfVariable( String variableName, boolean defaultValue ) {
-    if ( !Utils.isEmpty( variableName ) ) {
-      String value = environmentSubstitute( variableName );
-      if ( !Utils.isEmpty( value ) ) {
-        return ValueMetaString.convertStringToBoolean( value );
-      }
-    }
-    return defaultValue;
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see
-   * org.apache.hop.core.variables.IVariables#initializeVariablesFrom(org.apache.hop.core.variables.IVariables)
-   */
-  @Override
-  public void initializeVariablesFrom( IVariables parent ) {
-    variables.initializeVariablesFrom( parent );
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.variables.IVariables#listVariables()
-   */
-  @Override
-  public String[] listVariables() {
-    return variables.listVariables();
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.variables.IVariables#setVariable(java.lang.String, java.lang.String)
-   */
-  @Override
-  public void setVariable( String variableName, String variableValue ) {
-    variables.setVariable( variableName, variableValue );
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.variables.IVariables#shareVariablesWith(org.apache.hop.core.variables.IVariables)
-   */
-  @Override
-  public void shareVariablesWith( IVariables variables ) {
-    this.variables = variables;
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.variables.IVariables#injectVariables(java.util.Map)
-   */
-  @Override
-  public void injectVariables( Map<String, String> prop ) {
-    variables.injectVariables( prop );
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.parameters.INamedParams#addParameterDefinition(java.lang.String, java.lang.String,
+   * @see org.apache.hop.core.parameters.INamedParameters#addParameterDefinition(java.lang.String, java.lang.String,
    * java.lang.String)
    */
   @Override
@@ -1127,7 +961,7 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.hop.core.parameters.INamedParams#getParameterDescription(java.lang.String)
+   * @see org.apache.hop.core.parameters.INamedParameters#getParameterDescription(java.lang.String)
    */
   @Override
   public String getParameterDescription( String key ) throws UnknownParamException {
@@ -1137,7 +971,7 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.hop.core.parameters.INamedParams#getParameterDefault(java.lang.String)
+   * @see org.apache.hop.core.parameters.INamedParameters#getParameterDefault(java.lang.String)
    */
   @Override
   public String getParameterDefault( String key ) throws UnknownParamException {
@@ -1147,17 +981,7 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.hop.core.parameters.INamedParams#getParameterValue(java.lang.String)
-   */
-  @Override
-  public String getParameterValue( String key ) throws UnknownParamException {
-    return namedParams.getParameterValue( key );
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.parameters.INamedParams#listParameters()
+   * @see org.apache.hop.core.parameters.INamedParameters#listParameters()
    */
   @Override
   public String[] listParameters() {
@@ -1167,82 +991,11 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.hop.core.parameters.INamedParams#setParameterValue(java.lang.String, java.lang.String)
+   * @see org.apache.hop.core.parameters.INamedParameters#eraseParameters()
    */
   @Override
-  public void setParameterValue( String key, String value ) throws UnknownParamException {
-    namedParams.setParameterValue( key, value );
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.parameters.INamedParams#eraseParameters()
-   */
-  @Override
-  public void eraseParameters() {
-    namedParams.eraseParameters();
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.parameters.INamedParams#clearParameters()
-   */
-  @Override
-  public void clearParameters() {
-    namedParams.clearParameters();
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.parameters.INamedParams#copyParametersFrom(org.apache.hop.core.parameters.INamedParams)
-   */
-  @Override
-  public void copyParametersFrom( INamedParams params ) {
-    namedParams.copyParametersFrom( params );
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.parameters.INamedParams#mergeParametersWith(org.apache.hop.core.parameters.INamedParams, boolean replace)
-   */
-  @Override
-  public void mergeParametersWith( INamedParams params, boolean replace ) {
-    namedParams.mergeParametersWith( params, replace );
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.parameters.INamedParams#activateParameters()
-   */
-  @Override
-  public void activateParameters() {
-    String[] keys = listParameters();
-
-    for ( String key : keys ) {
-      String value;
-      try {
-        value = getParameterValue( key );
-      } catch ( UnknownParamException e ) {
-        value = "";
-      }
-      String defValue;
-      try {
-        defValue = getParameterDefault( key );
-      } catch ( UnknownParamException e ) {
-        defValue = "";
-      }
-
-      if ( Utils.isEmpty( value ) ) {
-        setVariable( key, defValue );
-      } else {
-        setVariable( key, value );
-      }
-    }
+  public void removeAllParameters() {
+    namedParams.removeAllParameters();
   }
 
   /*
@@ -1264,12 +1017,12 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
     this.logLevel = logLevel;
   }
 
-  public IMetaStore getMetaStore() {
-    return metaStore;
+  public IHopMetadataProvider getMetadataProvider() {
+    return metadataProvider;
   }
 
-  public void setMetaStore( IMetaStore metaStore ) {
-    this.metaStore = metaStore;
+  public void setMetadataProvider( IHopMetadataProvider metadataProvider ) {
+    this.metadataProvider = metadataProvider;
   }
 
 
@@ -1365,7 +1118,7 @@ public abstract class AbstractMeta implements IChanged, IUndo, IVariables,
     setFilename( null );
     notes = new ArrayList<>();
     attributesMap = new HashMap<>();
-    max_undo = Const.MAX_UNDO;
+    maxUndo = Const.MAX_UNDO;
     clearUndo();
     clearChanged();
     setChanged( false );

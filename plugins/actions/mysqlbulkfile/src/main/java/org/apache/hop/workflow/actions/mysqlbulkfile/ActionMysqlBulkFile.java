@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.mysqlbulkfile;
 
@@ -43,7 +38,7 @@ import org.apache.hop.workflow.action.IAction;
 import org.apache.hop.workflow.action.ActionBase;
 import org.apache.hop.workflow.action.validator.AndValidator;
 import org.apache.hop.workflow.action.validator.ActionValidatorUtils;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.resource.ResourceEntry;
 import org.apache.hop.resource.ResourceEntry.ResourceType;
 import org.apache.hop.resource.ResourceReference;
@@ -63,46 +58,46 @@ import java.util.List;
 	 
 @Action(
   id = "MYSQL_BULK_FILE",
-  i18nPackageName = "org.apache.hop.workflow.actions.mysqlbulkfile",
-  name = "ActionMysqlBulkFile.Name",
-  description = "ActionMysqlBulkFile.Description",
+  name = "i18n::ActionMysqlBulkFile.Name",
+  description = "i18n::ActionMysqlBulkFile.Description",
   image = "MysqlBulkFile.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.BulkLoading"
+  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.BulkLoading",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/mysqlbulkfile.html"
 )
 public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionMysqlBulkFile.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionMysqlBulkFile.class; // For Translator
 
-  private String tablename;
-  private String schemaname;
+  private String tableName;
+  private String schemaName;
   private String filename;
   private String separator;
   private String enclosed;
-  private String lineterminated;
-  private String limitlines;
-  private String listcolumn;
-  private boolean highpriority;
-  private boolean optionenclosed;
-  public int outdumpvalue;
-  public int iffileexists;
-  private boolean addfiletoresult;
+  private String lineTerminated;
+  private String limitLines;
+  private String listColumn;
+  private boolean highPriority;
+  private boolean optionEnclosed;
+  public int outDumpValue;
+  public int ifFileExists;
+  private boolean addFileToResult;
 
   private DatabaseMeta connection;
 
   public ActionMysqlBulkFile( String n ) {
     super( n, "" );
-    tablename = null;
-    schemaname = null;
+    tableName = null;
+    schemaName = null;
     filename = null;
     separator = null;
     enclosed = null;
-    limitlines = "0";
-    listcolumn = null;
-    lineterminated = null;
-    highpriority = true;
-    optionenclosed = false;
-    iffileexists = 2;
+    limitLines = "0";
+    listColumn = null;
+    lineTerminated = null;
+    highPriority = true;
+    optionEnclosed = false;
+    ifFileExists = 2;
     connection = null;
-    addfiletoresult = false;
+    addFileToResult = false;
   }
 
   public ActionMysqlBulkFile() {
@@ -118,19 +113,19 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
     StringBuilder retval = new StringBuilder( 200 );
 
     retval.append( super.getXml() );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "schemaname", schemaname ) );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "tablename", tablename ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "schemaname", schemaName ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "tablename", tableName ) );
     retval.append( "      " ).append( XmlHandler.addTagValue( "filename", filename ) );
     retval.append( "      " ).append( XmlHandler.addTagValue( "separator", separator ) );
     retval.append( "      " ).append( XmlHandler.addTagValue( "enclosed", enclosed ) );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "optionenclosed", optionenclosed ) );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "lineterminated", lineterminated ) );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "limitlines", limitlines ) );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "listcolumn", listcolumn ) );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "highpriority", highpriority ) );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "outdumpvalue", outdumpvalue ) );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "iffileexists", iffileexists ) );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "addfiletoresult", addfiletoresult ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "optionenclosed", optionEnclosed ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "lineterminated", lineTerminated ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "limitlines", limitLines ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "listcolumn", listColumn ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "highpriority", highPriority ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "outdumpvalue", outDumpValue ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "iffileexists", ifFileExists ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "addfiletoresult", addFileToResult ) );
     retval.append( "      " ).append(
       XmlHandler.addTagValue( "connection", connection == null ? null : connection.getName() ) );
 
@@ -138,43 +133,43 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
   }
 
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
-      schemaname = XmlHandler.getTagValue( entrynode, "schemaname" );
-      tablename = XmlHandler.getTagValue( entrynode, "tablename" );
+      schemaName = XmlHandler.getTagValue( entrynode, "schemaname" );
+      tableName = XmlHandler.getTagValue( entrynode, "tablename" );
       filename = XmlHandler.getTagValue( entrynode, "filename" );
       separator = XmlHandler.getTagValue( entrynode, "separator" );
       enclosed = XmlHandler.getTagValue( entrynode, "enclosed" );
-      lineterminated = XmlHandler.getTagValue( entrynode, "lineterminated" );
-      limitlines = XmlHandler.getTagValue( entrynode, "limitlines" );
-      listcolumn = XmlHandler.getTagValue( entrynode, "listcolumn" );
-      highpriority = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "highpriority" ) );
-      optionenclosed = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "optionenclosed" ) );
-      outdumpvalue = Const.toInt( XmlHandler.getTagValue( entrynode, "outdumpvalue" ), -1 );
-      iffileexists = Const.toInt( XmlHandler.getTagValue( entrynode, "iffileexists" ), -1 );
+      lineTerminated = XmlHandler.getTagValue( entrynode, "lineterminated" );
+      limitLines = XmlHandler.getTagValue( entrynode, "limitlines" );
+      listColumn = XmlHandler.getTagValue( entrynode, "listcolumn" );
+      highPriority = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "highpriority" ) );
+      optionEnclosed = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "optionenclosed" ) );
+      outDumpValue = Const.toInt( XmlHandler.getTagValue( entrynode, "outdumpvalue" ), -1 );
+      ifFileExists = Const.toInt( XmlHandler.getTagValue( entrynode, "iffileexists" ), -1 );
       String dbname = XmlHandler.getTagValue( entrynode, "connection" );
-      connection = DatabaseMeta.loadDatabase( metaStore, dbname );
-      addfiletoresult = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "addfiletoresult" ) );
+      connection = DatabaseMeta.loadDatabase( metadataProvider, dbname );
+      addFileToResult = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "addfiletoresult" ) );
     } catch ( HopException e ) {
       throw new HopXmlException( "Unable to load action of type 'table exists' from XML node", e );
     }
   }
 
-  public void setTablename( String tablename ) {
-    this.tablename = tablename;
+  public void setTableName( String tableName ) {
+    this.tableName = tableName;
   }
 
-  public void setSchemaname( String schemaname ) {
-    this.schemaname = schemaname;
+  public void setSchemaName( String schemaName ) {
+    this.schemaName = schemaName;
   }
 
-  public String getTablename() {
-    return tablename;
+  public String getTableName() {
+    return tableName;
   }
 
-  public String getSchemaname() {
-    return schemaname;
+  public String getSchemaName() {
+    return schemaName;
   }
 
   public void setDatabase( DatabaseMeta database ) {
@@ -185,7 +180,7 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
     return connection;
   }
 
-  public boolean evaluates() {
+  @Override public boolean isEvaluation() {
     return true;
   }
 
@@ -212,14 +207,14 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
       String realFilename = getRealFilename();
       File file = new File( realFilename );
 
-      if ( file.exists() && iffileexists == 2 ) {
+      if ( file.exists() && ifFileExists == 2 ) {
         // the file exists and user want to Fail
         result.setResult( false );
         result.setNrErrors( 1 );
         logError( BaseMessages.getString( PKG, "JobMysqlBulkFile.FileExists1.Label" )
           + realFilename + BaseMessages.getString( PKG, "JobMysqlBulkFile.FileExists2.Label" ) );
 
-      } else if ( file.exists() && iffileexists == 1 ) {
+      } else if ( file.exists() && ifFileExists == 1 ) {
         // the file exists and user want to do nothing
         result.setResult( true );
         if ( log.isDetailed() ) {
@@ -229,7 +224,7 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
 
       } else {
 
-        if ( file.exists() && iffileexists == 0 ) {
+        if ( file.exists() && ifFileExists == 0 ) {
           // File exists and user want to renamme it with unique name
 
           // Format Date
@@ -259,14 +254,13 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
 
         if ( connection != null ) {
           // User has specified a connection, We can continue ...
-          Database db = new Database( this, connection );
-          db.shareVariablesWith( this );
+          Database db = new Database( this, this, connection );
           try {
             db.connect();
             // Get schemaname
-            String realSchemaname = environmentSubstitute( schemaname );
+            String realSchemaname = resolve( schemaName );
             // Get tablename
-            String realTablename = environmentSubstitute( tablename );
+            String realTablename = resolve( tableName );
 
             if ( db.checkTableExists( realTablename ) ) {
               // The table existe, We can continue ...
@@ -276,7 +270,7 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
               }
 
               // Add schemaname (Most the time Schemaname.Tablename)
-              if ( schemaname != null ) {
+              if ( schemaName != null ) {
                 realTablename = realSchemaname + "." + realTablename;
               }
 
@@ -291,13 +285,13 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
               }
 
               // Fields separator
-              if ( getRealSeparator() != null && outdumpvalue == 0 ) {
+              if ( getRealSeparator() != null && outDumpValue == 0 ) {
                 FieldSeparator = "FIELDS TERMINATED BY '" + Const.replace( getRealSeparator(), "'", "''" ) + "'";
 
               }
 
               // Lines Terminated by
-              if ( getRealLineterminated() != null && outdumpvalue == 0 ) {
+              if ( getRealLineterminated() != null && outDumpValue == 0 ) {
                 LinesTerminated =
                   "LINES TERMINATED BY '" + Const.replace( getRealLineterminated(), "'", "''" ) + "'";
 
@@ -308,7 +302,7 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
                 strHighPriority = "HIGH_PRIORITY";
               }
 
-              if ( getRealEnclosed() != null && outdumpvalue == 0 ) {
+              if ( getRealEnclosed() != null && outDumpValue == 0 ) {
                 if ( isOptionEnclosed() ) {
                   OptionEnclosed = "OPTIONALLY ";
                 }
@@ -318,7 +312,7 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
               }
 
               // OutFile or Dumpfile
-              if ( outdumpvalue == 0 ) {
+              if ( outDumpValue == 0 ) {
                 OutDumpText = "INTO OUTFILE";
               } else {
                 OutDumpText = "INTO DUMPFILE";
@@ -345,7 +339,7 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
                   // Add filename to output files
                   ResultFile resultFile =
                     new ResultFile(
-                      ResultFile.FILE_TYPE_GENERAL, HopVfs.getFileObject( realFilename, this ), parentWorkflow
+                      ResultFile.FILE_TYPE_GENERAL, HopVfs.getFileObject( realFilename ), parentWorkflow
                       .getWorkflowName(), toString() );
                   result.getResultFiles().put( resultFile.getFile().toString(), resultFile );
                 }
@@ -400,19 +394,19 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
   }
 
   public void setHighPriority( boolean highpriority ) {
-    this.highpriority = highpriority;
+    this.highPriority = highpriority;
   }
 
   public void setOptionEnclosed( boolean optionenclosed ) {
-    this.optionenclosed = optionenclosed;
+    this.optionEnclosed = optionenclosed;
   }
 
   public boolean isHighPriority() {
-    return highpriority;
+    return highPriority;
   }
 
   public boolean isOptionEnclosed() {
-    return optionenclosed;
+    return optionEnclosed;
   }
 
   public void setFilename( String filename ) {
@@ -424,7 +418,7 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
   }
 
   public String getRealFilename() {
-    String RealFile = environmentSubstitute( getFilename() );
+    String RealFile = resolve( getFilename() );
     return RealFile.replace( '\\', '/' );
   }
 
@@ -436,16 +430,16 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
     this.enclosed = enclosed;
   }
 
-  public void setLineterminated( String lineterminated ) {
-    this.lineterminated = lineterminated;
+  public void setLineTerminated( String lineTerminated ) {
+    this.lineTerminated = lineTerminated;
   }
 
-  public String getLineterminated() {
-    return lineterminated;
+  public String getLineTerminated() {
+    return lineTerminated;
   }
 
   public String getRealLineterminated() {
-    return environmentSubstitute( getLineterminated() );
+    return resolve( getLineTerminated() );
   }
 
   public String getSeparator() {
@@ -457,43 +451,43 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
   }
 
   public String getRealSeparator() {
-    return environmentSubstitute( getSeparator() );
+    return resolve( getSeparator() );
   }
 
   public String getRealEnclosed() {
-    return environmentSubstitute( getEnclosed() );
+    return resolve( getEnclosed() );
   }
 
-  public void setLimitlines( String limitlines ) {
-    this.limitlines = limitlines;
+  public void setLimitLines( String limitLines ) {
+    this.limitLines = limitLines;
   }
 
-  public String getLimitlines() {
-    return limitlines;
+  public String getLimitLines() {
+    return limitLines;
   }
 
   public String getRealLimitlines() {
-    return environmentSubstitute( getLimitlines() );
+    return resolve( getLimitLines() );
   }
 
   public void setListColumn( String listcolumn ) {
-    this.listcolumn = listcolumn;
+    this.listColumn = listcolumn;
   }
 
   public String getListColumn() {
-    return listcolumn;
+    return listColumn;
   }
 
   public String getRealListColumn() {
-    return environmentSubstitute( getListColumn() );
+    return resolve( getListColumn() );
   }
 
   public void setAddFileToResult( boolean addfiletoresultin ) {
-    this.addfiletoresult = addfiletoresultin;
+    this.addFileToResult = addfiletoresultin;
   }
 
   public boolean isAddFileToResult() {
-    return addfiletoresult;
+    return addFileToResult;
   }
 
   private String MysqlString( String listcolumns ) {
@@ -516,8 +510,8 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
 
   }
 
-  public List<ResourceReference> getResourceDependencies( WorkflowMeta workflowMeta ) {
-    List<ResourceReference> references = super.getResourceDependencies( workflowMeta );
+  public List<ResourceReference> getResourceDependencies( IVariables variables, WorkflowMeta workflowMeta ) {
+    List<ResourceReference> references = super.getResourceDependencies( variables, workflowMeta );
     if ( connection != null ) {
       ResourceReference reference = new ResourceReference( this );
       reference.getEntries().add( new ResourceEntry( connection.getHostname(), ResourceType.SERVER ) );
@@ -529,7 +523,7 @@ public class ActionMysqlBulkFile extends ActionBase implements Cloneable, IActio
 
   @Override
   public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     ActionValidatorUtils.andValidator().validate( this, "filename", remarks,
       AndValidator.putValidators( ActionValidatorUtils.notBlankValidator() ) );
     ActionValidatorUtils.andValidator().validate( this, "tablename", remarks,

@@ -1,30 +1,26 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.pipeline.dialog;
 
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.logging.HopLogStore;
 import org.apache.hop.core.row.IRowMeta;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
@@ -51,9 +47,10 @@ import java.util.List;
  * @since 13-jan-2006
  */
 public class PipelinePreviewProgressDialog {
-  private static Class<?> PKG = PipelineDialog.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = PipelineDialog.class; // For Translator
 
   private Shell shell;
+  private final IVariables variables;
   private PipelineMeta pipelineMeta;
   private String[] previewTransformNames;
   private int[] previewSize;
@@ -66,8 +63,9 @@ public class PipelinePreviewProgressDialog {
   /**
    * Creates a new dialog that will handle the wait while previewing a pipeline...
    */
-  public PipelinePreviewProgressDialog( Shell shell, PipelineMeta pipelineMeta, String[] previewTransformNames, int[] previewSize ) {
+  public PipelinePreviewProgressDialog( Shell shell, IVariables variables, PipelineMeta pipelineMeta, String[] previewTransformNames, int[] previewSize ) {
     this.shell = shell;
+    this.variables = variables;
     this.pipelineMeta = pipelineMeta;
     this.previewTransformNames = previewTransformNames;
     this.previewSize = previewSize;
@@ -93,23 +91,21 @@ public class PipelinePreviewProgressDialog {
       final ProgressMonitorDialog pmd = new ProgressMonitorDialog( shell );
 
       // Run something in the background to cancel active database queries, forecably if needed!
-      Runnable run = new Runnable() {
-        public void run() {
-          IProgressMonitor monitor = pmd.getProgressMonitor();
-          while ( pmd.getShell() == null || ( !pmd.getShell().isDisposed() && !monitor.isCanceled() ) ) {
-            try {
-              Thread.sleep( 100 );
-            } catch ( InterruptedException e ) {
-              // Ignore
-            }
+      Runnable run = () -> {
+        IProgressMonitor monitor = pmd.getProgressMonitor();
+        while ( pmd.getShell() == null || ( !pmd.getShell().isDisposed() && !monitor.isCanceled() ) ) {
+          try {
+            Thread.sleep( 100 );
+          } catch ( InterruptedException e ) {
+            // Ignore
           }
+        }
 
-          if ( monitor.isCanceled() ) { // Disconnect and see what happens!
+        if ( monitor.isCanceled() ) { // Disconnect and see what happens!
 
-            try {
-              pipeline.stopAll();
-            } catch ( Exception e ) { /* Ignore */
-            }
+          try {
+            pipeline.stopAll();
+          } catch ( Exception e ) { /* Ignore */
           }
         }
       };
@@ -142,7 +138,7 @@ public class PipelinePreviewProgressDialog {
 
     // This pipeline is ready to run in preview!
     //
-    pipeline = new LocalPipelineEngine( pipelineMeta, HopGui.getInstance().getLoggingObject() );
+    pipeline = new LocalPipelineEngine( pipelineMeta, variables, HopGui.getInstance().getLoggingObject() );
     pipeline.setPreview( true );
 
     // Prepare the execution...
@@ -177,14 +173,11 @@ public class PipelinePreviewProgressDialog {
     // We add a break-point that is called every time we have a transform with a full preview row buffer
     // That makes it easy and fast to see if we have all the rows we need
     //
-    pipelineDebugMeta.addBreakPointListers( new IBreakPointListener() {
-      public void breakPointHit( PipelineDebugMeta pipelineDebugMeta, TransformDebugMeta transformDebugMeta,
-                                 IRowMeta rowBufferMeta, List<Object[]> rowBuffer ) {
-        String transformName = transformDebugMeta.getTransformMeta().getName();
-        previewComplete.add( transformName );
-        progressMonitor.subTask( BaseMessages.getString(
-          PKG, "PipelinePreviewProgressDialog.SubTask.TransformPreviewFinished", transformName ) );
-      }
+    pipelineDebugMeta.addBreakPointListers( ( pipelineDebugMeta, transformDebugMeta, rowBufferMeta, rowBuffer ) -> {
+      String transformName = transformDebugMeta.getTransformMeta().getName();
+      previewComplete.add( transformName );
+      progressMonitor.subTask( BaseMessages.getString(
+        PKG, "PipelinePreviewProgressDialog.SubTask.TransformPreviewFinished", transformName ) );
     } );
     // set the appropriate listeners on the pipeline...
     //
@@ -195,12 +188,8 @@ public class PipelinePreviewProgressDialog {
     try {
       pipeline.startThreads();
     } catch ( final HopException e ) {
-      shell.getDisplay().asyncExec( new Runnable() {
-        public void run() {
-          new ErrorDialog( shell, BaseMessages.getString( PKG, "System.Dialog.Error.Title" ), BaseMessages
-            .getString( PKG, "PipelinePreviewProgressDialog.Exception.ErrorPreparingPipeline" ), e );
-        }
-      } );
+      shell.getDisplay().asyncExec( () -> new ErrorDialog( shell, BaseMessages.getString( PKG, "System.Dialog.Error.Title" ), BaseMessages
+        .getString( PKG, "PipelinePreviewProgressDialog.Exception.ErrorPreparingPipeline" ), e ) );
 
       // It makes no sense to continue, so just stop running...
       //

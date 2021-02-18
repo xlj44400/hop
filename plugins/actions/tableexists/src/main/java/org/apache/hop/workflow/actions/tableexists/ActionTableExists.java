@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.tableexists;
 
@@ -38,7 +33,7 @@ import org.apache.hop.workflow.action.ActionBase;
 import org.apache.hop.workflow.action.IAction;
 import org.apache.hop.workflow.action.validator.ActionValidatorUtils;
 import org.apache.hop.workflow.action.validator.AndValidator;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.resource.ResourceEntry;
 import org.apache.hop.resource.ResourceEntry.ResourceType;
 import org.apache.hop.resource.ResourceReference;
@@ -55,23 +50,23 @@ import java.util.List;
 
 @Action(
   id = "TABLE_EXISTS",
-  i18nPackageName = "org.apache.hop.workflow.actions.tableexists",
-  name = "ActionTableExists.Name",
-  description = "ActionTableExists.Description",
+  name = "i18n::ActionTableExists.Name",
+  description = "i18n::ActionTableExists.Description",
   image = "TableExists.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Conditions"
+  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Conditions",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/tableexists.html"
 )
 public class ActionTableExists extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionTableExists.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionTableExists.class; // For Translator
 
-  private String tablename;
+  private String tableName;
   private String schemaname;
   private DatabaseMeta connection;
 
   public ActionTableExists( String n ) {
     super( n, "" );
     schemaname = null;
-    tablename = null;
+    tableName = null;
     connection = null;
   }
 
@@ -89,7 +84,7 @@ public class ActionTableExists extends ActionBase implements Cloneable, IAction 
 
     retval.append( super.getXml() );
 
-    retval.append( "      " ).append( XmlHandler.addTagValue( "tablename", tablename ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "tablename", tableName ) );
     retval.append( "      " ).append( XmlHandler.addTagValue( "schemaname", schemaname ) );
     retval.append( "      " ).append(
       XmlHandler.addTagValue( "connection", connection == null ? null : connection.getName() ) );
@@ -98,25 +93,25 @@ public class ActionTableExists extends ActionBase implements Cloneable, IAction 
   }
 
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
 
-      tablename = XmlHandler.getTagValue( entrynode, "tablename" );
+      tableName = XmlHandler.getTagValue( entrynode, "tablename" );
       schemaname = XmlHandler.getTagValue( entrynode, "schemaname" );
       String dbname = XmlHandler.getTagValue( entrynode, "connection" );
-      connection = DatabaseMeta.loadDatabase( metaStore, dbname );
+      connection = DatabaseMeta.loadDatabase( metadataProvider, dbname );
     } catch ( HopException e ) {
       throw new HopXmlException( BaseMessages.getString( PKG, "TableExists.Meta.UnableLoadXml" ), e );
     }
   }
 
-  public void setTablename( String tablename ) {
-    this.tablename = tablename;
+  public void setTablename( String tableName ) {
+    this.tableName = tableName;
   }
 
   public String getTablename() {
-    return tablename;
+    return tableName;
   }
 
   public String getSchemaname() {
@@ -135,7 +130,7 @@ public class ActionTableExists extends ActionBase implements Cloneable, IAction 
     return connection;
   }
 
-  public boolean evaluates() {
+  @Override public boolean isEvaluation() {
     return true;
   }
 
@@ -148,12 +143,11 @@ public class ActionTableExists extends ActionBase implements Cloneable, IAction 
     result.setResult( false );
 
     if ( connection != null ) {
-      Database db = new Database( this, connection );
-      db.shareVariablesWith( this );
+      Database db = new Database( this, this, connection );
       try {
         db.connect();
-        String realTablename = environmentSubstitute( tablename );
-        String realSchemaname = environmentSubstitute( schemaname );
+        String realTablename = resolve( tableName );
+        String realSchemaname = resolve( schemaname );
 
         if ( db.checkTableExists( realSchemaname, realTablename ) ) {
           if ( log.isDetailed() ) {
@@ -188,8 +182,8 @@ public class ActionTableExists extends ActionBase implements Cloneable, IAction 
     return new DatabaseMeta[] { connection, };
   }
 
-  public List<ResourceReference> getResourceDependencies( WorkflowMeta workflowMeta ) {
-    List<ResourceReference> references = super.getResourceDependencies( workflowMeta );
+  public List<ResourceReference> getResourceDependencies( IVariables variables, WorkflowMeta workflowMeta ) {
+    List<ResourceReference> references = super.getResourceDependencies( variables, workflowMeta );
     if ( connection != null ) {
       ResourceReference reference = new ResourceReference( this );
       reference.getEntries().add( new ResourceEntry( connection.getHostname(), ResourceType.SERVER ) );
@@ -201,7 +195,7 @@ public class ActionTableExists extends ActionBase implements Cloneable, IAction 
 
   @Override
   public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     ActionValidatorUtils.andValidator().validate( this, "tablename", remarks,
       AndValidator.putValidators( ActionValidatorUtils.notBlankValidator() ) );
   }

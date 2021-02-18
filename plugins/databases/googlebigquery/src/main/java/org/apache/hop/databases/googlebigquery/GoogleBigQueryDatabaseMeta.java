@@ -1,24 +1,20 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
+
 package org.apache.hop.databases.googlebigquery;
 
 import org.apache.hop.core.Const;
@@ -38,7 +34,7 @@ import org.apache.hop.i18n.BaseMessages;
 @GuiPlugin( id = "GUI-GoogleBigQueryDatabaseMeta" )
 public class GoogleBigQueryDatabaseMeta extends BaseDatabaseMeta implements IDatabase {
 
-  private static Class<?> PKG = GoogleBigQueryDatabaseMeta.class; // for i18n purposes
+  private static final Class<?> PKG = GoogleBigQueryDatabaseMeta.class; // For Translator
 
   @Override public int[] getAccessTypeList() {
     return new int[] { DatabaseMeta.TYPE_ACCESS_NATIVE };
@@ -59,13 +55,13 @@ public class GoogleBigQueryDatabaseMeta extends BaseDatabaseMeta implements IDat
   }
 
   @Override public String getFieldDefinition( IValueMeta v, String tk, String pk, boolean useAutoinc,
-                                              boolean addFieldname, boolean addCr ) {
+                                              boolean addFieldName, boolean addCr ) {
     String retval = "";
 
     String fieldname = v.getName();
     int precision = v.getPrecision();
 
-    if ( addFieldname ) {
+    if ( addFieldName ) {
       retval += fieldname + " ";
     }
 
@@ -118,7 +114,7 @@ public class GoogleBigQueryDatabaseMeta extends BaseDatabaseMeta implements IDat
   }
 
   @Override public String getAddColumnStatement(
-    String tablename, IValueMeta v, String tk,
+    String tableName, IValueMeta v, String tk,
     boolean useAutoinc, String pk, boolean semicolon ) {
     // BigQuery does not support DDL through JDBC.
     // https://cloud.google.com/bigquery/partners/simba-drivers/#do_the_drivers_provide_the_ability_to_manage_tables_create_table
@@ -126,7 +122,7 @@ public class GoogleBigQueryDatabaseMeta extends BaseDatabaseMeta implements IDat
   }
 
   @Override public String getModifyColumnStatement(
-    String tablename, IValueMeta v, String tk, boolean useAutoinc,
+    String tableName, IValueMeta v, String tk, boolean useAutoinc,
     String pk, boolean semicolon ) {
     // BigQuery does not support DDL through JDBC.
     // https://cloud.google.com/bigquery/partners/simba-drivers/#do_the_drivers_provide_the_ability_to_manage_tables_create_table
@@ -141,12 +137,12 @@ public class GoogleBigQueryDatabaseMeta extends BaseDatabaseMeta implements IDat
     return "SELECT * FROM " + tableName + " LIMIT 0";
   }
 
-  @Override public String getSqlTableExists( String tablename ) {
-    return getSqlQueryFields( tablename );
+  @Override public String getSqlTableExists( String tableName ) {
+    return getSqlQueryFields( tableName );
   }
 
-  @Override public String getSqlColumnExists( String columnname, String tablename ) {
-    return getSqlQueryColumnFields( columnname, tablename );
+  @Override public String getSqlColumnExists( String columnname, String tableName ) {
+    return getSqlQueryColumnFields( columnname, tableName );
   }
 
   public String getSqlQueryColumnFields( String columnname, String tableName ) {

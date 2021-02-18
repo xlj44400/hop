@@ -1,29 +1,23 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.fileexists;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.ui.core.dialog.BaseDialog;
@@ -36,23 +30,11 @@ import org.apache.hop.workflow.WorkflowMeta;
 import org.apache.hop.workflow.action.IAction;
 import org.apache.hop.workflow.action.IActionDialog;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.MessageBox;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
 /**
  * This dialog allows you to edit the SQL action settings. (select the connection and the sql script to be executed)
@@ -60,14 +42,8 @@ import org.eclipse.swt.widgets.Text;
  * @author Matt
  * @since 19-06-2003
  */
-@PluginDialog(
-  id = "FILE_EXISTS",
-  image = "FileExists.svg",
-  pluginType = PluginDialog.PluginType.ACTION,
-  documentationUrl = "https://www.project-hop.org/manual/latest/plugins/actions/"
-)
 public class ActionFileExistsDialog extends ActionDialog implements IActionDialog {
-  private static Class<?> PKG = ActionFileExists.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionFileExists.class; // For Translator
 
   private static final String[] EXTENSIONS = new String[] { "*.txt", "*.csv", "*" };
 
@@ -76,34 +52,18 @@ public class ActionFileExistsDialog extends ActionDialog implements IActionDialo
     BaseMessages.getString( PKG, "JobFileExists.Filetype.CSV" ),
     BaseMessages.getString( PKG, "JobFileExists.Filetype.All" ) };
 
-  private Label wlName;
-
   private Text wName;
 
-  private FormData fdlName, fdName;
-
-  private Label wlFilename;
-
-  private Button wbFilename;
-
   private TextVar wFilename;
-
-  private FormData fdlFilename, fdbFilename, fdFilename;
-
-  private Button wOk, wCancel;
-
-  private Listener lsOk, lsCancel;
 
   private ActionFileExists action;
 
   private Shell shell;
 
-  private SelectionAdapter lsDef;
-
   private boolean changed;
 
   public ActionFileExistsDialog( Shell parent, IAction action, WorkflowMeta workflowMeta ) {
-    super( parent, action, workflowMeta );
+    super( parent, workflowMeta );
     this.action = (ActionFileExists) action;
     if ( this.action.getName() == null ) {
       this.action.setName( BaseMessages.getString( PKG, "JobFileExists.Name.Default" ) );
@@ -114,15 +74,11 @@ public class ActionFileExistsDialog extends ActionDialog implements IActionDialo
     Shell parent = getParent();
     Display display = parent.getDisplay();
 
-    shell = new Shell( parent, props.getWorkflowsDialogStyle() );
+    shell = new Shell( parent, SWT.DIALOG_TRIM | SWT.MIN | SWT.MAX | SWT.RESIZE );
     props.setLook( shell );
     WorkflowDialog.setShellImage( shell, action );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        action.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> action.setChanged();
     changed = action.hasChanged();
 
     FormLayout formLayout = new FormLayout();
@@ -136,56 +92,56 @@ public class ActionFileExistsDialog extends ActionDialog implements IActionDialo
     int margin = Const.MARGIN;
 
     // Filename line
-    wlName = new Label( shell, SWT.RIGHT );
+    Label wlName = new Label(shell, SWT.RIGHT);
     wlName.setText( BaseMessages.getString( PKG, "JobFileExists.Name.Label" ) );
-    props.setLook( wlName );
-    fdlName = new FormData();
+    props.setLook(wlName);
+    FormData fdlName = new FormData();
     fdlName.left = new FormAttachment( 0, 0 );
     fdlName.right = new FormAttachment( middle, -margin );
     fdlName.top = new FormAttachment( 0, margin );
-    wlName.setLayoutData( fdlName );
+    wlName.setLayoutData(fdlName);
     wName = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wName );
     wName.addModifyListener( lsMod );
-    fdName = new FormData();
+    FormData fdName = new FormData();
     fdName.left = new FormAttachment( middle, 0 );
     fdName.top = new FormAttachment( 0, margin );
     fdName.right = new FormAttachment( 100, 0 );
-    wName.setLayoutData( fdName );
+    wName.setLayoutData(fdName);
 
     // Filename line
-    wlFilename = new Label( shell, SWT.RIGHT );
+    Label wlFilename = new Label(shell, SWT.RIGHT);
     wlFilename.setText( BaseMessages.getString( PKG, "JobFileExists.Filename.Label" ) );
-    props.setLook( wlFilename );
-    fdlFilename = new FormData();
+    props.setLook(wlFilename);
+    FormData fdlFilename = new FormData();
     fdlFilename.left = new FormAttachment( 0, 0 );
     fdlFilename.top = new FormAttachment( wName, margin );
     fdlFilename.right = new FormAttachment( middle, -margin );
-    wlFilename.setLayoutData( fdlFilename );
+    wlFilename.setLayoutData(fdlFilename);
 
-    wbFilename = new Button( shell, SWT.PUSH | SWT.CENTER );
-    props.setLook( wbFilename );
+    Button wbFilename = new Button(shell, SWT.PUSH | SWT.CENTER);
+    props.setLook(wbFilename);
     wbFilename.setText( BaseMessages.getString( PKG, "System.Button.Browse" ) );
-    fdbFilename = new FormData();
+    FormData fdbFilename = new FormData();
     fdbFilename.right = new FormAttachment( 100, 0 );
     fdbFilename.top = new FormAttachment( wName, 0 );
     // fdbFilename.height = 22;
-    wbFilename.setLayoutData( fdbFilename );
+    wbFilename.setLayoutData(fdbFilename);
 
-    wFilename = new TextVar( workflowMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wFilename = new TextVar( variables, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wFilename );
     wFilename.addModifyListener( lsMod );
-    fdFilename = new FormData();
+    FormData fdFilename = new FormData();
     fdFilename.left = new FormAttachment( middle, 0 );
     fdFilename.top = new FormAttachment( wName, margin );
-    fdFilename.right = new FormAttachment( wbFilename, -margin );
-    wFilename.setLayoutData( fdFilename );
+    fdFilename.right = new FormAttachment(wbFilename, -margin );
+    wFilename.setLayoutData(fdFilename);
 
     // Whenever something changes, set the tooltip to the expanded version:
-    wFilename.addModifyListener( e -> wFilename.setToolTipText( workflowMeta.environmentSubstitute( wFilename.getText() ) ) );
-    wbFilename.addListener( SWT.Selection, e-> BaseDialog.presentFileDialog(shell, wFilename, workflowMeta, EXTENSIONS, FILETYPES, false));
+    wFilename.addModifyListener( e -> wFilename.setToolTipText( variables.resolve( wFilename.getText() ) ) );
+    wbFilename.addListener( SWT.Selection, e-> BaseDialog.presentFileDialog(shell, wFilename, variables, EXTENSIONS, FILETYPES, false));
 
-    wOk = new Button( shell, SWT.PUSH );
+    Button wOk = new Button(shell, SWT.PUSH);
     wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
     FormData fd = new FormData();
     fd.right = new FormAttachment( 50, -10 );
@@ -193,7 +149,7 @@ public class ActionFileExistsDialog extends ActionDialog implements IActionDialo
     fd.width = 100;
     wOk.setLayoutData( fd );
 
-    wCancel = new Button( shell, SWT.PUSH );
+    Button wCancel = new Button(shell, SWT.PUSH);
     wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
     fd = new FormData();
     fd.left = new FormAttachment( 50, 10 );
@@ -201,30 +157,22 @@ public class ActionFileExistsDialog extends ActionDialog implements IActionDialo
     fd.width = 100;
     wCancel.setLayoutData( fd );
 
-    BaseTransformDialog.positionBottomButtons( shell, new Button[] { wOk, wCancel }, margin, wFilename );
+    BaseTransformDialog.positionBottomButtons( shell, new Button[] {wOk, wCancel}, margin, wFilename );
     // Add listeners
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
+    Listener lsCancel = e -> cancel();
+    Listener lsOk = e -> ok();
+
+    wCancel.addListener( SWT.Selection, lsCancel);
+    wOk.addListener( SWT.Selection, lsOk);
+
+    SelectionAdapter lsDef = new SelectionAdapter() {
+      public void widgetDefaultSelected(SelectionEvent e) {
         ok();
       }
     };
 
-    wCancel.addListener( SWT.Selection, lsCancel );
-    wOk.addListener( SWT.Selection, lsOk );
-
-    lsDef = new SelectionAdapter() {
-      public void widgetDefaultSelected( SelectionEvent e ) {
-        ok();
-      }
-    };
-
-    wName.addSelectionListener( lsDef );
-    wFilename.addSelectionListener( lsDef );
+    wName.addSelectionListener(lsDef);
+    wFilename.addSelectionListener(lsDef);
 
     // Detect X or ALT-F4 or something that kills this window...
     shell.addShellListener( new ShellAdapter() {
@@ -286,13 +234,4 @@ public class ActionFileExistsDialog extends ActionDialog implements IActionDialo
     action.setFilename( wFilename.getText() );
     dispose();
   }
-
-  public boolean evaluates() {
-    return true;
-  }
-
-  public boolean isUnconditional() {
-    return false;
-  }
-
 }

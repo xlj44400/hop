@@ -1,28 +1,22 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transform;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.hop.base.IBaseMeta;
 import org.apache.hop.core.IAttributes;
 import org.apache.hop.core.ICheckResult;
@@ -41,7 +35,7 @@ import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.xml.XmlHandler;
 import org.apache.hop.i18n.BaseMessages;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.errorhandling.IStream;
 import org.apache.hop.resource.ResourceDefinition;
@@ -67,7 +61,7 @@ public class TransformMeta implements
   Cloneable, Comparable<TransformMeta>, IGuiPosition,
   ICheckResultSource, IResourceExport, IResourceHolder,
   IAttributes, IBaseMeta {
-  private static Class<?> PKG = TransformMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = TransformMeta.class; // For Translator
 
   public static final String XML_TAG = "transform";
 
@@ -77,7 +71,7 @@ public class TransformMeta implements
 
   public static final String STRING_ID_ETL_META_INJECT = "MetaInject";
 
-  public static final String STRING_ID_JOB_EXECUTOR = "WorkflowExecutor";
+  public static final String STRING_ID_WORKFLOW_EXECUTOR = "WorkflowExecutor";
 
   public static final String STRING_ID_MAPPING_INPUT = "MappingInput";
 
@@ -139,7 +133,9 @@ public class TransformMeta implements
     if ( transform != null ) {
       PluginRegistry registry = PluginRegistry.getInstance();
       this.transformPluginId = registry.getPluginId( TransformPluginType.class, transform );
-      setDeprecationAndSuggestedTransform();
+      if (this.transformPluginId==null) {
+        System.err.println("WARNING: transform plugin class '"+transform.getClass().getName()+"' couldn't be found in the plugin registry. Check the classpath.");
+      }
     }
     this.name = transformName;
     setTransform( transform );
@@ -152,7 +148,7 @@ public class TransformMeta implements
     transformPartitioningMeta = new TransformPartitioningMeta();
     targetTransformPartitioningMeta = null;
 
-    attributesMap = new HashMap<String, Map<String, String>>();
+    attributesMap = new HashMap<>();
   }
 
   public TransformMeta() {
@@ -200,9 +196,9 @@ public class TransformMeta implements
    * Read the transform data from XML
    *
    * @param transformNode  The XML transform node.
-   * @param metaStore The IMetaStore.
+   * @param metadataProvider where to get the metadata.
    */
-  public TransformMeta( Node transformNode, IMetaStore metaStore ) throws HopXmlException,
+  public TransformMeta( Node transformNode, IHopMetadataProvider metadataProvider ) throws HopXmlException,
     HopPluginLoaderException {
     this();
     PluginRegistry registry = PluginRegistry.getInstance();
@@ -210,24 +206,24 @@ public class TransformMeta implements
     try {
       name = XmlHandler.getTagValue( transformNode, "name" );
       transformPluginId = XmlHandler.getTagValue( transformNode, "type" );
-      setDeprecationAndSuggestedTransform();
 
       // Create a new ITransformMeta object...
-      IPlugin sp = registry.findPluginWithId( TransformPluginType.class, transformPluginId, true );
+      IPlugin transformPlugin = registry.findPluginWithId( TransformPluginType.class, transformPluginId, true );
 
-      if ( sp == null ) {
+      if ( transformPlugin == null ) {
         setTransform( new Missing( name, transformPluginId ) );
       } else {
-        setTransform( (ITransformMeta) registry.loadClass( sp ) );
+        setTransform( (ITransformMeta) registry.loadClass( transformPlugin ) );
       }
       if ( this.transform != null ) {
-        if ( sp != null ) {
-          transformPluginId = sp.getIds()[ 0 ]; // revert to the default in case we loaded an alternate version
+        if ( transformPlugin != null ) {
+          transformPluginId = transformPlugin.getIds()[ 0 ]; // revert to the default in case we loaded an alternate version
+          suggestion = Const.NVL(transformPlugin.getSuggestion(),"");
         }
 
         // Load the specifics from XML...
         if ( transform != null ) {
-          transform.loadXml( transformNode, metaStore );
+          transform.loadXml( transformNode, metadataProvider );
         }
 
         /* Handle info general to all transform types... */
@@ -252,15 +248,16 @@ public class TransformMeta implements
 
         // Handle GUI information: location x and y coordinates
         //
-        String xloc, yloc;
-        int x, y;
-        xloc = XmlHandler.getTagValue( transformNode, "GUI", "xloc" );
-        yloc = XmlHandler.getTagValue( transformNode, "GUI", "yloc" );
+        
+        String xloc = XmlHandler.getTagValue( transformNode, "GUI", "xloc" );
+        String yloc = XmlHandler.getTagValue( transformNode, "GUI", "yloc" );
+        int x;
         try {
           x = Integer.parseInt( xloc );
         } catch ( Exception e ) {
           x = 0;
         }
+        int y;
         try {
           y = Integer.parseInt( yloc );
         } catch ( Exception e ) {
@@ -271,14 +268,14 @@ public class TransformMeta implements
         // The partitioning information?
         //
         Node partNode = XmlHandler.getSubNode( transformNode, "partitioning" );
-        transformPartitioningMeta = new TransformPartitioningMeta( partNode, metaStore );
+        transformPartitioningMeta = new TransformPartitioningMeta( partNode, metadataProvider );
 
         // Target partitioning information?
         //
         Node targetPartNode = XmlHandler.getSubNode( transformNode, "target_transform_partitioning" );
         partNode = XmlHandler.getSubNode( targetPartNode, "partitioning" );
         if ( partNode != null ) {
-          targetTransformPartitioningMeta = new TransformPartitioningMeta( partNode, metaStore );
+          targetTransformPartitioningMeta = new TransformPartitioningMeta( partNode, metadataProvider );
         }
       }
     } catch ( HopPluginLoaderException e ) {
@@ -316,11 +313,11 @@ public class TransformMeta implements
    *
    * @return the number of transform copies to start.
    */
-  public int getCopies() {
+  public int getCopies(IVariables variables) {
     // If the transform is partitioned, that's going to determine the number of copies, nothing else...
     //
     if ( isPartitioned() && getTransformPartitioningMeta().getPartitionSchema() != null ) {
-      List<String> partitionIDs = getTransformPartitioningMeta().getPartitionSchema().calculatePartitionIds();
+      List<String> partitionIDs = getTransformPartitioningMeta().getPartitionSchema().calculatePartitionIds(variables);
       if ( partitionIDs != null && partitionIDs.size() > 0 ) { // these are the partitions the transform can "reach"
         return partitionIDs.size();
       }
@@ -333,7 +330,7 @@ public class TransformMeta implements
     if ( parentPipelineMeta != null ) {
       // Return -1 to indicate that the variable or string value couldn't be converted to number
       //
-      copiesCache = Const.toInt( parentPipelineMeta.environmentSubstitute( copiesString ), -1 );
+      copiesCache = Const.toInt( variables.resolve( copiesString ), -1 );
     } else {
       copiesCache = Const.toInt( copiesString, 1 );
     }
@@ -441,10 +438,10 @@ public class TransformMeta implements
 
   private static Map<String, Map<String, String>> copyStringMap( Map<String, Map<String, String>> map ) {
     if ( map == null ) {
-      return new HashMap<String, Map<String, String>>();
+      return new HashMap<>();
     }
 
-    Map<String, Map<String, String>> result = new HashMap<String, Map<String, String>>( map.size() );
+    Map<String, Map<String, String>> result = new HashMap<>( map.size() );
     for ( Map.Entry<String, Map<String, String>> entry : map.entrySet() ) {
       Map<String, String> value = entry.getValue();
       HashMap<String, String> copy = ( value == null ) ? null : new HashMap<>( value );
@@ -461,6 +458,12 @@ public class TransformMeta implements
     this.transform = transform;
     if ( transform != null ) {
       this.transform.setParentTransformMeta( this );
+
+      // Check if transform is deprecated by annotation
+      Deprecated deprecated = transform.getClass().getDeclaredAnnotation(Deprecated.class);
+      if ( deprecated!=null ) {
+        this.isDeprecated = true;
+      }
     }
   }
 
@@ -539,8 +542,8 @@ public class TransformMeta implements
 
   @SuppressWarnings( "deprecation" )
   public void check( List<ICheckResult> remarks, PipelineMeta pipelineMeta, IRowMeta prev, String[] input,
-                     String[] output, IRowMeta info, IVariables variables, IMetaStore metaStore ) {
-    transform.check( remarks, pipelineMeta, this, prev, input, output, info, variables, metaStore );
+                     String[] output, IRowMeta info, IVariables variables, IHopMetadataProvider metadataProvider ) {
+    transform.check( remarks, pipelineMeta, this, prev, input, output, info, variables, metadataProvider );
   }
 
   @Override
@@ -555,14 +558,14 @@ public class TransformMeta implements
    * @return true is the transform is partitioned
    */
   public boolean isPartitioned() {
-    return transformPartitioningMeta.isPartitioned();
+    return transformPartitioningMeta!=null && transformPartitioningMeta.isPartitioned();
   }
 
   /**
    * @return true is the transform is partitioned
    */
   public boolean isTargetPartitioned() {
-    return targetTransformPartitioningMeta.isPartitioned();
+    return targetTransformPartitioningMeta!=null && targetTransformPartitioningMeta.isPartitioned();
   }
 
   /**
@@ -672,8 +675,8 @@ public class TransformMeta implements
     return STRING_ID_ETL_META_INJECT.equals( transformPluginId );
   }
 
-  public boolean isJobExecutor() {
-    return STRING_ID_JOB_EXECUTOR.equals( transformPluginId );
+  public boolean isWorkflowExecutor() {
+    return STRING_ID_WORKFLOW_EXECUTOR.equals( transformPluginId );
   }
 
   public boolean isMappingInput() {
@@ -689,19 +692,19 @@ public class TransformMeta implements
    *
    * @return a list of all the resource dependencies that the transform is depending on
    */
-  public List<ResourceReference> getResourceDependencies( PipelineMeta pipelineMeta ) {
-    return transform.getResourceDependencies( pipelineMeta, this );
+  public List<ResourceReference> getResourceDependencies( IVariables variables ) {
+    return transform.getResourceDependencies( variables, this );
   }
 
   @Override
   @SuppressWarnings( "deprecation" )
   public String exportResources( IVariables variables, Map<String, ResourceDefinition> definitions,
-                                 IResourceNaming iResourceNaming, IMetaStore metaStore )
+                                 IResourceNaming iResourceNaming, IHopMetadataProvider metadataProvider )
     throws HopException {
 
     // Compatibility with previous release...
     //
-    String resources = transform.exportResources( variables, definitions, iResourceNaming, metaStore );
+    String resources = transform.exportResources( variables, definitions, iResourceNaming, metadataProvider );
     if ( resources != null ) {
       return resources;
     }
@@ -710,7 +713,7 @@ public class TransformMeta implements
     // These can in turn add anything to the map in terms of resources, etc.
     // Even reference files, etc. For now it's just XML probably...
     //
-    return transform.exportResources( variables, definitions, iResourceNaming, metaStore );
+    return transform.exportResources( variables, definitions, iResourceNaming, metadataProvider );
   }
 
   /**
@@ -818,21 +821,6 @@ public class TransformMeta implements
       return null;
     }
     return attributes.get( key );
-  }
-
-  private void setDeprecationAndSuggestedTransform() {
-    PluginRegistry registry = PluginRegistry.getInstance();
-    final List<IPlugin> deprecatedTransforms = registry.getPluginsByCategory( TransformPluginType.class,
-      BaseMessages.getString( PKG, "BaseTransform.Category.Deprecated" ) );
-    for ( IPlugin p : deprecatedTransforms ) {
-      String[] ids = p.getIds();
-      if ( !ArrayUtils.isEmpty( ids ) && ids[ 0 ].equals( this.transformPluginId ) ) {
-        this.isDeprecated = true;
-        this.suggestion = registry.findPluginWithId( TransformPluginType.class, this.transformPluginId ) != null
-          ? registry.findPluginWithId( TransformPluginType.class, this.transformPluginId ).getSuggestion() : "";
-        break;
-      }
-    }
   }
 
   public boolean isMissing() {

@@ -1,28 +1,24 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.www;
 
 import org.apache.hop.core.Const;
+import org.apache.hop.core.annotations.HopServerServlet;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.logging.LogChannelFileWriter;
 import org.apache.hop.core.logging.LoggingObjectType;
@@ -30,7 +26,7 @@ import org.apache.hop.core.logging.SimpleLoggingObject;
 import org.apache.hop.core.util.FileUtil;
 import org.apache.hop.core.vfs.HopVfs;
 import org.apache.hop.core.xml.XmlHandler;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.pipeline.PipelineConfiguration;
 import org.apache.hop.pipeline.PipelineExecutionConfiguration;
 import org.apache.hop.pipeline.PipelineMeta;
@@ -46,6 +42,7 @@ import java.io.PrintWriter;
 import java.util.Map;
 import java.util.UUID;
 
+@HopServerServlet(id="addPipeline", name = "Add a pipeline for execution")
 public class AddPipelineServlet extends BaseHttpServlet implements IHopServerPlugin {
   private static final long serialVersionUID = -6850701762586992604L;
 
@@ -65,7 +62,7 @@ public class AddPipelineServlet extends BaseHttpServlet implements IHopServerPlu
     }
 
     if ( log.isDebug() ) {
-      logDebug( "Addition of transformation requested" );
+      logDebug( "Addition of pipeline requested" );
     }
 
     boolean useXML = "Y".equalsIgnoreCase( request.getParameter( "xml" ) );
@@ -82,7 +79,7 @@ public class AddPipelineServlet extends BaseHttpServlet implements IHopServerPlu
     } else {
       response.setContentType( "text/html" );
       out.println( "<HTML>" );
-      out.println( "<HEAD><TITLE>Add transformation</TITLE></HEAD>" );
+      out.println( "<HEAD><TITLE>Add pipeline</TITLE></HEAD>" );
       out.println( "<BODY>" );
     }
 
@@ -92,7 +89,7 @@ public class AddPipelineServlet extends BaseHttpServlet implements IHopServerPlu
     PipelineExecutionConfiguration pipelineExecutionConfiguration = null;
 
     try {
-      // First read the complete transformation in memory from the request
+      // First read the complete pipeline in memory from the request
       //
       StringBuilder xml = new StringBuilder( request.getContentLength() );
       int c;
@@ -100,24 +97,14 @@ public class AddPipelineServlet extends BaseHttpServlet implements IHopServerPlu
         xml.append( (char) c );
       }
 
-      // Parse the XML, create a transformation configuration
+      // Parse the XML, create a pipeline configuration
       //
-      IMetaStore metaStore = pipelineMap.getSlaveServerConfig().getMetaStore();
-      PipelineConfiguration pipelineConfiguration = PipelineConfiguration.fromXml( xml.toString(), metaStore );
+      PipelineConfiguration pipelineConfiguration = PipelineConfiguration.fromXml( xml.toString() );
       PipelineMeta pipelineMeta = pipelineConfiguration.getPipelineMeta();
       pipelineExecutionConfiguration = pipelineConfiguration.getPipelineExecutionConfiguration();
       pipelineMeta.setLogLevel( pipelineExecutionConfiguration.getLogLevel() );
       if ( log.isDetailed() ) {
         logDetailed( "Logging level set to " + log.getLogLevel().getDescription() );
-      }
-      pipelineMeta.injectVariables( pipelineExecutionConfiguration.getVariablesMap() );
-
-      // Also copy the parameters over...
-      //
-      Map<String, String> params = pipelineExecutionConfiguration.getParametersMap();
-      for ( String param : params.keySet() ) {
-        String value = params.get( param );
-        pipelineMeta.setParameterValue( param, value );
       }
 
       String serverObjectId = UUID.randomUUID().toString();
@@ -126,8 +113,10 @@ public class AddPipelineServlet extends BaseHttpServlet implements IHopServerPlu
       servletLoggingObject.setContainerObjectId( serverObjectId );
       servletLoggingObject.setLogLevel( pipelineExecutionConfiguration.getLogLevel() );
 
+      IHopMetadataProvider metadataProvider = pipelineConfiguration.getMetadataProvider();
+
       String runConfigurationName = pipelineExecutionConfiguration.getRunConfiguration();
-      final IPipelineEngine<PipelineMeta> pipeline = PipelineEngineFactory.createPipelineEngine( runConfigurationName, metaStore, pipelineMeta );
+      final IPipelineEngine<PipelineMeta> pipeline = PipelineEngineFactory.createPipelineEngine( variables, runConfigurationName, metadataProvider, pipelineMeta );
       pipeline.setParent( servletLoggingObject );
 
       if ( pipelineExecutionConfiguration.isSetLogfile() ) {
@@ -135,7 +124,7 @@ public class AddPipelineServlet extends BaseHttpServlet implements IHopServerPlu
         final LogChannelFileWriter logChannelFileWriter;
         try {
           FileUtil.createParentFolder( AddPipelineServlet.class, realLogFilename, pipelineExecutionConfiguration
-            .isCreateParentFolder(), pipeline.getLogChannel(), pipeline );
+            .isCreateParentFolder(), pipeline.getLogChannel() );
           logChannelFileWriter =
             new LogChannelFileWriter( servletLoggingObject.getLogChannelId(), HopVfs.getFileObject( realLogFilename ), pipelineExecutionConfiguration.isSetAppendLogfile() );
           logChannelFileWriter.startLogging();
@@ -165,7 +154,7 @@ public class AddPipelineServlet extends BaseHttpServlet implements IHopServerPlu
         out.println( "<H1>" + message + "</H1>" );
         out.println( "<p><a href=\""
           + convertContextPath( GetPipelineStatusServlet.CONTEXT_PATH ) + "?name=" + pipeline.getPipelineMeta().getName() + "&id="
-          + serverObjectId + "\">Go to the transformation status page</a><p>" );
+          + serverObjectId + "\">Go to the pipeline status page</a><p>" );
       }
     } catch ( Exception ex ) {
       if ( useXML ) {

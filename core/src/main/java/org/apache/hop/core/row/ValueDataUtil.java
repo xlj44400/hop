@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.row;
 
@@ -37,7 +32,7 @@ import org.apache.hop.core.Const;
 import org.apache.hop.core.exception.HopFileNotFoundException;
 import org.apache.hop.core.exception.HopValueException;
 import org.apache.hop.core.fileinput.CharsetToolkit;
-import org.apache.hop.core.util.HopJaroWinklerDistance;
+import org.apache.hop.core.util.PentahoJaroWinklerDistance;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.vfs.HopVfs;
 import org.apache.hop.core.xml.XmlCheck;
@@ -138,11 +133,11 @@ public class ValueDataUtil {
   }
 
   /**
-   * Determines whether or not a character is considered a space. A character is considered a space in Hop if it is a
-   * space, a tab, a newline or a cariage return.
+   * Determines whether or not a character is considered a variables. A character is considered a variables in Hop if it is a
+   * variables, a tab, a newline or a cariage return.
    *
-   * @param c The character to verify if it is a space.
-   * @return true if the character is a space. false otherwise.
+   * @param c The character to verify if it is a variables.
+   * @return true if the character is a variables. false otherwise.
    * @deprecated Use {@link Const#isSpace(char)} instead
    */
   @Deprecated
@@ -198,7 +193,7 @@ public class ValueDataUtil {
     if ( dataA == null || dataB == null ) {
       return null;
     }
-    HopJaroWinklerDistance pjwd = new HopJaroWinklerDistance();
+    PentahoJaroWinklerDistance pjwd = new PentahoJaroWinklerDistance();
     pjwd.apply( dataA.toString(), dataB.toString() );
     return pjwd.getJaroDistance();
   }
@@ -212,7 +207,7 @@ public class ValueDataUtil {
     if ( dataA == null || dataB == null ) {
       return null;
     }
-    HopJaroWinklerDistance pjwd = new HopJaroWinklerDistance();
+    PentahoJaroWinklerDistance pjwd = new PentahoJaroWinklerDistance();
     pjwd.apply( dataA.toString(), dataB.toString() );
     return pjwd.getJaroWinklerDistance();
   }

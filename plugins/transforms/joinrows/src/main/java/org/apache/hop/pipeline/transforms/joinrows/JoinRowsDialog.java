@@ -1,103 +1,68 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.joinrows;
 
 import org.apache.hop.core.Condition;
 import org.apache.hop.core.Const;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.exception.HopException;
-import org.apache.hop.core.row.RowMeta;
 import org.apache.hop.core.row.IRowMeta;
+import org.apache.hop.core.row.RowMeta;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
 import org.apache.hop.pipeline.transform.ITransformDialog;
 import org.apache.hop.pipeline.transform.TransformMeta;
-import org.apache.hop.pipeline.transforms.joinrows.JoinRowsMeta;
 import org.apache.hop.ui.core.dialog.ErrorDialog;
 import org.apache.hop.ui.core.widget.ConditionEditor;
 import org.apache.hop.ui.core.widget.TextVar;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CCombo;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.DirectoryDialog;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
 import java.util.List;
 
-@PluginDialog(
-        id = "JoinRows",
-        image = "joinrows.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = ""
-)
 public class JoinRowsDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = JoinRowsMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = JoinRowsMeta.class; // For Translator
 
-  private Label wlSortDir;
-  private Button wbSortDir;
   private TextVar wSortDir;
-  private FormData fdlSortDir, fdbSortDir, fdSortDir;
 
-  private Label wlPrefix;
   private Text wPrefix;
-  private FormData fdlPrefix, fdPrefix;
 
-  private Label wlCache;
   private Text wCache;
-  private FormData fdlCache, fdCache;
 
-  private Label wlMainTransform;
   private CCombo wMainTransform;
-  private FormData fdlMainTransform, fdMainTransform;
 
-  private Label wlCondition;
   private ConditionEditor wCondition;
-  private FormData fdlCondition, fdCondition;
 
-  private JoinRowsMeta input;
-  private Condition condition;
+  private final JoinRowsMeta input;
+  private final Condition condition;
 
   private Condition backupCondition;
 
-  public JoinRowsDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public JoinRowsDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (JoinRowsMeta) in;
     condition = input.getCondition();
   }
@@ -110,11 +75,7 @@ public class JoinRowsDialog extends BaseTransformDialog implements ITransformDia
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
     changed = input.hasChanged();
     backupCondition = (Condition) condition.clone();
 
@@ -148,34 +109,34 @@ public class JoinRowsDialog extends BaseTransformDialog implements ITransformDia
     wTransformName.setLayoutData( fdTransformName );
 
     // Connection line
-    wlSortDir = new Label( shell, SWT.RIGHT );
+    Label wlSortDir = new Label(shell, SWT.RIGHT);
     wlSortDir.setText( BaseMessages.getString( PKG, "JoinRowsDialog.TempDir.Label" ) );
-    props.setLook( wlSortDir );
-    fdlSortDir = new FormData();
+    props.setLook(wlSortDir);
+    FormData fdlSortDir = new FormData();
     fdlSortDir.left = new FormAttachment( 0, 0 );
     fdlSortDir.right = new FormAttachment( middle, -margin );
     fdlSortDir.top = new FormAttachment( wTransformName, margin );
-    wlSortDir.setLayoutData( fdlSortDir );
+    wlSortDir.setLayoutData(fdlSortDir);
 
-    wbSortDir = new Button( shell, SWT.PUSH | SWT.CENTER );
-    props.setLook( wbSortDir );
+    Button wbSortDir = new Button(shell, SWT.PUSH | SWT.CENTER);
+    props.setLook(wbSortDir);
     wbSortDir.setText( BaseMessages.getString( PKG, "JoinRowsDialog.Browse.Button" ) );
-    fdbSortDir = new FormData();
+    FormData fdbSortDir = new FormData();
     fdbSortDir.right = new FormAttachment( 100, 0 );
     fdbSortDir.top = new FormAttachment( wTransformName, margin );
-    wbSortDir.setLayoutData( fdbSortDir );
+    wbSortDir.setLayoutData(fdbSortDir);
 
-    wSortDir = new TextVar( pipelineMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wSortDir = new TextVar( variables, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wSortDir.setText( BaseMessages.getString( PKG, "JoinRowsDialog.Temp.Label" ) );
     props.setLook( wSortDir );
     wSortDir.addModifyListener( lsMod );
-    fdSortDir = new FormData();
+    FormData fdSortDir = new FormData();
     fdSortDir.left = new FormAttachment( middle, 0 );
     fdSortDir.top = new FormAttachment( wTransformName, margin );
-    fdSortDir.right = new FormAttachment( wbSortDir, -margin );
-    wSortDir.setLayoutData( fdSortDir );
+    fdSortDir.right = new FormAttachment(wbSortDir, -margin );
+    wSortDir.setLayoutData(fdSortDir);
 
-    wbSortDir.addSelectionListener( new SelectionAdapter() {
+    wbSortDir.addSelectionListener(new SelectionAdapter() {
       public void widgetSelected( SelectionEvent arg0 ) {
         DirectoryDialog dd = new DirectoryDialog( shell, SWT.NONE );
         dd.setFilterPath( wSortDir.getText() );
@@ -187,58 +148,54 @@ public class JoinRowsDialog extends BaseTransformDialog implements ITransformDia
     } );
 
     // Whenever something changes, set the tooltip to the expanded version:
-    wSortDir.addModifyListener( new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        wSortDir.setToolTipText( pipelineMeta.environmentSubstitute( wSortDir.getText() ) );
-      }
-    } );
+    wSortDir.addModifyListener( e -> wSortDir.setToolTipText( variables.resolve( wSortDir.getText() ) ) );
 
     // Table line...
-    wlPrefix = new Label( shell, SWT.RIGHT );
+    Label wlPrefix = new Label(shell, SWT.RIGHT);
     wlPrefix.setText( BaseMessages.getString( PKG, "JoinRowsDialog.TempFilePrefix.Label" ) );
-    props.setLook( wlPrefix );
-    fdlPrefix = new FormData();
+    props.setLook(wlPrefix);
+    FormData fdlPrefix = new FormData();
     fdlPrefix.left = new FormAttachment( 0, 0 );
     fdlPrefix.right = new FormAttachment( middle, -margin );
-    fdlPrefix.top = new FormAttachment( wbSortDir, margin * 2 );
-    wlPrefix.setLayoutData( fdlPrefix );
+    fdlPrefix.top = new FormAttachment(wbSortDir, margin * 2 );
+    wlPrefix.setLayoutData(fdlPrefix);
     wPrefix = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wPrefix );
     wPrefix.addModifyListener( lsMod );
-    fdPrefix = new FormData();
+    FormData fdPrefix = new FormData();
     fdPrefix.left = new FormAttachment( middle, 0 );
-    fdPrefix.top = new FormAttachment( wbSortDir, margin * 2 );
+    fdPrefix.top = new FormAttachment(wbSortDir, margin * 2 );
     fdPrefix.right = new FormAttachment( 100, 0 );
-    wPrefix.setLayoutData( fdPrefix );
+    wPrefix.setLayoutData(fdPrefix);
     wPrefix.setText( BaseMessages.getString( PKG, "JoinRowsDialog.Prefix.Label" ) );
 
     // ICache size...
-    wlCache = new Label( shell, SWT.RIGHT );
+    Label wlCache = new Label(shell, SWT.RIGHT);
     wlCache.setText( BaseMessages.getString( PKG, "JoinRowsDialog.Cache.Label" ) );
-    props.setLook( wlCache );
-    fdlCache = new FormData();
+    props.setLook(wlCache);
+    FormData fdlCache = new FormData();
     fdlCache.left = new FormAttachment( 0, 0 );
     fdlCache.right = new FormAttachment( middle, -margin );
     fdlCache.top = new FormAttachment( wPrefix, margin * 2 );
-    wlCache.setLayoutData( fdlCache );
+    wlCache.setLayoutData(fdlCache);
     wCache = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wCache );
     wCache.addModifyListener( lsMod );
-    fdCache = new FormData();
+    FormData fdCache = new FormData();
     fdCache.left = new FormAttachment( middle, 0 );
     fdCache.top = new FormAttachment( wPrefix, margin * 2 );
     fdCache.right = new FormAttachment( 100, 0 );
-    wCache.setLayoutData( fdCache );
+    wCache.setLayoutData(fdCache);
 
     // Read date from...
-    wlMainTransform = new Label( shell, SWT.RIGHT );
+    Label wlMainTransform = new Label(shell, SWT.RIGHT);
     wlMainTransform.setText( BaseMessages.getString( PKG, "JoinRowsDialog.MainTransform.Label" ) );
-    props.setLook( wlMainTransform );
-    fdlMainTransform = new FormData();
+    props.setLook(wlMainTransform);
+    FormData fdlMainTransform = new FormData();
     fdlMainTransform.left = new FormAttachment( 0, 0 );
     fdlMainTransform.right = new FormAttachment( middle, -margin );
     fdlMainTransform.top = new FormAttachment( wCache, margin );
-    wlMainTransform.setLayoutData( fdlMainTransform );
+    wlMainTransform.setLayoutData(fdlMainTransform);
     wMainTransform = new CCombo( shell, SWT.BORDER );
     props.setLook( wMainTransform );
 
@@ -248,24 +205,24 @@ public class JoinRowsDialog extends BaseTransformDialog implements ITransformDia
     }
 
     wMainTransform.addModifyListener( lsMod );
-    fdMainTransform = new FormData();
+    FormData fdMainTransform = new FormData();
     fdMainTransform.left = new FormAttachment( middle, 0 );
     fdMainTransform.top = new FormAttachment( wCache, margin );
     fdMainTransform.right = new FormAttachment( 100, 0 );
-    wMainTransform.setLayoutData( fdMainTransform );
+    wMainTransform.setLayoutData(fdMainTransform);
 
     // Condition widget...
-    wlCondition = new Label( shell, SWT.NONE );
+    Label wlCondition = new Label(shell, SWT.NONE);
     wlCondition.setText( BaseMessages.getString( PKG, "JoinRowsDialog.Condition.Label" ) );
-    props.setLook( wlCondition );
-    fdlCondition = new FormData();
+    props.setLook(wlCondition);
+    FormData fdlCondition = new FormData();
     fdlCondition.left = new FormAttachment( 0, 0 );
     fdlCondition.top = new FormAttachment( wMainTransform, margin );
-    wlCondition.setLayoutData( fdlCondition );
+    wlCondition.setLayoutData(fdlCondition);
 
     IRowMeta inputfields = null;
     try {
-      inputfields = pipelineMeta.getPrevTransformFields( transformName );
+      inputfields = pipelineMeta.getPrevTransformFields( variables, transformName );
     } catch ( HopException ke ) {
       inputfields = new RowMeta();
       new ErrorDialog(
@@ -282,25 +239,17 @@ public class JoinRowsDialog extends BaseTransformDialog implements ITransformDia
 
     wCondition = new ConditionEditor( shell, SWT.BORDER, condition, inputfields );
 
-    fdCondition = new FormData();
+    FormData fdCondition = new FormData();
     fdCondition.left = new FormAttachment( 0, 0 );
-    fdCondition.top = new FormAttachment( wlCondition, margin );
+    fdCondition.top = new FormAttachment(wlCondition, margin );
     fdCondition.right = new FormAttachment( 100, 0 );
     fdCondition.bottom = new FormAttachment( wOk, -2 * margin );
-    wCondition.setLayoutData( fdCondition );
+    wCondition.setLayoutData(fdCondition);
     wCondition.addModifyListener( lsMod );
 
     // Add listeners
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
+    lsOk = e -> ok();
+    lsCancel = e -> cancel();
 
     wOk.addListener( SWT.Selection, lsOk );
     wCancel.addListener( SWT.Selection, lsCancel );

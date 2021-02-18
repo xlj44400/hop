@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.util;
 
@@ -99,8 +94,8 @@ public class StringEvaluator {
   public StringEvaluator( boolean tryTrimming, String[] numberFormats, String[] dateFormats ) {
     this.tryTrimming = tryTrimming;
 
-    values = new HashSet<String>();
-    evaluationResults = new ArrayList<StringEvaluationResult>();
+    values = new HashSet<>();
+    evaluationResults = new ArrayList<>();
     count = 0;
 
     stringMeta = new ValueMetaString( "string" );
@@ -125,7 +120,7 @@ public class StringEvaluator {
   }
 
   private void challengeConversions( String value ) {
-    List<StringEvaluationResult> all = new ArrayList<StringEvaluationResult>( evaluationResults );
+    List<StringEvaluationResult> all = new ArrayList<>( evaluationResults );
     IValueMeta stringMetaClone = null;
     for ( StringEvaluationResult cmm : all ) {
       if ( cmm.getConversionMeta().isBoolean() ) {
@@ -345,31 +340,25 @@ public class StringEvaluator {
       Comparator<StringEvaluationResult> compare = null;
       if ( containsDate() ) {
         // want the longest format for dates
-        compare = new Comparator<StringEvaluationResult>() {
-          @Override
-          public int compare( StringEvaluationResult r1, StringEvaluationResult r2 ) {
-            Integer length1 =
-              r1.getConversionMeta().getConversionMask() == null ? 0 : r1
-                .getConversionMeta().getConversionMask().length();
-            Integer length2 =
-              r2.getConversionMeta().getConversionMask() == null ? 0 : r2
-                .getConversionMeta().getConversionMask().length();
-            return length2.compareTo( length1 );
-          }
+        compare = ( r1, r2 ) -> {
+          Integer length1 =
+            r1.getConversionMeta().getConversionMask() == null ? 0 : r1
+              .getConversionMeta().getConversionMask().length();
+          Integer length2 =
+            r2.getConversionMeta().getConversionMask() == null ? 0 : r2
+              .getConversionMeta().getConversionMask().length();
+          return length2.compareTo( length1 );
         };
       } else {
         // want the shortest format mask for numerics & integers
-        compare = new Comparator<StringEvaluationResult>() {
-          @Override
-          public int compare( StringEvaluationResult r1, StringEvaluationResult r2 ) {
-            Integer length1 =
-              r1.getConversionMeta().getConversionMask() == null ? 0 : r1
-                .getConversionMeta().getConversionMask().length();
-            Integer length2 =
-              r2.getConversionMeta().getConversionMask() == null ? 0 : r2
-                .getConversionMeta().getConversionMask().length();
-            return length1.compareTo( length2 );
-          }
+        compare = ( r1, r2 ) -> {
+          Integer length1 =
+            r1.getConversionMeta().getConversionMask() == null ? 0 : r1
+              .getConversionMeta().getConversionMask().length();
+          Integer length2 =
+            r2.getConversionMeta().getConversionMask() == null ? 0 : r2
+              .getConversionMeta().getConversionMask().length();
+          return length1.compareTo( length2 );
         };
       }
 

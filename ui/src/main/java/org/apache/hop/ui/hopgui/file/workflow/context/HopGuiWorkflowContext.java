@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.file.workflow.context;
 
@@ -79,24 +74,21 @@ public class HopGuiWorkflowContext extends BaseGuiContextHandler implements IGui
       }
     }
 
-    // Add the special entries : Start and Dummy first
-    //
-    guiActions.add(createStartGuiAction());
-    guiActions.add(createDummyGuiAction());
-
     // Also add all the entry creation actions...
     //
     PluginRegistry registry = PluginRegistry.getInstance();
     List<IPlugin> actionPlugins = registry.getPlugins( ActionPluginType.class );
     for ( IPlugin actionPlugin : actionPlugins ) {
-      if (!actionPlugin.getIds()[0].equals( WorkflowMeta.STRING_SPECIAL )) {
+     
         GuiAction createActionGuiAction =
           new GuiAction( "workflow-graph-create-workflow-action-" + actionPlugin.getIds()[ 0 ], GuiActionType.Create, actionPlugin.getName(), actionPlugin.getDescription(), actionPlugin.getImageFile(),
             (shiftClicked, controlClicked, t) -> {
-              workflowGraph.workflowEntryDelegate.newJobEntry( workflowMeta, actionPlugin.getIds()[ 0 ], actionPlugin.getName(), controlClicked, click );
+              workflowGraph.workflowActionDelegate.newAction( workflowMeta, actionPlugin.getIds()[ 0 ], actionPlugin.getName(), controlClicked, click );
             }
           );
         createActionGuiAction.getKeywords().addAll( Arrays.asList(actionPlugin.getKeywords()));
+        createActionGuiAction.setCategory( actionPlugin.getCategory() );
+        createActionGuiAction.setCategoryOrder( "9999_"+actionPlugin.getCategory() ); // sort alphabetically
       try {
         createActionGuiAction.setClassLoader( registry.getClassLoader( actionPlugin ) );
       } catch ( HopPluginException e ) {
@@ -104,26 +96,9 @@ public class HopGuiWorkflowContext extends BaseGuiContextHandler implements IGui
       }
       createActionGuiAction.getKeywords().add( actionPlugin.getCategory() );
       guiActions.add( createActionGuiAction );
-      }
     }
 
     return guiActions;
-  }
-
-  private GuiAction createStartGuiAction() {
-    return new GuiAction( "workflow-graph-create-workflow-action-start", GuiActionType.Create, WorkflowMeta.STRING_SPECIAL_START, null, "ui/images/STR.svg",
-      (shiftClicked, controlClicked, t) -> {
-          workflowGraph.workflowEntryDelegate.newJobEntry( workflowMeta, WorkflowMeta.STRING_SPECIAL, WorkflowMeta.STRING_SPECIAL_START, controlClicked, click );
-        }
-      );
-  }
-
-  private GuiAction createDummyGuiAction() {
-    return new GuiAction( "workflow-graph-create-workflow-action-dummy", GuiActionType.Create, WorkflowMeta.STRING_SPECIAL_DUMMY, null, "ui/images/DUM.svg",
-      (shiftClicked, controlClicked, t) -> {
-        workflowGraph.workflowEntryDelegate.newJobEntry( workflowMeta, WorkflowMeta.STRING_SPECIAL, WorkflowMeta.STRING_SPECIAL_DUMMY, controlClicked, click );
-      }
-    );
   }
 
   /**
@@ -147,14 +122,14 @@ public class HopGuiWorkflowContext extends BaseGuiContextHandler implements IGui
    *
    * @return value of workflowGraph
    */
-  public HopGuiWorkflowGraph getJobGraph() {
+  public HopGuiWorkflowGraph getWorkflowGraph() {
     return workflowGraph;
   }
 
   /**
    * @param workflowGraph The workflowGraph to set
    */
-  public void setJobGraph( HopGuiWorkflowGraph workflowGraph ) {
+  public void setWorkflowGraph( HopGuiWorkflowGraph workflowGraph ) {
     this.workflowGraph = workflowGraph;
   }
 

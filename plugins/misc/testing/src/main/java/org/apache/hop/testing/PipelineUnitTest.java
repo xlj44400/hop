@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Pentaho Data Integration
- *
- * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.testing;
 
@@ -32,14 +27,12 @@ import org.apache.hop.core.logging.LogChannel;
 import org.apache.hop.core.util.StringUtil;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.variables.IVariables;
-import org.apache.hop.core.variables.Variables;
 import org.apache.hop.core.vfs.HopVfs;
-import org.apache.hop.metastore.IHopMetaStoreElement;
-import org.apache.hop.metastore.api.IMetaStore;
-import org.apache.hop.metastore.api.exceptions.MetaStoreException;
-import org.apache.hop.metastore.persist.MetaStoreAttribute;
-import org.apache.hop.metastore.persist.MetaStoreElementType;
-import org.apache.hop.metastore.persist.MetaStoreFactory;
+import org.apache.hop.metadata.api.HopMetadata;
+import org.apache.hop.metadata.api.HopMetadataBase;
+import org.apache.hop.metadata.api.HopMetadataProperty;
+import org.apache.hop.metadata.api.IHopMetadata;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.testing.util.DataSetConst;
 
 import java.io.File;
@@ -52,45 +45,45 @@ import java.util.List;
  *
  * @author matt
  */
-@MetaStoreElementType(
+@HopMetadata(
+  key = "unit-test",
   name = "Pipeline Unit Test",
-  description = "This describes a test for a pipeline with alternative data sets as input from certain transform and testing output against golden data"
+  description = "This describes a test for a pipeline with alternative data sets as input from certain transform and testing output against golden data",
+  image = "Test_tube_icon.svg"
 )
-public class PipelineUnitTest extends Variables implements IVariables, Cloneable, IHopMetaStoreElement<PipelineUnitTest> {
+public class PipelineUnitTest extends HopMetadataBase implements Cloneable, IHopMetadata {
 
-  private String name;
-
-  @MetaStoreAttribute( key = "description" )
+  @HopMetadataProperty
   private String description;
 
-  @MetaStoreAttribute( key = "pipeline_filename" )
+  @HopMetadataProperty( key = "pipeline_filename" )
   protected String pipelineFilename; // file (3rd priority)
 
-  @MetaStoreAttribute( key = "input_data_sets" )
+  @HopMetadataProperty( key = "input_data_sets" )
   protected List<PipelineUnitTestSetLocation> inputDataSets;
 
-  @MetaStoreAttribute( key = "golden_data_sets" )
+  @HopMetadataProperty( key = "golden_data_sets" )
   protected List<PipelineUnitTestSetLocation> goldenDataSets;
 
-  @MetaStoreAttribute( key = "trans_test_tweaks" )
+  @HopMetadataProperty( key = "trans_test_tweaks" )
   protected List<PipelineUnitTestTweak> tweaks;
 
-  @MetaStoreAttribute( key = "test_type" )
+  @HopMetadataProperty( key = "test_type" )
   protected TestType type;
 
-  @MetaStoreAttribute( key = "persist_filename" )
+  @HopMetadataProperty( key = "persist_filename" )
   protected String filename;
 
-  @MetaStoreAttribute
+  @HopMetadataProperty
   protected String basePath;
 
-  @MetaStoreAttribute( key = "database_replacements" )
+  @HopMetadataProperty( key = "database_replacements" )
   protected List<PipelineUnitTestDatabaseReplacement> databaseReplacements;
 
-  @MetaStoreAttribute
+  @HopMetadataProperty
   protected List<VariableValue> variableValues;
 
-  @MetaStoreAttribute
+  @HopMetadataProperty
   protected boolean autoOpening;
 
 
@@ -127,23 +120,6 @@ public class PipelineUnitTest extends Variables implements IVariables, Cloneable
     this.autoOpening = autoOpening;
   }
 
-  @Override
-  public boolean equals( Object obj ) {
-    if ( obj == this ) {
-      return true;
-    }
-    if ( !( obj instanceof PipelineUnitTest ) ) {
-      return false;
-    }
-    return ( (PipelineUnitTest) obj ).name.equalsIgnoreCase( name );
-  }
-
-  @Override
-  public int hashCode() {
-    return name.hashCode();
-  }
-
-
   public PipelineUnitTestSetLocation findGoldenLocation( String transformName ) {
     for ( PipelineUnitTestSetLocation location : goldenDataSets ) {
       if ( transformName.equalsIgnoreCase( location.getTransformName() ) ) {
@@ -166,12 +142,12 @@ public class PipelineUnitTest extends Variables implements IVariables, Cloneable
    * Retrieve the golden data set for the specified location
    *
    * @param log       the logging channel to log to
-   * @param metaStore The metaStore to use
+   * @param metadataProvider The metadataProvider to use
    * @param location  the location where we want to check against golden rows
    * @return The golden data set
    * @throws HopException
    */
-  public DataSet getGoldenDataSet( ILogChannel log, IMetaStore metaStore, PipelineUnitTestSetLocation location ) throws HopException {
+  public DataSet getGoldenDataSet( ILogChannel log, IHopMetadataProvider metadataProvider, PipelineUnitTestSetLocation location ) throws HopException {
 
     String transformName = location.getTransformName();
     String goldenDataSetName = location.getDataSetName();
@@ -183,11 +159,10 @@ public class PipelineUnitTest extends Variables implements IVariables, Cloneable
         throw new HopException( "Unable to find golden data set for transform '" + transformName + "'" );
       }
 
-      DataSet goldenDataSet = DataSet.createFactory( metaStore ).loadElement( goldenDataSetName );
+      DataSet goldenDataSet = metadataProvider.getSerializer( DataSet.class ).load(goldenDataSetName);
       if ( goldenDataSet == null ) {
         throw new HopException( "Unable to find golden data set '" + goldenDataSetName + "' for transform '" + transformName + "'" );
       }
-      goldenDataSet.initializeVariablesFrom( this );
 
       return goldenDataSet;
 
@@ -233,14 +208,14 @@ public class PipelineUnitTest extends Variables implements IVariables, Cloneable
     }
   }
 
-  public boolean matchesPipelineFilename(String referencePipelineFilename) throws HopFileException, FileSystemException {
+  public boolean matchesPipelineFilename(IVariables variables, String referencePipelineFilename) throws HopFileException, FileSystemException {
     if ( Utils.isEmpty(referencePipelineFilename)) {
       return false;
     }
     FileObject pipelineFile = HopVfs.getFileObject( referencePipelineFilename );
     String pipelineUri = pipelineFile.getName().getURI();
 
-    String testPipelineFilename = calculateCompleteFilename();
+    String testPipelineFilename = calculateCompletePipelineFilename(variables);
     if (Utils.isEmpty(testPipelineFilename)) {
       return false;
     }
@@ -250,7 +225,7 @@ public class PipelineUnitTest extends Variables implements IVariables, Cloneable
     return pipelineUri.equals( testPipelineUri );
   }
 
-  public String calculateCompleteFilename() {
+  public String calculateCompletePipelineFilename( IVariables variables) {
 
     // Without a filename we don't have any work
     //
@@ -261,16 +236,16 @@ public class PipelineUnitTest extends Variables implements IVariables, Cloneable
     // If the filename is an absolute path, just return that.
     //
     if (pipelineFilename.startsWith( "/" ) || pipelineFilename.startsWith( "file:///" )) {
-      return environmentSubstitute( pipelineFilename ); // to make sure
+      return variables.resolve( pipelineFilename ); // to make sure
     }
 
     // We're dealing with a relative path vs the base path
     //
-    String baseFilePath = environmentSubstitute( basePath );
+    String baseFilePath = variables.resolve( basePath );
     if ( StringUtils.isEmpty( baseFilePath ) ) {
       // See if the base path environment variable is set
       //
-      baseFilePath = getVariable( DataSetConst.VARIABLE_UNIT_TESTS_BASE_PATH );
+      baseFilePath = variables.getVariable( DataSetConst.VARIABLE_HOP_UNIT_TESTS_FOLDER );
     }
     if ( StringUtils.isEmpty( baseFilePath ) ) {
       baseFilePath = "";
@@ -281,22 +256,6 @@ public class PipelineUnitTest extends Variables implements IVariables, Cloneable
       }
     }
     return baseFilePath + pipelineFilename;
-  }
-
-  /**
-   * Gets name
-   *
-   * @return value of name
-   */
-  public String getName() {
-    return name;
-  }
-
-  /**
-   * @param name The name to set
-   */
-  public void setName( String name ) {
-    this.name = name;
   }
 
   /**
@@ -475,15 +434,7 @@ public class PipelineUnitTest extends Variables implements IVariables, Cloneable
     this.autoOpening = autoOpening;
   }
 
-  @Override public MetaStoreFactory<PipelineUnitTest> getFactory( IMetaStore metaStore ) {
-    return createFactory( metaStore );
-  }
-
-  public static final MetaStoreFactory<PipelineUnitTest> createFactory(IMetaStore metaStore) {
-    return new MetaStoreFactory<>( PipelineUnitTest.class, metaStore );
-  }
-
-  public void setRelativeFilename( String referencePipelineFilename ) throws MetaStoreException {
+  public void setRelativeFilename( IVariables variables, String referencePipelineFilename ) throws HopException {
     // Build relative path whenever a pipeline is saved
     //
     if ( StringUtils.isEmpty( referencePipelineFilename ) ) {
@@ -496,9 +447,9 @@ public class PipelineUnitTest extends Variables implements IVariables, Cloneable
 
     String base = getBasePath();
     if ( StringUtils.isEmpty( base ) ) {
-      base = getVariable( DataSetConst.VARIABLE_UNIT_TESTS_BASE_PATH );
+      base = variables.getVariable( DataSetConst.VARIABLE_HOP_UNIT_TESTS_FOLDER );
     }
-    base = environmentSubstitute( base );
+    base = variables.resolve( base );
     if ( StringUtils.isNotEmpty( base ) ) {
       // See if the base path is present in the filename
       // Then replace the filename
@@ -528,13 +479,13 @@ public class PipelineUnitTest extends Variables implements IVariables, Cloneable
               //
               setPipelineFilename( relativeFilename );
 
-              LogChannel.GENERAL.logBasic( "Unit test '" + getName() + "' : saved relative path to pipeline: " + relativeFilename );
+              LogChannel.GENERAL.logDetailed( "Unit test '" + getName() + "' : saved relative path to pipeline: " + relativeFilename );
             }
           }
           parent = parent.getParent();
         }
       } catch ( Exception e ) {
-        throw new MetaStoreException( "Error calculating relative unit test file path", e );
+        throw new HopException( "Error calculating relative unit test file path", e );
       }
     }
 

@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.calculator;
 
@@ -31,7 +26,7 @@ import org.apache.hop.i18n.BaseMessages;
 import org.w3c.dom.Node;
 
 public class CalculatorMetaFunction implements Cloneable {
-  private static Class<?> PKG = CalculatorMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = CalculatorMeta.class; // For Translator
 
   public static final String XML_TAG = "calculation";
 
@@ -125,7 +120,7 @@ public class CalculatorMetaFunction implements Cloneable {
   public static final int CALC_ADD_SECONDS = 87;
   public static final int CALC_REMAINDER = 88;
 
-  public static final String[] calc_desc = {
+  public static final String[] calcDesc = {
     "-", "CONSTANT", "COPY_FIELD", "ADD", "SUBTRACT", "MULTIPLY", "DIVIDE", "SQUARE", "SQUARE_ROOT",
     "PERCENT_1", "PERCENT_2", "PERCENT_3", "COMBINATION_1", "COMBINATION_2", "ROUND_1", "ROUND_2",
     "ROUND_STD_1", "ROUND_STD_2", "CEIL", "FLOOR", "NVL", "ADD_DAYS", "YEAR_OF_DATE", "MONTH_OF_DATE",
@@ -223,7 +218,7 @@ public class CalculatorMetaFunction implements Cloneable {
     BaseMessages.getString( PKG, "CalculatorMetaFunction.CalcFunctions.AddSeconds" ),
     BaseMessages.getString( PKG, "CalculatorMetaFunction.CalcFunctions.Remainder" ), };
 
-  public static final int[] calcDefaultResultType = new int[ calc_desc.length ];
+  public static final int[] calcDefaultResultType = new int[ calcDesc.length ];
 
   static {
     calcDefaultResultType[ CalculatorMetaFunction.CALC_NONE ] = IValueMeta.TYPE_NONE;
@@ -536,8 +531,8 @@ public class CalculatorMetaFunction implements Cloneable {
   }
 
   public static int getCalcFunctionType( String desc ) {
-    for ( int i = 1; i < calc_desc.length; i++ ) {
-      if ( calc_desc[ i ].equalsIgnoreCase( desc ) ) {
+    for ( int i = 1; i < calcDesc.length; i++ ) {
+      if ( calcDesc[ i ].equalsIgnoreCase( desc ) ) {
         return i;
       }
     }
@@ -551,10 +546,10 @@ public class CalculatorMetaFunction implements Cloneable {
   }
 
   public static String getCalcFunctionDesc( int type ) {
-    if ( type < 0 || type >= calc_desc.length ) {
+    if ( type < 0 || type >= calcDesc.length ) {
       return null;
     }
-    return calc_desc[ type ];
+    return calcDesc[ type ];
   }
 
   public static String getCalcFunctionLongDesc( int type ) {

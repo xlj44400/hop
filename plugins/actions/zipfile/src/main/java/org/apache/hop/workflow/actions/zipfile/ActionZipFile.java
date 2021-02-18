@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.zipfile;
 
@@ -50,7 +45,7 @@ import org.apache.hop.workflow.action.validator.ActionValidatorUtils;
 import org.apache.hop.workflow.action.validator.AndValidator;
 import org.apache.hop.workflow.action.validator.FileDoesNotExistValidator;
 import org.apache.hop.workflow.action.validator.ValidatorContext;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.workarounds.BufferedOutputStreamWithCloseDetection;
 import org.apache.hop.workflow.engine.IWorkflowEngine;
 import org.w3c.dom.Node;
@@ -83,14 +78,14 @@ import java.util.zip.ZipOutputStream;
 
 @Action(
   id = "ZIP_FILE",
-  i18nPackageName = "org.apache.hop.workflow.actions.zipfile",
-  name = "ActionZipFile.Name",
-  description = "ActionZipFile.Description",
+  name = "i18n::ActionZipFile.Name",
+  description = "i18n::ActionZipFile.Description",
   image = "Zip.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.FileManagement"
+  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.FileManagement",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/zipfile.html"
 )
 public class ActionZipFile extends ActionBase implements Cloneable, IAction {
-  private static final Class<?> PKG = ActionZipFile.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionZipFile.class; // For Translator
 
   private String zipFilename;
   public int compressionRate;
@@ -172,7 +167,7 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
   }
 
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
       zipFilename = XmlHandler.getTagValue( entrynode, "zipfilename" );
@@ -205,7 +200,7 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
     boolean result = false;
     try {
       // Get parent folder
-      parentfolder = HopVfs.getFileObject( filename, this ).getParent();
+      parentfolder = HopVfs.getFileObject( filename ).getParent();
 
       if ( !parentfolder.exists() ) {
         if ( log.isDetailed() ) {
@@ -258,7 +253,7 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
     String localSourceFilename = realSourceDirectoryOrFile;
 
     try {
-      originFile = HopVfs.getFileObject( realSourceDirectoryOrFile, this );
+      originFile = HopVfs.getFileObject( realSourceDirectoryOrFile );
       localSourceFilename = HopVfs.getFilename( originFile );
       orginExist = originFile.exists();
     } catch ( Exception e ) {
@@ -278,7 +273,7 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
 
       FileObject fileObject = null;
       try {
-        fileObject = HopVfs.getFileObject( localrealZipfilename, this );
+        fileObject = HopVfs.getFileObject( localrealZipfilename );
         localrealZipfilename = HopVfs.getFilename( fileObject );
         // Check if Zip File exists
         if ( fileObject.exists() ) {
@@ -316,7 +311,7 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
           // Let's see if we deal with file or folder
           FileObject[] fileList;
 
-          FileObject sourceFileOrFolder = HopVfs.getFileObject( localSourceFilename, this );
+          FileObject sourceFileOrFolder = HopVfs.getFileObject( localSourceFilename );
           boolean isSourceDirectory = sourceFileOrFolder.getType().equals( FileType.FOLDER );
           final Pattern pattern;
           final Pattern patternExclude;
@@ -406,11 +401,11 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
 
             // Prepare Zip File
             buffer = new byte[ 18024 ];
-            dest = HopVfs.getOutputStream( localrealZipfilename, this, false );
+            dest = HopVfs.getOutputStream( localrealZipfilename, false );
             buff = new BufferedOutputStreamWithCloseDetection( dest );
             out = new ZipOutputStream( buff );
 
-            HashSet<String> fileSet = new HashSet<String>();
+            HashSet<String> fileSet = new HashSet<>();
 
             if ( renameOk ) {
               // User want to append files to existing Zip file
@@ -495,7 +490,7 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
                 targetFilename = localSourceFilename;
               }
 
-              FileObject file = HopVfs.getFileObject( targetFilename, this );
+              FileObject file = HopVfs.getFileObject( targetFilename );
               boolean isTargetDirectory = file.exists() && file.getType().equals( FileType.FOLDER );
 
               if ( getIt && !getItexclude && !isTargetDirectory && !fileSet.contains( targetFilename ) ) {
@@ -521,7 +516,7 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
                     relativeName = fullName;
                   }
                 } else if ( isFromPrevious ) {
-                  int depth = determineDepth( environmentSubstitute( storedSourcePathDepth ) );
+                  int depth = determineDepth( resolve( storedSourcePathDepth ) );
                   relativeName = determineZipfilenameForDepth( fullName, depth );
                 } else {
                   relativeName = fileList[ i ].getName().getBaseName();
@@ -564,7 +559,7 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
                   // Delete, Move File
                   FileObject fileObjectd = zippedFiles[ i ];
                   if ( !isSourceDirectory ) {
-                    fileObjectd = HopVfs.getFileObject( localSourceFilename, this );
+                    fileObjectd = HopVfs.getFileObject( localSourceFilename );
                   }
 
                   // Here we can move, delete files
@@ -590,7 +585,7 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
                     try {
                       fileObjectm =
                         HopVfs.getFileObject( realMovetodirectory
-                          + Const.FILE_SEPARATOR + fileObjectd.getName().getBaseName(), this );
+                          + Const.FILE_SEPARATOR + fileObjectd.getName().getBaseName() );
                       fileObjectd.moveTo( fileObjectm );
                     } catch ( IOException e ) {
                       logError( BaseMessages.getString( PKG, "JobZipFiles.Cant_Move_File1.Label" )
@@ -709,7 +704,7 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
       if ( depth == 0 ) {
         return filename;
       }
-      FileObject fileObject = HopVfs.getFileObject( filename, this );
+      FileObject fileObject = HopVfs.getFileObject( filename );
       FileObject folder = fileObject.getParent();
       String baseName = fileObject.getName().getBaseName();
       if ( depth == 1 ) {
@@ -731,7 +726,7 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
 
   private File getFile( final String filename ) {
     try {
-      String uri = HopVfs.getFileObject( environmentSubstitute( filename ), this ).getName().getPath();
+      String uri = HopVfs.getFileObject( resolve( filename ) ).getName().getPath();
       return new File( uri );
     } catch ( HopFileException ex ) {
       logError( "Error in Fetching URI for File: " + filename, ex );
@@ -759,7 +754,7 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
     String realWildcard = null;
     String realWildcardExclude = null;
     String realTargetdirectory;
-    String realMovetodirectory = environmentSubstitute( movetoDirectory );
+    String realMovetodirectory = resolve( movetoDirectory );
 
     // Sanity check
     boolean SanityControlOK = true;
@@ -771,7 +766,7 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
       } else {
         FileObject moveToDirectory = null;
         try {
-          moveToDirectory = HopVfs.getFileObject( realMovetodirectory, this );
+          moveToDirectory = HopVfs.getFileObject( realMovetodirectory );
           if ( moveToDirectory.exists() ) {
             if ( moveToDirectory.getType() == FileType.FOLDER ) {
               if ( log.isDetailed() ) {
@@ -870,10 +865,10 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
       if ( !Utils.isEmpty( sourceDirectory ) ) {
         // get values from action
         realZipfilename =
-          getFullFilename( environmentSubstitute( zipFilename ), addDate, addTime, specifyFormat, dateTimeFormat );
-        realWildcard = environmentSubstitute( wildCard );
-        realWildcardExclude = environmentSubstitute( excludeWildCard );
-        realTargetdirectory = environmentSubstitute( sourceDirectory );
+          getFullFilename( resolve( zipFilename ), addDate, addTime, specifyFormat, dateTimeFormat );
+        realWildcard = resolve( wildCard );
+        realWildcardExclude = resolve( excludeWildCard );
+        realTargetdirectory = resolve( sourceDirectory );
 
         boolean success = processRowFile( parentWorkflow, result, realZipfilename, realWildcard, realWildcardExclude,
           realTargetdirectory, realMovetodirectory, createParentFolder );
@@ -897,15 +892,15 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
     return result;
   }
 
-  public String getFullFilename( String filename, boolean add_date, boolean add_time, boolean specify_format,
-                                 String datetime_folder ) {
+  public String getFullFilename( String filename, boolean addDate, boolean addTime, boolean specifyFormat,
+                                 String datetimeFolder ) {
     String retval;
     if ( Utils.isEmpty( filename ) ) {
       return null;
     }
 
     // Replace possible environment variables...
-    String realfilename = environmentSubstitute( filename );
+    String realfilename = resolve( filename );
     int lenstring = realfilename.length();
     int lastindexOfDot = realfilename.lastIndexOf( '.' );
     if ( lastindexOfDot == -1 ) {
@@ -917,17 +912,17 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
     final SimpleDateFormat daf = new SimpleDateFormat();
     Date now = new Date();
 
-    if ( specify_format && !Utils.isEmpty( datetime_folder ) ) {
-      daf.applyPattern( datetime_folder );
+    if ( specifyFormat && !Utils.isEmpty( datetimeFolder ) ) {
+      daf.applyPattern( datetimeFolder );
       String dt = daf.format( now );
       retval += dt;
     } else {
-      if ( add_date ) {
+      if ( addDate ) {
         daf.applyPattern( "yyyyMMdd" );
         String d = daf.format( now );
         retval += "_" + d;
       }
-      if ( add_time ) {
+      if ( addTime ) {
         daf.applyPattern( "HHmmssSSS" );
         String t = daf.format( now );
         retval += "_" + t;
@@ -938,7 +933,7 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
 
   }
 
-  public boolean evaluates() {
+  @Override public boolean isEvaluation() {
     return true;
   }
 
@@ -950,8 +945,8 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
     this.wildCard = wildcard;
   }
 
-  public void setWildcardExclude( String wildcardexclude ) {
-    this.excludeWildCard = wildcardexclude;
+  public void setWildcardExclude( String wildcardExclude ) {
+    this.excludeWildCard = wildcardExclude;
   }
 
   public void setSourceDirectory( String sourcedirectory ) {
@@ -1022,16 +1017,16 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
     return specifyFormat;
   }
 
-  public void setSpecifyFormat( boolean SpecifyFormat ) {
-    this.specifyFormat = SpecifyFormat;
+  public void setSpecifyFormat( boolean specifyFormat ) {
+    this.specifyFormat = specifyFormat;
   }
 
   public String getDateTimeFormat() {
     return dateTimeFormat;
   }
 
-  public void setDateTimeFormat( String date_time_format ) {
-    this.dateTimeFormat = date_time_format;
+  public void setDateTimeFormat( String dateTimeFormat ) {
+    this.dateTimeFormat = dateTimeFormat;
   }
 
   public boolean getcreateparentfolder() {
@@ -1048,7 +1043,7 @@ public class ActionZipFile extends ActionBase implements Cloneable, IAction {
 
   @Override
   public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     ValidatorContext ctx1 = new ValidatorContext();
     AbstractFileValidator.putVariableSpace( ctx1, getVariables() );
     AndValidator.putValidators( ctx1, ActionValidatorUtils.notBlankValidator(), ActionValidatorUtils.fileDoesNotExistValidator() );

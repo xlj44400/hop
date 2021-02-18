@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.databaselookup;
 
@@ -36,8 +31,9 @@ import org.apache.hop.core.row.value.ValueMetaBinary;
 import org.apache.hop.core.row.value.ValueMetaInteger;
 import org.apache.hop.core.row.value.ValueMetaString;
 import org.apache.hop.core.variables.IVariables;
+import org.apache.hop.core.variables.Variables;
 import org.apache.hop.junit.rules.RestoreHopEngineEnvironment;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.TransformMeta;
@@ -51,8 +47,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -92,6 +86,7 @@ public class DatabaseLookupUTest {
   private static final String BINARY_FIELD = "aBinaryFieldInDb";
   private static final String ID_FIELD = "id";
   private TransformMockHelper<DatabaseLookupMeta, DatabaseLookupData> mockHelper;
+  private IVariables variables;
 
   @BeforeClass
   public static void setUpClass() throws Exception {
@@ -105,6 +100,7 @@ public class DatabaseLookupUTest {
 
   @Before
   public void setUp() {
+    variables = new Variables();
     mockHelper = createMockHelper();
   }
 
@@ -130,16 +126,18 @@ public class DatabaseLookupUTest {
 
   private TransformMockHelper<DatabaseLookupMeta, DatabaseLookupData> createMockHelper() {
     TransformMockHelper<DatabaseLookupMeta, DatabaseLookupData> mockHelper =
-      new TransformMockHelper<DatabaseLookupMeta, DatabaseLookupData>( "test DatabaseLookup", DatabaseLookupMeta.class,
+      new TransformMockHelper<>( "test DatabaseLookup", DatabaseLookupMeta.class,
         DatabaseLookupData.class );
     when( mockHelper.logChannelFactory.create( any(), any( ILoggingObject.class ) ) )
-      .thenReturn( mockHelper.logChannelInterface );
+      .thenReturn( mockHelper.iLogChannel );
     when( mockHelper.pipeline.isRunning() ).thenReturn( true );
 
     RowMeta inputRowMeta = new RowMeta();
     IRowSet rowSet = mock( IRowSet.class );
     when( rowSet.getRowWait( anyLong(), any( TimeUnit.class ) ) ).thenReturn( new Object[ 0 ] ).thenReturn( null );
     when( rowSet.getRowMeta() ).thenReturn( inputRowMeta );
+
+    Mockito.doReturn( rowSet ).when( mockHelper.pipeline ).findRowSet( anyString(), anyInt(), anyString(), anyInt() );
 
     when( mockHelper.pipeline.findRowSet( anyString(), anyInt(), anyString(), anyInt() ) ).thenReturn( rowSet );
 
@@ -159,7 +157,7 @@ public class DatabaseLookupUTest {
 
     DatabaseLookupMeta meta = new DatabaseLookupMeta();
     meta.setDatabaseMeta( dbMeta );
-    meta.setTablename( "VirtualTable" );
+    meta.setTableName( "VirtualTable" );
 
     meta.setTableKeyField( new String[] { ID_FIELD } );
     meta.setKeyCondition( new String[] { "=" } );
@@ -174,20 +172,18 @@ public class DatabaseLookupUTest {
     meta.setReturnValueDefault( new String[] { "" } );
 
     meta = spy( meta );
-    doAnswer( new Answer() {
-      @Override public Object answer( InvocationOnMock invocation ) throws Throwable {
-        IRowMeta row = (IRowMeta) invocation.getArguments()[ 0 ];
-        IValueMeta v = new ValueMetaBinary( BINARY_FIELD );
-        row.addValueMeta( v );
-        return null;
-      }
+    doAnswer( invocation -> {
+      IRowMeta row = (IRowMeta) invocation.getArguments()[ 0 ];
+      IValueMeta v = new ValueMetaBinary( BINARY_FIELD );
+      row.addValueMeta( v );
+      return null;
     } ).when( meta ).getFields(
       any( IRowMeta.class ),
       anyString(),
       any( IRowMeta[].class ),
       any( TransformMeta.class ),
       any( IVariables.class ),
-      any( IMetaStore.class ) );
+      any( IHopMetadataProvider.class ) );
     return meta;
   }
 
@@ -207,7 +203,7 @@ public class DatabaseLookupUTest {
     Connection connection = mock( Connection.class );
     when( connection.prepareStatement( anyString() ) ).thenReturn( ps );
 
-    Database db = new Database( mock( ILoggingObject.class ), meta );
+    Database db = new Database( mock( ILoggingObject.class ), variables, meta );
     db.setConnection( connection );
 
     db = spy( db );
@@ -248,7 +244,7 @@ public class DatabaseLookupUTest {
   @Test
   public void testEqualsAndIsNullAreCached() throws Exception {
     when( mockHelper.logChannelFactory.create( any(), any( ILoggingObject.class ) ) )
-      .thenReturn( mockHelper.logChannelInterface );
+      .thenReturn( mockHelper.iLogChannel );
 
     DatabaseLookupData data = new DatabaseLookupData();
     data.cache = DefaultCache.newCache( data, 0 );
@@ -260,7 +256,7 @@ public class DatabaseLookupUTest {
 
     DatabaseLookupMeta meta = new DatabaseLookupMeta();
     meta.setDatabaseMeta( dbMeta );
-    meta.setTablename( "VirtualTable" );
+    meta.setTableName( "VirtualTable" );
 
     meta.setTableKeyField( new String[] { "ID1", "ID2" } );
     meta.setKeyCondition( new String[] { "=", "IS NULL" } );
@@ -275,20 +271,18 @@ public class DatabaseLookupUTest {
     meta.setReturnValueDefault( new String[] { "", "" } );
 
     meta = spy( meta );
-    doAnswer( new Answer() {
-      @Override public Object answer( InvocationOnMock invocation ) throws Throwable {
-        IRowMeta row = (IRowMeta) invocation.getArguments()[ 0 ];
-        IValueMeta v = new ValueMetaBinary( BINARY_FIELD );
-        row.addValueMeta( v );
-        return null;
-      }
+    doAnswer( invocation -> {
+      IRowMeta row = (IRowMeta) invocation.getArguments()[ 0 ];
+      IValueMeta v = new ValueMetaBinary( BINARY_FIELD );
+      row.addValueMeta( v );
+      return null;
     } ).when( meta ).getFields(
       any( IRowMeta.class ),
       anyString(),
       any( IRowMeta[].class ),
       any( TransformMeta.class ),
       any( IVariables.class ),
-      any( IMetaStore.class ) );
+      any( IHopMetadataProvider.class ) );
 
     DatabaseLookup look = new MockDatabaseLookup( mockHelper.transformMeta, meta, data, 0, mockHelper.pipelineMeta, mockHelper.pipeline );
 
@@ -300,7 +294,7 @@ public class DatabaseLookupUTest {
   @Test
   public void getRowInCacheTest() throws HopException {
     when( mockHelper.logChannelFactory.create( any(), any( ILoggingObject.class ) ) )
-      .thenReturn( mockHelper.logChannelInterface );
+      .thenReturn( mockHelper.iLogChannel );
 
     DatabaseLookupData data = new DatabaseLookupData();
     data.cache = DefaultCache.newCache( data, 0 );

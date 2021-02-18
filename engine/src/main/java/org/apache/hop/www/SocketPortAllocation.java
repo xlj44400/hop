@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.www;
 
@@ -31,25 +26,25 @@ public class SocketPortAllocation {
 
   private String pipelineName;
   private String clusterRunId;
-  private String sourceSlaveName;
+  private String sourceServerName;
   private String sourceTransformName;
   private String sourceTransformCopy;
-  private String targetSlaveName;
+  private String targetServerName;
   private String targetTransformName;
   private String targetTransformCopy;
 
   public SocketPortAllocation( int port, Date lastRequested, String clusterRunId, String pipelineName,
-                               String sourceSlaveName, String sourceTransformName, String sourceTransformCopy, String targetSlaveName,
+                               String sourceServerName, String sourceTransformName, String sourceTransformCopy, String targetServerName,
                                String targetTransformName, String targetTransformCopy ) {
     this.port = port;
     this.lastRequested = lastRequested;
     this.clusterRunId = clusterRunId;
     this.pipelineName = pipelineName;
-    this.sourceSlaveName = sourceSlaveName;
+    this.sourceServerName = sourceServerName;
     this.sourceTransformName = sourceTransformName;
     this.sourceTransformCopy = sourceTransformCopy;
 
-    this.targetSlaveName = targetSlaveName;
+    this.targetServerName = targetServerName;
     this.targetTransformName = targetTransformName;
     this.targetTransformCopy = targetTransformCopy;
     this.allocated = true;
@@ -185,31 +180,31 @@ public class SocketPortAllocation {
   }
 
   /**
-   * @return the sourceSlaveName
+   * @return the sourceServerName
    */
-  public String getSourceSlaveName() {
-    return sourceSlaveName;
+  public String getSourceServerName() {
+    return sourceServerName;
   }
 
   /**
-   * @param sourceSlaveName the sourceSlaveName to set
+   * @param sourceServerName the sourceServerName to set
    */
-  public void setSourceSlaveName( String sourceSlaveName ) {
-    this.sourceSlaveName = sourceSlaveName;
+  public void setSourceServerName( String sourceServerName ) {
+    this.sourceServerName = sourceServerName;
   }
 
   /**
-   * @return the targetSlaveName
+   * @return the targetServerName
    */
-  public String getTargetSlaveName() {
-    return targetSlaveName;
+  public String getTargetServerName() {
+    return targetServerName;
   }
 
   /**
-   * @param targetSlaveName the targetSlaveName to set
+   * @param targetServerName the targetServerName to set
    */
-  public void setTargetSlaveName( String targetSlaveName ) {
-    this.targetSlaveName = targetSlaveName;
+  public void setTargetServerName( String targetServerName ) {
+    this.targetServerName = targetServerName;
   }
 
   /**

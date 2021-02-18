@@ -1,29 +1,22 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.file.pipeline.delegates;
 
-import org.apache.hop.cluster.SlaveServer;
-import org.apache.hop.core.Const;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.extension.ExtensionPointHandler;
 import org.apache.hop.core.extension.HopExtensionPoint;
@@ -42,7 +35,6 @@ import org.apache.hop.ui.pipeline.debug.PipelineDebugDialog;
 import org.apache.hop.ui.pipeline.dialog.PipelineExecutionConfigurationDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.MessageBox;
-import org.eclipse.swt.widgets.Shell;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 
 public class HopGuiPipelineRunDelegate {
-  private static Class<?> PKG = HopGui.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = HopGui.class; // For Translator
 
   private HopGuiPipelineGraph pipelineGraph;
   private HopGui hopGui;
@@ -113,7 +105,7 @@ public class HopGuiPipelineRunDelegate {
 
     // Set MetaStore and safe mode information in both the exec config and the metadata
     //
-    pipelineMeta.setMetaStore( hopGui.getMetaStore() );
+    pipelineMeta.setMetadataProvider( hopGui.getMetadataProvider() );
 
     if ( debug ) {
       // See if we have debugging information stored somewhere?
@@ -166,7 +158,7 @@ public class HopGuiPipelineRunDelegate {
     int debugAnswer = PipelineDebugDialog.DEBUG_CONFIG;
 
     if ( debug || preview ) {
-      PipelineDebugDialog pipelineDebugDialog = new PipelineDebugDialog( hopGui.getShell(), pipelineDebugMeta );
+      PipelineDebugDialog pipelineDebugDialog = new PipelineDebugDialog( hopGui.getShell(), pipelineGraph.getVariables(), pipelineDebugMeta );
       debugAnswer = pipelineDebugDialog.open();
       if ( debugAnswer == PipelineDebugDialog.DEBUG_CANCEL ) {
         // If we cancel the debug dialog, we don't go further with the execution either.
@@ -179,7 +171,7 @@ public class HopGuiPipelineRunDelegate {
     variableMap.putAll( executionConfiguration.getVariablesMap() ); // the default
 
     executionConfiguration.setVariablesMap( variableMap );
-    executionConfiguration.getUsedVariables( pipelineMeta );
+    executionConfiguration.getUsedVariables( pipelineGraph.getVariables(), pipelineMeta );
 
     executionConfiguration.setLogLevel( logLevel );
 
@@ -194,17 +186,7 @@ public class HopGuiPipelineRunDelegate {
     if ( execConfigAnswer ) {
       pipelineGraph.pipelineGridDelegate.addPipelineGrid();
       pipelineGraph.pipelineLogDelegate.addPipelineLog();
-      pipelineGraph.pipelinePreviewDelegate.addPipelinePreview();
-      pipelineGraph.pipelineMetricsDelegate.addPipelineMetrics();
-      pipelineGraph.pipelinePerfDelegate.addPipelinePerf();
       pipelineGraph.extraViewTabFolder.setSelection( 0 );
-
-      // Set the named parameters
-      Map<String, String> paramMap = executionConfiguration.getParametersMap();
-      for ( String key : paramMap.keySet() ) {
-        pipelineMeta.setParameterValue( key, Const.NVL( paramMap.get( key ), "" ) );
-      }
-      pipelineMeta.activateParameters();
 
       // Set the log level
       //
@@ -215,15 +197,8 @@ public class HopGuiPipelineRunDelegate {
       // Set the run options
       pipelineMeta.setClearingLog( executionConfiguration.isClearingLog() );
 
-      ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.HopGuiPipelineMetaExecutionStart.id, pipelineMeta );
-      ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.HopUiPipelineExecutionConfiguration.id, executionConfiguration );
-
-      try {
-        ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.HopUiPipelineBeforeStart.id, new Object[] { executionConfiguration, pipelineMeta, pipelineMeta } );
-      } catch ( HopException e ) {
-        log.logError( e.getMessage(), pipelineMeta.getFilename() );
-        return null;
-      }
+      ExtensionPointHandler.callExtensionPoint( log, pipelineGraph.getVariables(), HopExtensionPoint.HopGuiPipelineMetaExecutionStart.id, pipelineMeta );
+      ExtensionPointHandler.callExtensionPoint( log, pipelineGraph.getVariables(), HopExtensionPoint.HopGuiPipelineExecutionConfiguration.id, executionConfiguration );
 
       // Verify if there is at least one transform specified to debug or preview...
       // TODO: Is this a local preview or debugging execution? We might want to get rid of the distinction

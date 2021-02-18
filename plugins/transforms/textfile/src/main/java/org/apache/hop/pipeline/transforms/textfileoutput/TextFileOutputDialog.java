@@ -1,30 +1,24 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.textfileoutput;
 
 import org.apache.hop.core.Const;
 import org.apache.hop.core.Props;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.compress.CompressionProviderFactory;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.row.IRowMeta;
@@ -32,6 +26,7 @@ import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.row.value.ValueMetaFactory;
 import org.apache.hop.core.row.value.ValueMetaString;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
@@ -50,191 +45,111 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CCombo;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
-import org.eclipse.swt.events.FocusListener;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.MessageBox;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-@PluginDialog(
-        id = "TextFileOutput",
-        image = "textfileoutput.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = ""
-)
 public class TextFileOutputDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = TextFileOutputMeta.class; // for i18n purposes, needed by Translator!!
-
-  private CTabFolder wTabFolder;
-  private FormData fdTabFolder;
-
-  private CTabItem wFileTab, wContentTab, wFieldsTab;
-
-  private FormData fdFileComp, fdContentComp, fdFieldsComp;
+  private static final Class<?> PKG = TextFileOutputMeta.class; // For Translator
 
   private Label wlFilename;
   private Button wbFilename;
   private TextVar wFilename;
-  private FormData fdlFilename, fdbFilename, fdFilename;
 
-  private Label wlServletOutput;
   protected Button wServletOutput;
-  private FormData fdlServletOutput, fdServletOutput;
 
   private Label wlExtension;
   private TextVar wExtension;
-  private FormData fdlExtension, fdExtension;
 
   private Label wlAddTransformNr;
   private Button wAddTransformNr;
-  private FormData fdlAddTransformNr, fdAddTransformNr;
 
   private Label wlAddPartnr;
   private Button wAddPartnr;
-  private FormData fdlAddPartnr, fdAddPartnr;
 
   private Label wlAddDate;
   private Button wAddDate;
-  private FormData fdlAddDate, fdAddDate;
 
   private Label wlAddTime;
   private Button wAddTime;
-  private FormData fdlAddTime, fdAddTime;
 
   private Button wbShowFiles;
-  private FormData fdbShowFiles;
 
-  /* Additional fields */
-  private Label wlFileNameInField;
   private Button wFileNameInField;
-  private FormData fdlFileNameInField, fdFileNameInField;
 
   private Label wlFileNameField;
   private ComboVar wFileNameField;
-  private FormData fdlFileNameField, fdFileNameField;
   /* END */
 
   private Label wlAppend;
   private Button wAppend;
-  private FormData fdlAppend, fdAppend;
 
-  private Label wlSeparator;
-  private Button wbSeparator;
   private TextVar wSeparator;
-  private FormData fdlSeparator, fdbSeparator, fdSeparator;
 
-  private Label wlEnclosure;
   private TextVar wEnclosure;
-  private FormData fdlEnclosure, fdEnclosure;
 
-  private Label wlEndedLine;
   private TextVar wEndedLine;
-  private FormData fdlEndedLine, fdEndedLine;
 
-  private Label wlEnclForced;
   private Button wEnclForced;
-  private FormData fdlEnclForced, fdEnclForced;
 
-  private Label wlDisableEnclosureFix;
   private Button wDisableEnclosureFix;
-  private FormData fdlDisableEnclosureFix, fdDisableEnclosureFix;
 
-  private Label wlHeader;
   private Button wHeader;
-  private FormData fdlHeader, fdHeader;
 
-  private Label wlFooter;
   private Button wFooter;
-  private FormData fdlFooter, fdFooter;
 
-  private Label wlFormat;
   private CCombo wFormat;
-  private FormData fdlFormat, fdFormat;
 
-  private Label wlCompression;
   private CCombo wCompression;
-  private FormData fdlCompression, fdCompression;
 
-  private Label wlEncoding;
   private CCombo wEncoding;
-  private FormData fdlEncoding, fdEncoding;
 
-  private Label wlPad;
   private Button wPad;
-  private FormData fdlPad, fdPad;
 
-  private Label wlFastDump;
   private Button wFastDump;
-  private FormData fdlFastDump, fdFastDump;
 
   private Label wlSplitEvery;
   private TextVar wSplitEvery;
-  private FormData fdlSplitEvery, fdSplitEvery;
 
   private TableView wFields;
-  private FormData fdFields;
 
   protected TextFileOutputMeta input;
 
-  private Button wMinWidth;
-  private Listener lsMinWidth;
   private boolean gotEncodings = false;
 
   private Label wlAddToResult;
   private Button wAddToResult;
-  private FormData fdlAddToResult, fdAddToResult;
 
   private Label wlDoNotOpenNewFileInit;
   private Button wDoNotOpenNewFileInit;
-  private FormData fdlDoNotOpenNewFileInit, fdDoNotOpenNewFileInit;
 
   private Label wlDateTimeFormat;
   private CCombo wDateTimeFormat;
-  private FormData fdlDateTimeFormat, fdDateTimeFormat;
 
   private Label wlSpecifyFormat;
   private Button wSpecifyFormat;
-  private FormData fdlSpecifyFormat, fdSpecifyFormat;
 
   protected Label wlCreateParentFolder;
   protected Button wCreateParentFolder;
-  private FormData fdlCreateParentFolder, fdCreateParentFolder;
 
   private ColumnInfo[] colinf;
 
-  private Map<String, Integer> inputFields;
+  private final Map<String, Integer> inputFields;
 
   private boolean gotPreviousFields = false;
 
-  public TextFileOutputDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public TextFileOutputDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (TextFileOutputMeta) in;
-    inputFields = new HashMap<String, Integer>();
+    inputFields = new HashMap<>();
   }
 
   public String open() {
@@ -245,11 +160,7 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
     changed = input.hasChanged();
 
     FormLayout formLayout = new FormLayout();
@@ -281,17 +192,26 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     fdTransformName.right = new FormAttachment( 100, 0 );
     wTransformName.setLayoutData( fdTransformName );
 
-    wTabFolder = new CTabFolder( shell, SWT.BORDER );
-    props.setLook( wTabFolder, Props.WIDGET_STYLE_TAB );
-    wTabFolder.setSimple( false );
+    // Buttons at the bottom first
+    //
+    wOk = new Button( shell, SWT.PUSH );
+    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
+    wOk.addListener( SWT.Selection, e -> ok() );
+    wCancel = new Button( shell, SWT.PUSH );
+    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
+    wCancel.addListener( SWT.Selection, e -> cancel() );
+    setButtonPositions( new Button[] { wOk, wCancel }, margin, null);
+
+    CTabFolder wTabFolder = new CTabFolder(shell, SWT.BORDER);
+    props.setLook(wTabFolder, Props.WIDGET_STYLE_TAB );
 
     // ////////////////////////
     // START OF FILE TAB///
     // /
-    wFileTab = new CTabItem( wTabFolder, SWT.NONE );
+    CTabItem wFileTab = new CTabItem(wTabFolder, SWT.NONE);
     wFileTab.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.FileTab.TabTitle" ) );
 
-    Composite wFileComp = new Composite( wTabFolder, SWT.NONE );
+    Composite wFileComp = new Composite(wTabFolder, SWT.NONE );
     props.setLook( wFileComp );
 
     FormLayout fileLayout = new FormLayout();
@@ -303,49 +223,49 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     wlFilename = new Label( wFileComp, SWT.RIGHT );
     wlFilename.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.Filename.Label" ) );
     props.setLook( wlFilename );
-    fdlFilename = new FormData();
+    FormData fdlFilename = new FormData();
     fdlFilename.left = new FormAttachment( 0, 0 );
     fdlFilename.top = new FormAttachment( 0, margin );
     fdlFilename.right = new FormAttachment( middle, -margin );
-    wlFilename.setLayoutData( fdlFilename );
+    wlFilename.setLayoutData(fdlFilename);
 
     wbFilename = new Button( wFileComp, SWT.PUSH | SWT.CENTER );
     props.setLook( wbFilename );
     wbFilename.setText( BaseMessages.getString( PKG, "System.Button.Browse" ) );
-    fdbFilename = new FormData();
+    FormData fdbFilename = new FormData();
     fdbFilename.right = new FormAttachment( 100, 0 );
     fdbFilename.top = new FormAttachment( 0, 0 );
-    wbFilename.setLayoutData( fdbFilename );
+    wbFilename.setLayoutData(fdbFilename);
 
-    wFilename = new TextVar( pipelineMeta, wFileComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wFilename = new TextVar( variables, wFileComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wFilename );
     wFilename.addModifyListener( lsMod );
-    fdFilename = new FormData();
+    FormData fdFilename = new FormData();
     fdFilename.left = new FormAttachment( middle, 0 );
     fdFilename.top = new FormAttachment( 0, margin );
     fdFilename.right = new FormAttachment( wbFilename, -margin );
-    wFilename.setLayoutData( fdFilename );
+    wFilename.setLayoutData(fdFilename);
 
     Control topControl = addAdditionalComponentIfNeed( middle, margin, wFileComp, wFilename );
 
     // Output to servlet (browser, ws)
     //
-    wlServletOutput = new Label( wFileComp, SWT.RIGHT );
+    Label wlServletOutput = new Label(wFileComp, SWT.RIGHT);
     wlServletOutput.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.ServletOutput.Label" ) );
-    props.setLook( wlServletOutput );
-    fdlServletOutput = new FormData();
+    props.setLook(wlServletOutput);
+    FormData fdlServletOutput = new FormData();
     fdlServletOutput.left = new FormAttachment( 0, 0 );
     fdlServletOutput.top = new FormAttachment( topControl, margin );
     fdlServletOutput.right = new FormAttachment( middle, -margin );
-    wlServletOutput.setLayoutData( fdlServletOutput );
+    wlServletOutput.setLayoutData(fdlServletOutput);
     wServletOutput = new Button( wFileComp, SWT.CHECK );
     wServletOutput.setToolTipText( BaseMessages.getString( PKG, "TextFileOutputDialog.ServletOutput.Tooltip" ) );
     props.setLook( wServletOutput );
-    fdServletOutput = new FormData();
+    FormData fdServletOutput = new FormData();
     fdServletOutput.left = new FormAttachment( middle, 0 );
-    fdServletOutput.top = new FormAttachment( topControl, margin );
+    fdServletOutput.top = new FormAttachment( wlServletOutput, 0, SWT.CENTER );
     fdServletOutput.right = new FormAttachment( 100, 0 );
-    wServletOutput.setLayoutData( fdServletOutput );
+    wServletOutput.setLayoutData(fdServletOutput);
     wServletOutput.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
@@ -357,20 +277,20 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     wlCreateParentFolder = new Label( wFileComp, SWT.RIGHT );
     wlCreateParentFolder.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.CreateParentFolder.Label" ) );
     props.setLook( wlCreateParentFolder );
-    fdlCreateParentFolder = new FormData();
+    FormData fdlCreateParentFolder = new FormData();
     fdlCreateParentFolder.left = new FormAttachment( 0, 0 );
     fdlCreateParentFolder.top = new FormAttachment( wServletOutput, margin );
     fdlCreateParentFolder.right = new FormAttachment( middle, -margin );
-    wlCreateParentFolder.setLayoutData( fdlCreateParentFolder );
+    wlCreateParentFolder.setLayoutData(fdlCreateParentFolder);
     wCreateParentFolder = new Button( wFileComp, SWT.CHECK );
     wCreateParentFolder.setToolTipText( BaseMessages.getString(
       PKG, "TextFileOutputDialog.CreateParentFolder.Tooltip" ) );
     props.setLook( wCreateParentFolder );
-    fdCreateParentFolder = new FormData();
+    FormData fdCreateParentFolder = new FormData();
     fdCreateParentFolder.left = new FormAttachment( middle, 0 );
-    fdCreateParentFolder.top = new FormAttachment( wServletOutput, margin );
+    fdCreateParentFolder.top = new FormAttachment( wlCreateParentFolder, 0, SWT.CENTER );
     fdCreateParentFolder.right = new FormAttachment( 100, 0 );
-    wCreateParentFolder.setLayoutData( fdCreateParentFolder );
+    wCreateParentFolder.setLayoutData(fdCreateParentFolder);
     wCreateParentFolder.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
@@ -382,20 +302,20 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     wlDoNotOpenNewFileInit.setText( BaseMessages
       .getString( PKG, "TextFileOutputDialog.DoNotOpenNewFileInit.Label" ) );
     props.setLook( wlDoNotOpenNewFileInit );
-    fdlDoNotOpenNewFileInit = new FormData();
+    FormData fdlDoNotOpenNewFileInit = new FormData();
     fdlDoNotOpenNewFileInit.left = new FormAttachment( 0, 0 );
     fdlDoNotOpenNewFileInit.top = new FormAttachment( wCreateParentFolder, margin );
     fdlDoNotOpenNewFileInit.right = new FormAttachment( middle, -margin );
-    wlDoNotOpenNewFileInit.setLayoutData( fdlDoNotOpenNewFileInit );
+    wlDoNotOpenNewFileInit.setLayoutData(fdlDoNotOpenNewFileInit);
     wDoNotOpenNewFileInit = new Button( wFileComp, SWT.CHECK );
     wDoNotOpenNewFileInit.setToolTipText( BaseMessages.getString(
       PKG, "TextFileOutputDialog.DoNotOpenNewFileInit.Tooltip" ) );
     props.setLook( wDoNotOpenNewFileInit );
-    fdDoNotOpenNewFileInit = new FormData();
+    FormData fdDoNotOpenNewFileInit = new FormData();
     fdDoNotOpenNewFileInit.left = new FormAttachment( middle, 0 );
-    fdDoNotOpenNewFileInit.top = new FormAttachment( wCreateParentFolder, margin );
+    fdDoNotOpenNewFileInit.top = new FormAttachment( wlDoNotOpenNewFileInit, 0, SWT.CENTER );
     fdDoNotOpenNewFileInit.right = new FormAttachment( 100, 0 );
-    wDoNotOpenNewFileInit.setLayoutData( fdDoNotOpenNewFileInit );
+    wDoNotOpenNewFileInit.setLayoutData(fdDoNotOpenNewFileInit);
     wDoNotOpenNewFileInit.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
@@ -404,21 +324,22 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
 
     /* next Lines */
     // FileNameInField line
-    wlFileNameInField = new Label( wFileComp, SWT.RIGHT );
+    /* Additional fields */
+    Label wlFileNameInField = new Label(wFileComp, SWT.RIGHT);
     wlFileNameInField.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.FileNameInField.Label" ) );
-    props.setLook( wlFileNameInField );
-    fdlFileNameInField = new FormData();
+    props.setLook(wlFileNameInField);
+    FormData fdlFileNameInField = new FormData();
     fdlFileNameInField.left = new FormAttachment( 0, 0 );
     fdlFileNameInField.top = new FormAttachment( wDoNotOpenNewFileInit, margin );
     fdlFileNameInField.right = new FormAttachment( middle, -margin );
-    wlFileNameInField.setLayoutData( fdlFileNameInField );
+    wlFileNameInField.setLayoutData(fdlFileNameInField);
     wFileNameInField = new Button( wFileComp, SWT.CHECK );
     props.setLook( wFileNameInField );
-    fdFileNameInField = new FormData();
+    FormData fdFileNameInField = new FormData();
     fdFileNameInField.left = new FormAttachment( middle, 0 );
-    fdFileNameInField.top = new FormAttachment( wDoNotOpenNewFileInit, margin );
+    fdFileNameInField.top = new FormAttachment( wlFileNameInField, 0, SWT.CENTER );
     fdFileNameInField.right = new FormAttachment( 100, 0 );
-    wFileNameInField.setLayoutData( fdFileNameInField );
+    wFileNameInField.setLayoutData(fdFileNameInField);
     wFileNameInField.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
@@ -430,26 +351,26 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     wlFileNameField = new Label( wFileComp, SWT.RIGHT );
     wlFileNameField.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.FileNameField.Label" ) );
     props.setLook( wlFileNameField );
-    fdlFileNameField = new FormData();
+    FormData fdlFileNameField = new FormData();
     fdlFileNameField.left = new FormAttachment( 0, 0 );
     fdlFileNameField.right = new FormAttachment( middle, -margin );
     fdlFileNameField.top = new FormAttachment( wFileNameInField, margin );
-    wlFileNameField.setLayoutData( fdlFileNameField );
+    wlFileNameField.setLayoutData(fdlFileNameField);
 
-    wFileNameField = new ComboVar( pipelineMeta, wFileComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wFileNameField = new ComboVar( variables, wFileComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wFileNameField );
     wFileNameField.addModifyListener( lsMod );
-    fdFileNameField = new FormData();
+    FormData fdFileNameField = new FormData();
     fdFileNameField.left = new FormAttachment( middle, 0 );
     fdFileNameField.top = new FormAttachment( wFileNameInField, margin );
     fdFileNameField.right = new FormAttachment( 100, 0 );
-    wFileNameField.setLayoutData( fdFileNameField );
+    wFileNameField.setLayoutData(fdFileNameField);
     wFileNameField.setEnabled( false );
     wFileNameField.addFocusListener( new FocusListener() {
-      public void focusLost( org.eclipse.swt.events.FocusEvent e ) {
+      public void focusLost( FocusEvent e ) {
       }
 
-      public void focusGained( org.eclipse.swt.events.FocusEvent e ) {
+      public void focusGained( FocusEvent e ) {
         Cursor busy = new Cursor( shell.getDisplay(), SWT.CURSOR_WAIT );
         shell.setCursor( busy );
         getFields();
@@ -463,37 +384,37 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     wlExtension = new Label( wFileComp, SWT.RIGHT );
     wlExtension.setText( BaseMessages.getString( PKG, "System.Label.Extension" ) );
     props.setLook( wlExtension );
-    fdlExtension = new FormData();
+    FormData fdlExtension = new FormData();
     fdlExtension.left = new FormAttachment( 0, 0 );
     fdlExtension.top = new FormAttachment( wFileNameField, margin );
     fdlExtension.right = new FormAttachment( middle, -margin );
-    wlExtension.setLayoutData( fdlExtension );
-    wExtension = new TextVar( pipelineMeta, wFileComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wlExtension.setLayoutData(fdlExtension);
+    wExtension = new TextVar( variables, wFileComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wExtension.setText( "" );
     props.setLook( wExtension );
     wExtension.addModifyListener( lsMod );
-    fdExtension = new FormData();
+    FormData fdExtension = new FormData();
     fdExtension.left = new FormAttachment( middle, 0 );
     fdExtension.top = new FormAttachment( wFileNameField, margin );
     fdExtension.right = new FormAttachment( 100, 0 );
-    wExtension.setLayoutData( fdExtension );
+    wExtension.setLayoutData(fdExtension);
 
     // Create multi-part file?
     wlAddTransformNr = new Label( wFileComp, SWT.RIGHT );
     wlAddTransformNr.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.AddTransformnr.Label" ) );
     props.setLook( wlAddTransformNr );
-    fdlAddTransformNr = new FormData();
+    FormData fdlAddTransformNr = new FormData();
     fdlAddTransformNr.left = new FormAttachment( 0, 0 );
     fdlAddTransformNr.top = new FormAttachment( wExtension, margin );
     fdlAddTransformNr.right = new FormAttachment( middle, -margin );
-    wlAddTransformNr.setLayoutData( fdlAddTransformNr );
+    wlAddTransformNr.setLayoutData(fdlAddTransformNr);
     wAddTransformNr = new Button( wFileComp, SWT.CHECK );
     props.setLook( wAddTransformNr );
-    fdAddTransformNr = new FormData();
+    FormData fdAddTransformNr = new FormData();
     fdAddTransformNr.left = new FormAttachment( middle, 0 );
-    fdAddTransformNr.top = new FormAttachment( wExtension, margin );
+    fdAddTransformNr.top = new FormAttachment( wlAddTransformNr, 0, SWT.CENTER  );
     fdAddTransformNr.right = new FormAttachment( 100, 0 );
-    wAddTransformNr.setLayoutData( fdAddTransformNr );
+    wAddTransformNr.setLayoutData(fdAddTransformNr);
     wAddTransformNr.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
@@ -504,18 +425,18 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     wlAddPartnr = new Label( wFileComp, SWT.RIGHT );
     wlAddPartnr.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.AddPartnr.Label" ) );
     props.setLook( wlAddPartnr );
-    fdlAddPartnr = new FormData();
+    FormData fdlAddPartnr = new FormData();
     fdlAddPartnr.left = new FormAttachment( 0, 0 );
     fdlAddPartnr.top = new FormAttachment( wAddTransformNr, margin );
     fdlAddPartnr.right = new FormAttachment( middle, -margin );
-    wlAddPartnr.setLayoutData( fdlAddPartnr );
+    wlAddPartnr.setLayoutData(fdlAddPartnr);
     wAddPartnr = new Button( wFileComp, SWT.CHECK );
     props.setLook( wAddPartnr );
-    fdAddPartnr = new FormData();
+    FormData fdAddPartnr = new FormData();
     fdAddPartnr.left = new FormAttachment( middle, 0 );
-    fdAddPartnr.top = new FormAttachment( wAddTransformNr, margin );
+    fdAddPartnr.top = new FormAttachment( wlAddPartnr, 0, SWT.CENTER );
     fdAddPartnr.right = new FormAttachment( 100, 0 );
-    wAddPartnr.setLayoutData( fdAddPartnr );
+    wAddPartnr.setLayoutData(fdAddPartnr);
     wAddPartnr.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
@@ -526,18 +447,18 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     wlAddDate = new Label( wFileComp, SWT.RIGHT );
     wlAddDate.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.AddDate.Label" ) );
     props.setLook( wlAddDate );
-    fdlAddDate = new FormData();
+    FormData fdlAddDate = new FormData();
     fdlAddDate.left = new FormAttachment( 0, 0 );
     fdlAddDate.top = new FormAttachment( wAddPartnr, margin );
     fdlAddDate.right = new FormAttachment( middle, -margin );
-    wlAddDate.setLayoutData( fdlAddDate );
+    wlAddDate.setLayoutData(fdlAddDate);
     wAddDate = new Button( wFileComp, SWT.CHECK );
     props.setLook( wAddDate );
-    fdAddDate = new FormData();
+    FormData fdAddDate = new FormData();
     fdAddDate.left = new FormAttachment( middle, 0 );
-    fdAddDate.top = new FormAttachment( wAddPartnr, margin );
+    fdAddDate.top = new FormAttachment( wlAddDate, 0, SWT.CENTER );
     fdAddDate.right = new FormAttachment( 100, 0 );
-    wAddDate.setLayoutData( fdAddDate );
+    wAddDate.setLayoutData(fdAddDate);
     wAddDate.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
@@ -547,18 +468,18 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     wlAddTime = new Label( wFileComp, SWT.RIGHT );
     wlAddTime.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.AddTime.Label" ) );
     props.setLook( wlAddTime );
-    fdlAddTime = new FormData();
+    FormData fdlAddTime = new FormData();
     fdlAddTime.left = new FormAttachment( 0, 0 );
     fdlAddTime.top = new FormAttachment( wAddDate, margin );
     fdlAddTime.right = new FormAttachment( middle, -margin );
-    wlAddTime.setLayoutData( fdlAddTime );
+    wlAddTime.setLayoutData(fdlAddTime);
     wAddTime = new Button( wFileComp, SWT.CHECK );
     props.setLook( wAddTime );
-    fdAddTime = new FormData();
+    FormData fdAddTime = new FormData();
     fdAddTime.left = new FormAttachment( middle, 0 );
-    fdAddTime.top = new FormAttachment( wAddDate, margin );
+    fdAddTime.top = new FormAttachment( wlAddTime, 0, SWT.CENTER );
     fdAddTime.right = new FormAttachment( 100, 0 );
-    wAddTime.setLayoutData( fdAddTime );
+    wAddTime.setLayoutData(fdAddTime);
     wAddTime.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
@@ -569,19 +490,19 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     wlSpecifyFormat = new Label( wFileComp, SWT.RIGHT );
     wlSpecifyFormat.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.SpecifyFormat.Label" ) );
     props.setLook( wlSpecifyFormat );
-    fdlSpecifyFormat = new FormData();
+    FormData fdlSpecifyFormat = new FormData();
     fdlSpecifyFormat.left = new FormAttachment( 0, 0 );
     fdlSpecifyFormat.top = new FormAttachment( wAddTime, margin );
     fdlSpecifyFormat.right = new FormAttachment( middle, -margin );
-    wlSpecifyFormat.setLayoutData( fdlSpecifyFormat );
+    wlSpecifyFormat.setLayoutData(fdlSpecifyFormat);
     wSpecifyFormat = new Button( wFileComp, SWT.CHECK );
     props.setLook( wSpecifyFormat );
     wSpecifyFormat.setToolTipText( BaseMessages.getString( PKG, "TextFileOutputDialog.SpecifyFormat.Tooltip" ) );
-    fdSpecifyFormat = new FormData();
+    FormData fdSpecifyFormat = new FormData();
     fdSpecifyFormat.left = new FormAttachment( middle, 0 );
-    fdSpecifyFormat.top = new FormAttachment( wAddTime, margin );
+    fdSpecifyFormat.top = new FormAttachment( wlSpecifyFormat, 0, SWT.CENTER );
     fdSpecifyFormat.right = new FormAttachment( 100, 0 );
-    wSpecifyFormat.setLayoutData( fdSpecifyFormat );
+    wSpecifyFormat.setLayoutData(fdSpecifyFormat);
     wSpecifyFormat.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
@@ -593,37 +514,37 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     wlDateTimeFormat = new Label( wFileComp, SWT.RIGHT );
     wlDateTimeFormat.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.DateTimeFormat.Label" ) );
     props.setLook( wlDateTimeFormat );
-    fdlDateTimeFormat = new FormData();
+    FormData fdlDateTimeFormat = new FormData();
     fdlDateTimeFormat.left = new FormAttachment( 0, 0 );
     fdlDateTimeFormat.top = new FormAttachment( wSpecifyFormat, margin );
     fdlDateTimeFormat.right = new FormAttachment( middle, -margin );
-    wlDateTimeFormat.setLayoutData( fdlDateTimeFormat );
+    wlDateTimeFormat.setLayoutData(fdlDateTimeFormat);
     wDateTimeFormat = new CCombo( wFileComp, SWT.BORDER | SWT.READ_ONLY );
     wDateTimeFormat.setEditable( true );
     props.setLook( wDateTimeFormat );
     wDateTimeFormat.addModifyListener( lsMod );
-    fdDateTimeFormat = new FormData();
+    FormData fdDateTimeFormat = new FormData();
     fdDateTimeFormat.left = new FormAttachment( middle, 0 );
     fdDateTimeFormat.top = new FormAttachment( wSpecifyFormat, margin );
     fdDateTimeFormat.right = new FormAttachment( 100, 0 );
-    wDateTimeFormat.setLayoutData( fdDateTimeFormat );
+    wDateTimeFormat.setLayoutData(fdDateTimeFormat);
     String[] dats = Const.getDateFormats();
-    for ( int x = 0; x < dats.length; x++ ) {
-      wDateTimeFormat.add( dats[ x ] );
+    for (String dat : dats) {
+      wDateTimeFormat.add(dat);
     }
 
     wbShowFiles = new Button( wFileComp, SWT.PUSH | SWT.CENTER );
     props.setLook( wbShowFiles );
     wbShowFiles.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.ShowFiles.Button" ) );
-    fdbShowFiles = new FormData();
+    FormData fdbShowFiles = new FormData();
     fdbShowFiles.left = new FormAttachment( middle, 0 );
     fdbShowFiles.top = new FormAttachment( wDateTimeFormat, margin * 2 );
-    wbShowFiles.setLayoutData( fdbShowFiles );
+    wbShowFiles.setLayoutData(fdbShowFiles);
     wbShowFiles.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         TextFileOutputMeta tfoi = new TextFileOutputMeta();
         saveInfoInMeta( tfoi );
-        String[] files = tfoi.getFiles( pipelineMeta );
+        String[] files = tfoi.getFiles( variables );
         if ( files != null && files.length > 0 ) {
           EnterSelectionDialog esd = new EnterSelectionDialog( shell, files,
             BaseMessages.getString( PKG, "TextFileOutputDialog.SelectOutputFiles.DialogTitle" ),
@@ -643,19 +564,19 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     wlAddToResult = new Label( wFileComp, SWT.RIGHT );
     wlAddToResult.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.AddFileToResult.Label" ) );
     props.setLook( wlAddToResult );
-    fdlAddToResult = new FormData();
+    FormData fdlAddToResult = new FormData();
     fdlAddToResult.left = new FormAttachment( 0, 0 );
     fdlAddToResult.top = new FormAttachment( wbShowFiles, 2 * margin );
     fdlAddToResult.right = new FormAttachment( middle, -margin );
-    wlAddToResult.setLayoutData( fdlAddToResult );
+    wlAddToResult.setLayoutData(fdlAddToResult);
     wAddToResult = new Button( wFileComp, SWT.CHECK );
     wAddToResult.setToolTipText( BaseMessages.getString( PKG, "TextFileOutputDialog.AddFileToResult.Tooltip" ) );
     props.setLook( wAddToResult );
-    fdAddToResult = new FormData();
+    FormData fdAddToResult = new FormData();
     fdAddToResult.left = new FormAttachment( middle, 0 );
-    fdAddToResult.top = new FormAttachment( wbShowFiles, 2 * margin );
+    fdAddToResult.top = new FormAttachment( wlAddToResult, 0, SWT.CENTER );
     fdAddToResult.right = new FormAttachment( 100, 0 );
-    wAddToResult.setLayoutData( fdAddToResult );
+    wAddToResult.setLayoutData(fdAddToResult);
     SelectionAdapter lsSelR = new SelectionAdapter() {
       public void widgetSelected( SelectionEvent arg0 ) {
         input.setChanged();
@@ -663,12 +584,12 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     };
     wAddToResult.addSelectionListener( lsSelR );
 
-    fdFileComp = new FormData();
+    FormData fdFileComp = new FormData();
     fdFileComp.left = new FormAttachment( 0, 0 );
     fdFileComp.top = new FormAttachment( 0, 0 );
     fdFileComp.right = new FormAttachment( 100, 0 );
     fdFileComp.bottom = new FormAttachment( 100, 0 );
-    wFileComp.setLayoutData( fdFileComp );
+    wFileComp.setLayoutData(fdFileComp);
 
     wFileComp.layout();
     wFileTab.setControl( wFileComp );
@@ -680,14 +601,14 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     // ////////////////////////
     // START OF CONTENT TAB///
     // /
-    wContentTab = new CTabItem( wTabFolder, SWT.NONE );
+    CTabItem wContentTab = new CTabItem(wTabFolder, SWT.NONE);
     wContentTab.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.ContentTab.TabTitle" ) );
 
     FormLayout contentLayout = new FormLayout();
     contentLayout.marginWidth = 3;
     contentLayout.marginHeight = 3;
 
-    Composite wContentComp = new Composite( wTabFolder, SWT.NONE );
+    Composite wContentComp = new Composite(wTabFolder, SWT.NONE );
     props.setLook( wContentComp );
     wContentComp.setLayout( contentLayout );
 
@@ -695,18 +616,18 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     wlAppend = new Label( wContentComp, SWT.RIGHT );
     wlAppend.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.Append.Label" ) );
     props.setLook( wlAppend );
-    fdlAppend = new FormData();
+    FormData fdlAppend = new FormData();
     fdlAppend.left = new FormAttachment( 0, 0 );
     fdlAppend.top = new FormAttachment( 0, 0 );
     fdlAppend.right = new FormAttachment( middle, -margin );
-    wlAppend.setLayoutData( fdlAppend );
+    wlAppend.setLayoutData(fdlAppend);
     wAppend = new Button( wContentComp, SWT.CHECK );
     props.setLook( wAppend );
-    fdAppend = new FormData();
+    FormData fdAppend = new FormData();
     fdAppend.left = new FormAttachment( middle, 0 );
-    fdAppend.top = new FormAttachment( 0, 0 );
+    fdAppend.top = new FormAttachment( wlAppend, 0, SWT.CENTER );
     fdAppend.right = new FormAttachment( 100, 0 );
-    wAppend.setLayoutData( fdAppend );
+    wAppend.setLayoutData(fdAppend);
     wAppend.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
@@ -718,148 +639,148 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
       }
     } );
 
-    wlSeparator = new Label( wContentComp, SWT.RIGHT );
+    Label wlSeparator = new Label(wContentComp, SWT.RIGHT);
     wlSeparator.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.Separator.Label" ) );
-    props.setLook( wlSeparator );
-    fdlSeparator = new FormData();
+    props.setLook(wlSeparator);
+    FormData fdlSeparator = new FormData();
     fdlSeparator.left = new FormAttachment( 0, 0 );
     fdlSeparator.top = new FormAttachment( wAppend, margin );
     fdlSeparator.right = new FormAttachment( middle, -margin );
-    wlSeparator.setLayoutData( fdlSeparator );
+    wlSeparator.setLayoutData(fdlSeparator);
 
-    wbSeparator = new Button( wContentComp, SWT.PUSH | SWT.CENTER );
-    props.setLook( wbSeparator );
+    Button wbSeparator = new Button(wContentComp, SWT.PUSH | SWT.CENTER);
+    props.setLook(wbSeparator);
     wbSeparator.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.Separator.Button" ) );
-    fdbSeparator = new FormData();
+    FormData fdbSeparator = new FormData();
     fdbSeparator.right = new FormAttachment( 100, 0 );
     fdbSeparator.top = new FormAttachment( wAppend, 0 );
-    wbSeparator.setLayoutData( fdbSeparator );
-    wbSeparator.addSelectionListener( new SelectionAdapter() {
+    wbSeparator.setLayoutData(fdbSeparator);
+    wbSeparator.addSelectionListener(new SelectionAdapter() {
       public void widgetSelected( SelectionEvent se ) {
         // wSeparator.insert("\t");
         wSeparator.getTextWidget().insert( "\t" );
       }
     } );
 
-    wSeparator = new TextVar( pipelineMeta, wContentComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wSeparator = new TextVar( variables, wContentComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wSeparator );
     wSeparator.addModifyListener( lsMod );
-    fdSeparator = new FormData();
+    FormData fdSeparator = new FormData();
     fdSeparator.left = new FormAttachment( middle, 0 );
     fdSeparator.top = new FormAttachment( wAppend, margin );
-    fdSeparator.right = new FormAttachment( wbSeparator, -margin );
-    wSeparator.setLayoutData( fdSeparator );
+    fdSeparator.right = new FormAttachment(wbSeparator, -margin );
+    wSeparator.setLayoutData(fdSeparator);
 
     // Enclosure line...
-    wlEnclosure = new Label( wContentComp, SWT.RIGHT );
+    Label wlEnclosure = new Label(wContentComp, SWT.RIGHT);
     wlEnclosure.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.Enclosure.Label" ) );
-    props.setLook( wlEnclosure );
-    fdlEnclosure = new FormData();
+    props.setLook(wlEnclosure);
+    FormData fdlEnclosure = new FormData();
     fdlEnclosure.left = new FormAttachment( 0, 0 );
     fdlEnclosure.top = new FormAttachment( wSeparator, margin );
     fdlEnclosure.right = new FormAttachment( middle, -margin );
-    wlEnclosure.setLayoutData( fdlEnclosure );
-    wEnclosure = new TextVar( pipelineMeta, wContentComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wlEnclosure.setLayoutData(fdlEnclosure);
+    wEnclosure = new TextVar( variables, wContentComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wEnclosure );
     wEnclosure.addModifyListener( lsMod );
-    fdEnclosure = new FormData();
+    FormData fdEnclosure = new FormData();
     fdEnclosure.left = new FormAttachment( middle, 0 );
     fdEnclosure.top = new FormAttachment( wSeparator, margin );
     fdEnclosure.right = new FormAttachment( 100, 0 );
-    wEnclosure.setLayoutData( fdEnclosure );
+    wEnclosure.setLayoutData(fdEnclosure);
 
-    wlEnclForced = new Label( wContentComp, SWT.RIGHT );
+    Label wlEnclForced = new Label(wContentComp, SWT.RIGHT);
     wlEnclForced.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.EnclForced.Label" ) );
-    props.setLook( wlEnclForced );
-    fdlEnclForced = new FormData();
+    props.setLook(wlEnclForced);
+    FormData fdlEnclForced = new FormData();
     fdlEnclForced.left = new FormAttachment( 0, 0 );
     fdlEnclForced.top = new FormAttachment( wEnclosure, margin );
     fdlEnclForced.right = new FormAttachment( middle, -margin );
-    wlEnclForced.setLayoutData( fdlEnclForced );
+    wlEnclForced.setLayoutData(fdlEnclForced);
     wEnclForced = new Button( wContentComp, SWT.CHECK );
     props.setLook( wEnclForced );
-    fdEnclForced = new FormData();
+    FormData fdEnclForced = new FormData();
     fdEnclForced.left = new FormAttachment( middle, 0 );
-    fdEnclForced.top = new FormAttachment( wEnclosure, margin );
+    fdEnclForced.top = new FormAttachment( wlEnclForced, 0, SWT.CENTER);
     fdEnclForced.right = new FormAttachment( 100, 0 );
-    wEnclForced.setLayoutData( fdEnclForced );
+    wEnclForced.setLayoutData(fdEnclForced);
     wEnclForced.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
       }
     } );
 
-    wlDisableEnclosureFix = new Label( wContentComp, SWT.RIGHT );
+    Label wlDisableEnclosureFix = new Label(wContentComp, SWT.RIGHT);
     wlDisableEnclosureFix
       .setText( BaseMessages.getString( PKG, "TextFileOutputDialog.DisableEnclosureFix.Label" ) );
-    props.setLook( wlDisableEnclosureFix );
-    fdlDisableEnclosureFix = new FormData();
+    props.setLook(wlDisableEnclosureFix);
+    FormData fdlDisableEnclosureFix = new FormData();
     fdlDisableEnclosureFix.left = new FormAttachment( 0, 0 );
     fdlDisableEnclosureFix.top = new FormAttachment( wEnclForced, margin );
     fdlDisableEnclosureFix.right = new FormAttachment( middle, -margin );
-    wlDisableEnclosureFix.setLayoutData( fdlDisableEnclosureFix );
+    wlDisableEnclosureFix.setLayoutData(fdlDisableEnclosureFix);
     wDisableEnclosureFix = new Button( wContentComp, SWT.CHECK );
     props.setLook( wDisableEnclosureFix );
-    fdDisableEnclosureFix = new FormData();
+    FormData fdDisableEnclosureFix = new FormData();
     fdDisableEnclosureFix.left = new FormAttachment( middle, 0 );
-    fdDisableEnclosureFix.top = new FormAttachment( wEnclForced, margin );
+    fdDisableEnclosureFix.top = new FormAttachment( wlDisableEnclosureFix, 0, SWT.CENTER);
     fdDisableEnclosureFix.right = new FormAttachment( 100, 0 );
-    wDisableEnclosureFix.setLayoutData( fdDisableEnclosureFix );
+    wDisableEnclosureFix.setLayoutData(fdDisableEnclosureFix);
     wDisableEnclosureFix.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
       }
     } );
 
-    wlHeader = new Label( wContentComp, SWT.RIGHT );
+    Label wlHeader = new Label(wContentComp, SWT.RIGHT);
     wlHeader.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.Header.Label" ) );
-    props.setLook( wlHeader );
-    fdlHeader = new FormData();
+    props.setLook(wlHeader);
+    FormData fdlHeader = new FormData();
     fdlHeader.left = new FormAttachment( 0, 0 );
     fdlHeader.top = new FormAttachment( wDisableEnclosureFix, margin );
     fdlHeader.right = new FormAttachment( middle, -margin );
-    wlHeader.setLayoutData( fdlHeader );
+    wlHeader.setLayoutData(fdlHeader);
     wHeader = new Button( wContentComp, SWT.CHECK );
     props.setLook( wHeader );
-    fdHeader = new FormData();
+    FormData fdHeader = new FormData();
     fdHeader.left = new FormAttachment( middle, 0 );
-    fdHeader.top = new FormAttachment( wDisableEnclosureFix, margin );
+    fdHeader.top = new FormAttachment( wlHeader, 0, SWT.CENTER );
     fdHeader.right = new FormAttachment( 100, 0 );
-    wHeader.setLayoutData( fdHeader );
+    wHeader.setLayoutData(fdHeader);
     wHeader.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
       }
     } );
-    wlFooter = new Label( wContentComp, SWT.RIGHT );
+    Label wlFooter = new Label(wContentComp, SWT.RIGHT);
     wlFooter.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.Footer.Label" ) );
-    props.setLook( wlFooter );
-    fdlFooter = new FormData();
+    props.setLook(wlFooter);
+    FormData fdlFooter = new FormData();
     fdlFooter.left = new FormAttachment( 0, 0 );
     fdlFooter.top = new FormAttachment( wHeader, margin );
     fdlFooter.right = new FormAttachment( middle, -margin );
-    wlFooter.setLayoutData( fdlFooter );
+    wlFooter.setLayoutData(fdlFooter);
     wFooter = new Button( wContentComp, SWT.CHECK );
     props.setLook( wFooter );
-    fdFooter = new FormData();
+    FormData fdFooter = new FormData();
     fdFooter.left = new FormAttachment( middle, 0 );
-    fdFooter.top = new FormAttachment( wHeader, margin );
+    fdFooter.top = new FormAttachment( wlFooter, 0, SWT.CENTER );
     fdFooter.right = new FormAttachment( 100, 0 );
-    wFooter.setLayoutData( fdFooter );
+    wFooter.setLayoutData(fdFooter);
     wFooter.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
       }
     } );
 
-    wlFormat = new Label( wContentComp, SWT.RIGHT );
+    Label wlFormat = new Label(wContentComp, SWT.RIGHT);
     wlFormat.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.Format.Label" ) );
-    props.setLook( wlFormat );
-    fdlFormat = new FormData();
+    props.setLook(wlFormat);
+    FormData fdlFormat = new FormData();
     fdlFormat.left = new FormAttachment( 0, 0 );
     fdlFormat.top = new FormAttachment( wFooter, margin );
     fdlFormat.right = new FormAttachment( middle, -margin );
-    wlFormat.setLayoutData( fdlFormat );
+    wlFormat.setLayoutData(fdlFormat);
     wFormat = new CCombo( wContentComp, SWT.BORDER | SWT.READ_ONLY );
     wFormat.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.Format.Label" ) );
     props.setLook( wFormat );
@@ -871,54 +792,54 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     }
     wFormat.select( 0 );
     wFormat.addModifyListener( lsMod );
-    fdFormat = new FormData();
+    FormData fdFormat = new FormData();
     fdFormat.left = new FormAttachment( middle, 0 );
     fdFormat.top = new FormAttachment( wFooter, margin );
     fdFormat.right = new FormAttachment( 100, 0 );
-    wFormat.setLayoutData( fdFormat );
+    wFormat.setLayoutData(fdFormat);
 
-    wlCompression = new Label( wContentComp, SWT.RIGHT );
+    Label wlCompression = new Label(wContentComp, SWT.RIGHT);
     wlCompression.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.Compression.Label" ) );
-    props.setLook( wlCompression );
-    fdlCompression = new FormData();
+    props.setLook(wlCompression);
+    FormData fdlCompression = new FormData();
     fdlCompression.left = new FormAttachment( 0, 0 );
     fdlCompression.top = new FormAttachment( wFormat, margin );
     fdlCompression.right = new FormAttachment( middle, -margin );
-    wlCompression.setLayoutData( fdlCompression );
+    wlCompression.setLayoutData(fdlCompression);
     wCompression = new CCombo( wContentComp, SWT.BORDER | SWT.READ_ONLY );
     wCompression.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.Compression.Label" ) );
     props.setLook( wCompression );
 
     wCompression.setItems( CompressionProviderFactory.getInstance().getCompressionProviderNames() );
     wCompression.addModifyListener( lsMod );
-    fdCompression = new FormData();
+    FormData fdCompression = new FormData();
     fdCompression.left = new FormAttachment( middle, 0 );
     fdCompression.top = new FormAttachment( wFormat, margin );
     fdCompression.right = new FormAttachment( 100, 0 );
-    wCompression.setLayoutData( fdCompression );
+    wCompression.setLayoutData(fdCompression);
 
-    wlEncoding = new Label( wContentComp, SWT.RIGHT );
+    Label wlEncoding = new Label(wContentComp, SWT.RIGHT);
     wlEncoding.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.Encoding.Label" ) );
-    props.setLook( wlEncoding );
-    fdlEncoding = new FormData();
+    props.setLook(wlEncoding);
+    FormData fdlEncoding = new FormData();
     fdlEncoding.left = new FormAttachment( 0, 0 );
     fdlEncoding.top = new FormAttachment( wCompression, margin );
     fdlEncoding.right = new FormAttachment( middle, -margin );
-    wlEncoding.setLayoutData( fdlEncoding );
+    wlEncoding.setLayoutData(fdlEncoding);
     wEncoding = new CCombo( wContentComp, SWT.BORDER | SWT.READ_ONLY );
     wEncoding.setEditable( true );
     props.setLook( wEncoding );
     wEncoding.addModifyListener( lsMod );
-    fdEncoding = new FormData();
+    FormData fdEncoding = new FormData();
     fdEncoding.left = new FormAttachment( middle, 0 );
     fdEncoding.top = new FormAttachment( wCompression, margin );
     fdEncoding.right = new FormAttachment( 100, 0 );
-    wEncoding.setLayoutData( fdEncoding );
+    wEncoding.setLayoutData(fdEncoding);
     wEncoding.addFocusListener( new FocusListener() {
-      public void focusLost( org.eclipse.swt.events.FocusEvent e ) {
+      public void focusLost( FocusEvent e ) {
       }
 
-      public void focusGained( org.eclipse.swt.events.FocusEvent e ) {
+      public void focusGained( FocusEvent e ) {
         Cursor busy = new Cursor( shell.getDisplay(), SWT.CURSOR_WAIT );
         shell.setCursor( busy );
         setEncodings();
@@ -927,42 +848,42 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
       }
     } );
 
-    wlPad = new Label( wContentComp, SWT.RIGHT );
+    Label wlPad = new Label(wContentComp, SWT.RIGHT);
     wlPad.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.Pad.Label" ) );
-    props.setLook( wlPad );
-    fdlPad = new FormData();
+    props.setLook(wlPad);
+    FormData fdlPad = new FormData();
     fdlPad.left = new FormAttachment( 0, 0 );
     fdlPad.top = new FormAttachment( wEncoding, margin );
     fdlPad.right = new FormAttachment( middle, -margin );
-    wlPad.setLayoutData( fdlPad );
+    wlPad.setLayoutData(fdlPad);
     wPad = new Button( wContentComp, SWT.CHECK );
     props.setLook( wPad );
-    fdPad = new FormData();
+    FormData fdPad = new FormData();
     fdPad.left = new FormAttachment( middle, 0 );
-    fdPad.top = new FormAttachment( wEncoding, margin );
+    fdPad.top = new FormAttachment( wlPad, 0, SWT.CENTER );
     fdPad.right = new FormAttachment( 100, 0 );
-    wPad.setLayoutData( fdPad );
+    wPad.setLayoutData(fdPad);
     wPad.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
       }
     } );
 
-    wlFastDump = new Label( wContentComp, SWT.RIGHT );
+    Label wlFastDump = new Label(wContentComp, SWT.RIGHT);
     wlFastDump.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.FastDump.Label" ) );
-    props.setLook( wlFastDump );
-    fdlFastDump = new FormData();
+    props.setLook(wlFastDump);
+    FormData fdlFastDump = new FormData();
     fdlFastDump.left = new FormAttachment( 0, 0 );
     fdlFastDump.top = new FormAttachment( wPad, margin );
     fdlFastDump.right = new FormAttachment( middle, -margin );
-    wlFastDump.setLayoutData( fdlFastDump );
+    wlFastDump.setLayoutData(fdlFastDump);
     wFastDump = new Button( wContentComp, SWT.CHECK );
     props.setLook( wFastDump );
-    fdFastDump = new FormData();
+    FormData fdFastDump = new FormData();
     fdFastDump.left = new FormAttachment( middle, 0 );
-    fdFastDump.top = new FormAttachment( wPad, margin );
+    fdFastDump.top = new FormAttachment( wlFastDump, 0, SWT.CENTER );
     fdFastDump.right = new FormAttachment( 100, 0 );
-    wFastDump.setLayoutData( fdFastDump );
+    wFastDump.setLayoutData(fdFastDump);
     wFastDump.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
@@ -972,44 +893,44 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     wlSplitEvery = new Label( wContentComp, SWT.RIGHT );
     wlSplitEvery.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.SplitEvery.Label" ) );
     props.setLook( wlSplitEvery );
-    fdlSplitEvery = new FormData();
+    FormData fdlSplitEvery = new FormData();
     fdlSplitEvery.left = new FormAttachment( 0, 0 );
     fdlSplitEvery.top = new FormAttachment( wFastDump, margin );
     fdlSplitEvery.right = new FormAttachment( middle, -margin );
-    wlSplitEvery.setLayoutData( fdlSplitEvery );
-    wSplitEvery = new TextVar( pipelineMeta, wContentComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wlSplitEvery.setLayoutData(fdlSplitEvery);
+    wSplitEvery = new TextVar( variables, wContentComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wSplitEvery );
     wSplitEvery.addModifyListener( lsMod );
-    fdSplitEvery = new FormData();
+    FormData fdSplitEvery = new FormData();
     fdSplitEvery.left = new FormAttachment( middle, 0 );
     fdSplitEvery.top = new FormAttachment( wFastDump, margin );
     fdSplitEvery.right = new FormAttachment( 100, 0 );
-    wSplitEvery.setLayoutData( fdSplitEvery );
+    wSplitEvery.setLayoutData(fdSplitEvery);
 
     // Bruise:
-    wlEndedLine = new Label( wContentComp, SWT.RIGHT );
+    Label wlEndedLine = new Label(wContentComp, SWT.RIGHT);
     wlEndedLine.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.EndedLine.Label" ) );
-    props.setLook( wlEndedLine );
-    fdlEndedLine = new FormData();
+    props.setLook(wlEndedLine);
+    FormData fdlEndedLine = new FormData();
     fdlEndedLine.left = new FormAttachment( 0, 0 );
     fdlEndedLine.top = new FormAttachment( wSplitEvery, margin );
     fdlEndedLine.right = new FormAttachment( middle, -margin );
-    wlEndedLine.setLayoutData( fdlEndedLine );
-    wEndedLine = new TextVar( pipelineMeta, wContentComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wlEndedLine.setLayoutData(fdlEndedLine);
+    wEndedLine = new TextVar( variables, wContentComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wEndedLine );
     wEndedLine.addModifyListener( lsMod );
-    fdEndedLine = new FormData();
+    FormData fdEndedLine = new FormData();
     fdEndedLine.left = new FormAttachment( middle, 0 );
     fdEndedLine.top = new FormAttachment( wSplitEvery, margin );
     fdEndedLine.right = new FormAttachment( 100, 0 );
-    wEndedLine.setLayoutData( fdEndedLine );
+    wEndedLine.setLayoutData(fdEndedLine);
 
-    fdContentComp = new FormData();
+    FormData fdContentComp = new FormData();
     fdContentComp.left = new FormAttachment( 0, 0 );
     fdContentComp.top = new FormAttachment( 0, 0 );
     fdContentComp.right = new FormAttachment( 100, 0 );
     fdContentComp.bottom = new FormAttachment( 100, 0 );
-    wContentComp.setLayoutData( fdContentComp );
+    wContentComp.setLayoutData(fdContentComp);
 
     wContentComp.layout();
     wContentTab.setControl( wContentComp );
@@ -1020,14 +941,14 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
 
     // Fields tab...
     //
-    wFieldsTab = new CTabItem( wTabFolder, SWT.NONE );
+    CTabItem wFieldsTab = new CTabItem(wTabFolder, SWT.NONE);
     wFieldsTab.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.FieldsTab.TabTitle" ) );
 
     FormLayout fieldsLayout = new FormLayout();
     fieldsLayout.marginWidth = Const.FORM_MARGIN;
     fieldsLayout.marginHeight = Const.FORM_MARGIN;
 
-    Composite wFieldsComp = new Composite( wTabFolder, SWT.NONE );
+    Composite wFieldsComp = new Composite(wTabFolder, SWT.NONE );
     wFieldsComp.setLayout( fieldsLayout );
     props.setLook( wFieldsComp );
 
@@ -1035,15 +956,15 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     wGet.setText( BaseMessages.getString( PKG, "System.Button.GetFields" ) );
     wGet.setToolTipText( BaseMessages.getString( PKG, "System.Tooltip.GetFields" ) );
 
-    wMinWidth = new Button( wFieldsComp, SWT.PUSH );
+    Button wMinWidth = new Button(wFieldsComp, SWT.PUSH);
     wMinWidth.setText( BaseMessages.getString( PKG, "TextFileOutputDialog.MinWidth.Button" ) );
     wMinWidth.setToolTipText( BaseMessages.getString( PKG, "TextFileOutputDialog.MinWidth.Tooltip" ) );
-    wMinWidth.addSelectionListener( new SelectionAdapter() {
+    wMinWidth.addSelectionListener(new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
       }
     } );
-    setButtonPositions( new Button[] { wGet, wMinWidth }, margin, null );
+    setButtonPositions( new Button[] { wGet, wMinWidth}, margin, null );
 
     final int FieldsCols = 10;
     final int FieldsRows = input.getOutputFields().length;
@@ -1103,89 +1024,56 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
 
     wFields =
       new TableView(
-        pipelineMeta, wFieldsComp, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
+        variables, wFieldsComp, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
 
-    fdFields = new FormData();
+    FormData fdFields = new FormData();
     fdFields.left = new FormAttachment( 0, 0 );
     fdFields.top = new FormAttachment( 0, 0 );
     fdFields.right = new FormAttachment( 100, 0 );
     fdFields.bottom = new FormAttachment( wGet, -margin );
-    wFields.setLayoutData( fdFields );
+    wFields.setLayoutData(fdFields);
 
     //
     // Search the fields in the background
 
-    final Runnable runnable = new Runnable() {
-      public void run() {
-        TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
-        if ( transformMeta != null ) {
-          try {
-            IRowMeta row = pipelineMeta.getPrevTransformFields( transformMeta );
+    final Runnable runnable = () -> {
+      TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
+      if ( transformMeta != null ) {
+        try {
+          IRowMeta row = pipelineMeta.getPrevTransformFields( variables, transformMeta );
 
-            // Remember these fields...
-            for ( int i = 0; i < row.size(); i++ ) {
-              inputFields.put( row.getValueMeta( i ).getName(), Integer.valueOf( i ) );
-            }
-            setComboBoxes();
-          } catch ( HopException e ) {
-            logError( BaseMessages.getString( PKG, "System.Dialog.GetFieldsFailed.Message" ) );
+          // Remember these fields...
+          for ( int i = 0; i < row.size(); i++ ) {
+            inputFields.put( row.getValueMeta( i ).getName(), Integer.valueOf( i ) );
           }
+          setComboBoxes();
+        } catch ( HopException e ) {
+          logError( BaseMessages.getString( PKG, "System.Dialog.GetFieldsFailed.Message" ) );
         }
       }
     };
     new Thread( runnable ).start();
 
-    fdFieldsComp = new FormData();
+    FormData fdFieldsComp = new FormData();
     fdFieldsComp.left = new FormAttachment( 0, 0 );
     fdFieldsComp.top = new FormAttachment( 0, 0 );
     fdFieldsComp.right = new FormAttachment( 100, 0 );
     fdFieldsComp.bottom = new FormAttachment( 100, 0 );
-    wFieldsComp.setLayoutData( fdFieldsComp );
+    wFieldsComp.setLayoutData(fdFieldsComp);
 
     wFieldsComp.layout();
     wFieldsTab.setControl( wFieldsComp );
 
-    fdTabFolder = new FormData();
+    FormData fdTabFolder = new FormData();
     fdTabFolder.left = new FormAttachment( 0, 0 );
     fdTabFolder.top = new FormAttachment( wTransformName, margin );
     fdTabFolder.right = new FormAttachment( 100, 0 );
-    fdTabFolder.bottom = new FormAttachment( 100, -50 );
-    wTabFolder.setLayoutData( fdTabFolder );
+    fdTabFolder.bottom = new FormAttachment( wOk, -2*margin );
+    wTabFolder.setLayoutData(fdTabFolder);
 
-    wOk = new Button( shell, SWT.PUSH );
-    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
 
-    wCancel = new Button( shell, SWT.PUSH );
-    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
-
-    setButtonPositions( new Button[] { wOk, wCancel }, margin, wTabFolder );
-
-    // Add listeners
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
-    lsGet = new Listener() {
-      public void handleEvent( Event e ) {
-        get();
-      }
-    };
-    lsMinWidth = new Listener() {
-      public void handleEvent( Event e ) {
-        setMinimalWidth();
-      }
-    };
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-
-    wOk.addListener( SWT.Selection, lsOk );
-    wGet.addListener( SWT.Selection, lsGet );
-    wMinWidth.addListener( SWT.Selection, lsMinWidth );
-    wCancel.addListener( SWT.Selection, lsCancel );
+    wGet.addListener( SWT.Selection, e -> get() );
+    wMinWidth.addListener( SWT.Selection, e -> setMinimalWidth());
 
     lsDef = new SelectionAdapter() {
       public void widgetDefaultSelected( SelectionEvent e ) {
@@ -1198,9 +1086,9 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     wSeparator.addSelectionListener( lsDef );
 
     // Whenever something changes, set the tooltip to the expanded version:
-    wFilename.addModifyListener( e -> wFilename.setToolTipText( pipelineMeta.environmentSubstitute( wFilename.getText() ) ) );
+    wFilename.addModifyListener( e -> wFilename.setToolTipText( variables.resolve( wFilename.getText() ) ) );
 
-    wbFilename.addListener( SWT.Selection, e-> BaseDialog.presentFileDialog( true, shell, wFilename, pipelineMeta,
+    wbFilename.addListener( SWT.Selection, e-> BaseDialog.presentFileDialog( true, shell, wFilename, variables,
       new String[] {"*.txt", "*.csv", "*" },
       new String[] {
         BaseMessages.getString( PKG, "System.FileType.TextFiles" ),
@@ -1329,7 +1217,7 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
   protected void setComboBoxes() {
     // Something was changed in the row.
     //
-    final Map<String, Integer> fields = new HashMap<String, Integer>();
+    final Map<String, Integer> fields = new HashMap<>();
 
     // Add the currentMeta fields...
     fields.putAll( inputFields );
@@ -1363,10 +1251,9 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
       gotEncodings = true;
 
       wEncoding.removeAll();
-      List<Charset> values = new ArrayList<Charset>( Charset.availableCharsets().values() );
-      for ( int i = 0; i < values.size(); i++ ) {
-        Charset charSet = values.get( i );
-        wEncoding.add( charSet.displayName() );
+      List<Charset> values = new ArrayList<>(Charset.availableCharsets().values());
+      for (Charset charSet : values) {
+        wEncoding.add(charSet.displayName());
       }
 
       // Now select the default!
@@ -1382,7 +1269,7 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
     if ( !gotPreviousFields ) {
       try {
         String field = wFileNameField.getText();
-        IRowMeta r = pipelineMeta.getPrevTransformFields( transformName );
+        IRowMeta r = pipelineMeta.getPrevTransformFields( variables, transformName );
         if ( r != null ) {
           wFileNameField.setItems( r.getFieldNames() );
         }
@@ -1577,53 +1464,51 @@ public class TextFileOutputDialog extends BaseTransformDialog implements ITransf
 
   private void get() {
     try {
-      IRowMeta r = pipelineMeta.getPrevTransformFields( transformName );
+      IRowMeta r = pipelineMeta.getPrevTransformFields( variables, transformName );
       if ( r != null ) {
-        ITableItemInsertListener listener = new ITableItemInsertListener() {
-          public boolean tableItemInserted( TableItem tableItem, IValueMeta v ) {
+        ITableItemInsertListener listener = ( tableItem, v ) -> {
 
-            if ( v.isNumeric() ) {
-              // currency symbol
-              tableItem.setText( 6, Const.NVL( v.getCurrencySymbol(), "" ) );
+          if ( v.isNumeric() ) {
+            // currency symbol
+            tableItem.setText( 6, Const.NVL( v.getCurrencySymbol(), "" ) );
 
-              // decimal and grouping
-              tableItem.setText( 7, Const.NVL( v.getDecimalSymbol(), "" ) );
-              tableItem.setText( 8, Const.NVL( v.getGroupingSymbol(), "" ) );
-            }
+            // decimal and grouping
+            tableItem.setText( 7, Const.NVL( v.getDecimalSymbol(), "" ) );
+            tableItem.setText( 8, Const.NVL( v.getGroupingSymbol(), "" ) );
+          }
 
-            // trim type
-            tableItem.setText( 9, Const.NVL( ValueMetaString.getTrimTypeDesc( v.getTrimType() ), "" ) );
+          // trim type
+          tableItem.setText( 9, Const.NVL( ValueMetaString.getTrimTypeDesc( v.getTrimType() ), "" ) );
 
-            // conversion mask
-            if ( !Utils.isEmpty( v.getConversionMask() ) ) {
-              tableItem.setText( 3, v.getConversionMask() );
-            } else {
-              if ( v.isNumber() ) {
-                if ( v.getLength() > 0 ) {
-                  int le = v.getLength();
-                  int pr = v.getPrecision();
+          // conversion mask
+          if ( !Utils.isEmpty( v.getConversionMask() ) ) {
+            tableItem.setText( 3, v.getConversionMask() );
+          } else {
+            if ( v.isNumber() ) {
+              if ( v.getLength() > 0 ) {
+                int le = v.getLength();
+                int pr = v.getPrecision();
 
-                  if ( v.getPrecision() <= 0 ) {
-                    pr = 0;
-                  }
-
-                  String mask = "";
-                  for ( int m = 0; m < le - pr; m++ ) {
-                    mask += "0";
-                  }
-                  if ( pr > 0 ) {
-                    mask += ".";
-                  }
-                  for ( int m = 0; m < pr; m++ ) {
-                    mask += "0";
-                  }
-                  tableItem.setText( 3, mask );
+                if ( v.getPrecision() <= 0 ) {
+                  pr = 0;
                 }
+
+                String mask = "";
+                for ( int m = 0; m < le - pr; m++ ) {
+                  mask += "0";
+                }
+                if ( pr > 0 ) {
+                  mask += ".";
+                }
+                for ( int m = 0; m < pr; m++ ) {
+                  mask += "0";
+                }
+                tableItem.setText( 3, mask );
               }
             }
-
-            return true;
           }
+
+          return true;
         };
         BaseTransformDialog.getFieldsFromPrevious( r, wFields, 1, new int[] { 1 }, new int[] { 2 }, 4, 5, listener );
       }

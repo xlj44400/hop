@@ -1,26 +1,27 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.perspective.dataorch;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Stack;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.hop.core.Const;
 import org.apache.hop.core.Props;
@@ -28,7 +29,8 @@ import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.extension.ExtensionPointHandler;
 import org.apache.hop.core.extension.HopExtensionPoint;
 import org.apache.hop.core.gui.plugin.GuiPlugin;
-import org.apache.hop.core.gui.plugin.toolbar.GuiToolbarElement;
+import org.apache.hop.core.search.ISearchable;
+import org.apache.hop.core.search.ISearchableCallback;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.ui.core.PropsUi;
 import org.apache.hop.ui.core.gui.GuiResource;
@@ -38,6 +40,7 @@ import org.apache.hop.ui.hopgui.HopGuiKeyHandler;
 import org.apache.hop.ui.hopgui.context.IGuiContextHandler;
 import org.apache.hop.ui.hopgui.file.IHopFileType;
 import org.apache.hop.ui.hopgui.file.IHopFileTypeHandler;
+import org.apache.hop.ui.hopgui.file.empty.EmptyFileType;
 import org.apache.hop.ui.hopgui.file.empty.EmptyHopFileTypeHandler;
 import org.apache.hop.ui.hopgui.file.pipeline.HopGuiPipelineGraph;
 import org.apache.hop.ui.hopgui.file.pipeline.HopPipelineFileType;
@@ -56,24 +59,22 @@ import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Stack;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.MenuItem;
 
 @HopPerspectivePlugin(
-  id = "HopDataOrchestrationPerspective",
+  id = "100-HopDataOrchestrationPerspective",
   name = "Data Orchestration",
+  image = "ui/images/data_orch.svg",
   description = "The Hop Data Orchestration Perspective for pipelines and workflows"
 )
-@GuiPlugin
+@GuiPlugin (description="Hop Data Orchestration Perspective GUI" )
 public class HopDataOrchestrationPerspective implements IHopPerspective {
 
   public static final String ID_PERSPECTIVE_TOOLBAR_ITEM = "20010-perspective-data-orchestration";
 
-  private static HopDataOrchestrationPerspective perspective;
   private final HopPipelineFileType<PipelineMeta> pipelineFileType;
   private final HopWorkflowFileType<WorkflowMeta> workflowFileType;
 
@@ -91,15 +92,9 @@ public class HopDataOrchestrationPerspective implements IHopPerspective {
   private Stack<Integer> tabSelectionHistory;
   private int tabSelectionIndex;
 
-  public static final HopDataOrchestrationPerspective getInstance() {
-    if ( perspective == null ) {
-      perspective = new HopDataOrchestrationPerspective();
-    }
-    return perspective;
-  }
-
-  private HopDataOrchestrationPerspective() {
-    items = new ArrayList<>();
+  public HopDataOrchestrationPerspective() {
+    items = new CopyOnWriteArrayList<>();
+     
     activeItem = null;
     tabSelectionHistory = new Stack<>();
     tabSelectionIndex = 0;
@@ -112,28 +107,17 @@ public class HopDataOrchestrationPerspective implements IHopPerspective {
     return "data-orch";
   }
 
-  @GuiToolbarElement(
-    root = HopGui.GUI_PLUGIN_PERSPECTIVES_PARENT_ID,
-    id = ID_PERSPECTIVE_TOOLBAR_ITEM,
-    image = "ui/images/pipeline.svg",
-    toolTip = "Data Orchestration"
-  )
-  public void activate() {
-    hopGui.getPerspectiveManager().showPerspective( this.getClass() );
+  @Override public void activate() {
+	  hopGui.setActivePerspective(this);
   }
 
-  @Override public void show() {
-    composite.setVisible( true );
-    hopGui.getPerspectivesToolbarWidgets().findToolItem( ID_PERSPECTIVE_TOOLBAR_ITEM ).setImage( GuiResource.getInstance().getImageToolbarDataOrchestration() );
+  @Override
+  public void perspectiveActivated() {
+      HopGui.getInstance().handleFileCapabilities(getActiveFileTypeHandler().getFileType(), false, false);
   }
-
-  @Override public void hide() {
-    composite.setVisible( false );
-    hopGui.getPerspectivesToolbarWidgets().findToolItem( ID_PERSPECTIVE_TOOLBAR_ITEM ).setImage( GuiResource.getInstance().getImageToolbarDataOrchestrationInactive() );
-  }
-
+	
   @Override public boolean isActive() {
-    return composite != null && !composite.isDisposed() && composite.isVisible();
+    return hopGui.isActivePerspective(this); // composite != null && !composite.isDisposed() && composite.isVisible();;
   }
 
   @Override public void initialize( HopGui hopGui, Composite parent ) {
@@ -174,14 +158,60 @@ public class HopDataOrchestrationPerspective implements IHopPerspective {
         handleTabCloseEvent( event );
       }
     } );
-    tabFolder.addListener( SWT.Selection, event -> handTabSelectionEvent( event ) );
+    tabFolder.addListener( SWT.Selection, event -> handleTabSelectionEvent( event ) );  
+    
+    
+    // Create tab item context menu
+    Menu menu = new Menu(tabFolder);
+    tabFolder.setMenu(menu);
+    tabFolder.addListener( SWT.MenuDetect, event -> handleTabMenuDetectEvent( event ) );
 
+    // Create menu item
+    MenuItem miClose = new MenuItem(menu, SWT.NONE);
+    miClose.setText("Close");
+    miClose.addListener( SWT.Selection, (event) -> {    	
+      if ( activeItem!=null ) {    	  
+    	  activeItem.getTypeHandler().close();
+      }
+    });
+            
+    MenuItem miCloseOthers = new MenuItem(menu, SWT.NONE);
+    miCloseOthers.setText("Close Others");
+    miCloseOthers.addListener( SWT.Selection, (event) -> {
+    	TabItemHandler currentItem = activeItem; 
+     	items.forEach((item) -> {
+    		if ( !item.equals(currentItem) ) {
+    			// FIXME: Works only if you activate the item
+   				activeItem = item;
+   				item.getTypeHandler().close();
+        	}
+    	});        
+    });
+        
+    MenuItem miCloseAll = new MenuItem(menu, SWT.NONE);
+    miCloseAll.setText("Close All");
+    miCloseAll.addListener( SWT.Selection, (event) -> {    	   
+    	items.forEach((item) -> {
+			// FIXME: Works only if you activate the item
+			activeItem = item;
+       		item.getTypeHandler().close();
+    	});
+    });  
+        
     // Support reorder tab item
     new TabFolderReorder( tabFolder );
 
   }
 
-  private void handTabSelectionEvent( Event event ) {
+  private void handleTabMenuDetectEvent( Event event ) {  
+	  CTabItem tabItem = tabFolder.getSelection();	  
+	  if ( tabItem==null ) {
+		  event.doit=false;
+		  return;
+	  }
+  }
+  
+  private void handleTabSelectionEvent( Event event ) {
     CTabItem tabItem = (CTabItem) event.item;
     activeItem = findTabItemHandler( tabItem );
     if ( activeItem != null ) {
@@ -210,9 +240,15 @@ public class HopDataOrchestrationPerspective implements IHopPerspective {
       hopGui.getLog().logError( "Tab item handler not found for tab item " + tabItem.toString() );
       return;
     }
-    IHopFileTypeHandler typeHandler = tabItemHandler.getTypeHandler();
-    remove( typeHandler );
-
+    IHopFileTypeHandler typeHandler = tabItemHandler.getTypeHandler();   
+    boolean isRemoved = remove( typeHandler );
+    
+    // Ignore event if canceled
+    if ( ! isRemoved ) {    
+    	event.doit = false;
+    	return;
+    }
+    
     // Also switch to the last used tab
     // But first remove all from the selection history
     //
@@ -271,6 +307,12 @@ public class HopDataOrchestrationPerspective implements IHopPerspective {
           activeItem.getTypeHandler().updateGui();
         }
       }
+      
+      // If all tab are closed
+      //
+      if ( tabFolder.getItemCount()==0 ) {    	  
+    	HopGui.getInstance().handleFileCapabilities( new EmptyFileType(), false, false );
+      }
     }
   }
 
@@ -298,15 +340,23 @@ public class HopDataOrchestrationPerspective implements IHopPerspective {
    * @param pipelineMeta
    * @return
    */
-  public IHopFileTypeHandler addPipeline( Composite parent, HopGui hopGui, PipelineMeta pipelineMeta, HopPipelineFileType pipelineFile ) throws HopException {
+  public IHopFileTypeHandler addPipeline( HopGui hopGui, PipelineMeta pipelineMeta, HopPipelineFileType pipelineFile ) throws HopException {
     CTabItem tabItem = new CTabItem( tabFolder, SWT.CLOSE );
-    tabItem.setImage( GuiResource.getInstance().getImageToolbarPipeline() );
+    tabItem.setImage( GuiResource.getInstance().getImagePipeline() );
     HopGuiPipelineGraph pipelineGraph = new HopGuiPipelineGraph( tabFolder, hopGui, tabItem, this, pipelineMeta, pipelineFile );
     tabItem.setControl( pipelineGraph );
 
     // Set the tab name
     //
     updateTabLabel( tabItem, pipelineMeta.getFilename(), pipelineMeta.getName() );
+
+    // Update the internal variables (file specific) in the pipeline graph variables
+    //
+    pipelineMeta.setInternalHopVariables( pipelineGraph.getVariables() );
+
+    // Update the variables using the list of parameters
+    //
+    hopGui.setParametersAsVariablesInUI( pipelineMeta, pipelineGraph.getVariables() );
 
     // Switch to the tab
     tabFolder.setSelection( tabItem );
@@ -323,10 +373,12 @@ public class HopDataOrchestrationPerspective implements IHopPerspective {
     tabSelectionIndex = tabSelectionHistory.size() - 1;
 
     try {
-      ExtensionPointHandler.callExtensionPoint( hopGui.getLog(), HopExtensionPoint.HopGuiNewPipelineTab.id, pipelineGraph );
+      ExtensionPointHandler.callExtensionPoint( hopGui.getLog(), pipelineGraph.getVariables(), HopExtensionPoint.HopGuiNewPipelineTab.id, pipelineGraph );
     } catch ( Exception e ) {
       throw new HopException( "Error calling extension point plugin for plugin id " + HopExtensionPoint.HopGuiNewPipelineTab.id + " trying to handle a new pipeline tab", e );
     }
+
+    pipelineGraph.adjustScrolling();
 
     pipelineGraph.setFocus();
 
@@ -346,11 +398,19 @@ public class HopDataOrchestrationPerspective implements IHopPerspective {
    * @param workflowMeta
    * @return The file type handler
    */
-  public IHopFileTypeHandler addWorkflow( Composite parent, HopGui hopGui, WorkflowMeta workflowMeta, HopWorkflowFileType workflowFile ) throws HopException {
+  public IHopFileTypeHandler addWorkflow( HopGui hopGui, WorkflowMeta workflowMeta, HopWorkflowFileType workflowFile ) throws HopException {
     CTabItem tabItem = new CTabItem( tabFolder, SWT.CLOSE );
-    tabItem.setImage( GuiResource.getInstance().getImageToolbarWorkflow() );
-    HopGuiWorkflowGraph jobGraph = new HopGuiWorkflowGraph( tabFolder, hopGui, tabItem, this, workflowMeta, workflowFile );
-    tabItem.setControl( jobGraph );
+    tabItem.setImage( GuiResource.getInstance().getImageWorkflow() );
+    HopGuiWorkflowGraph workflowGraph = new HopGuiWorkflowGraph( tabFolder, hopGui, tabItem, this, workflowMeta, workflowFile );
+    tabItem.setControl( workflowGraph );
+
+    // Update the internal variables (file specific) in the workflow graph variables
+    //
+    workflowMeta.setInternalHopVariables( workflowGraph.getVariables() );
+
+    // Update the variables using the list of parameters
+    //
+    hopGui.setParametersAsVariablesInUI( workflowMeta, workflowGraph.getVariables() );
 
     // Set the tab name
     //
@@ -358,7 +418,7 @@ public class HopDataOrchestrationPerspective implements IHopPerspective {
 
     // Switch to the tab
     tabFolder.setSelection( tabItem );
-    activeItem = new TabItemHandler( tabItem, jobGraph );
+    activeItem = new TabItemHandler( tabItem, workflowGraph );
     items.add( activeItem );
 
     // Remove all the history above the current tabSelectionIndex
@@ -371,14 +431,14 @@ public class HopDataOrchestrationPerspective implements IHopPerspective {
     tabSelectionIndex = tabSelectionHistory.size() - 1;
 
     try {
-      ExtensionPointHandler.callExtensionPoint( hopGui.getLog(), HopExtensionPoint.HopGuiNewJobTab.id, jobGraph );
+      ExtensionPointHandler.callExtensionPoint( hopGui.getLog(), workflowGraph.getVariables(), HopExtensionPoint.HopGuiNewWorkflowTab.id, workflowGraph );
     } catch ( Exception e ) {
-      throw new HopException( "Error calling extension point plugin for plugin id " + HopExtensionPoint.HopGuiNewPipelineTab.id + " trying to handle a new workflow tab", e );
+      throw new HopException( "Error calling extension point plugin for plugin id " + HopExtensionPoint.HopGuiNewWorkflowTab.id + " trying to handle a new workflow tab", e );
     }
 
-    jobGraph.setFocus();
+    workflowGraph.setFocus();
 
-    return jobGraph;
+    return workflowGraph;
   }
 
   /**
@@ -409,13 +469,13 @@ public class HopDataOrchestrationPerspective implements IHopPerspective {
       if ( typeHandler.getSubject() != null ) {
         if ( typeHandler.getSubject() instanceof PipelineMeta ) {
           try {
-            ExtensionPointHandler.callExtensionPoint( hopGui.getLog(), HopExtensionPoint.HopGuiPipelineAfterClose.id, typeHandler.getSubject() );
+            ExtensionPointHandler.callExtensionPoint( hopGui.getLog(), hopGui.getVariables(), HopExtensionPoint.HopGuiPipelineAfterClose.id, typeHandler.getSubject() );
           } catch ( Exception e ) {
             hopGui.getLog().logError( "Error calling extension point 'HopGuiPipelineAfterClose'", e );
           }
         } else if ( typeHandler.getSubject() instanceof WorkflowMeta ) {
           try {
-            ExtensionPointHandler.callExtensionPoint( hopGui.getLog(), HopExtensionPoint.HopGuiWorkflowAfterClose.id, typeHandler.getSubject() );
+            ExtensionPointHandler.callExtensionPoint( hopGui.getLog(), hopGui.getVariables(), HopExtensionPoint.HopGuiWorkflowAfterClose.id, typeHandler.getSubject() );
           } catch ( Exception e ) {
             hopGui.getLog().logError( "Error calling extension point 'HopGuiWorkflowAfterClose'", e );
           }
@@ -520,11 +580,49 @@ public class HopDataOrchestrationPerspective implements IHopPerspective {
       return null;
     }
     for ( TabItemHandler item : items ) {
-      if ( item.getTypeHandler().getFilename().equals( filename ) ) {
+      if ( filename.equals(item.getTypeHandler().getFilename()) ) {
         return item;
       }
     }
     return null;
+  }
+
+  @Override public List<ISearchable> getSearchables() {
+    List<ISearchable> searchables = new ArrayList<>();
+    for (final TabItemHandler item : items) {
+      // The type handler is the pipeline or workflow
+      //
+      IHopFileTypeHandler typeHandler = item.getTypeHandler();
+      searchables.add( new ISearchable() {
+        @Override public String getLocation() {
+          return "Data orchestration perspective in tab : "+item.getTabItem().getText();
+        }
+
+        @Override public String getName() {
+          return typeHandler.getName();
+        }
+
+        @Override public String getType() {
+          return typeHandler.getFileType().getName();
+        }
+
+        @Override public String getFilename() {
+          return typeHandler.getFilename();
+        }
+
+        @Override public Object getSearchableObject() {
+          return typeHandler.getSubject();
+        }
+
+        @Override public ISearchableCallback getSearchCallback() {
+          return ( searchable, searchResult ) -> {
+            activate();
+            switchToTab( item );
+          };
+        }
+      } );
+    }
+    return searchables;
   }
 
   /**
@@ -575,52 +673,8 @@ public class HopDataOrchestrationPerspective implements IHopPerspective {
     this.hopGui = hopGui;
   }
 
-  /**
-   * Gets parent
-   *
-   * @return value of parent
-   */
-  public Composite getParent() {
-    return parent;
-  }
-
-  /**
-   * @param parent The parent to set
-   */
-  public void setParent( Composite parent ) {
-    this.parent = parent;
-  }
-
-  /**
-   * Gets composite
-   *
-   * @return value of composite
-   */
-  @Override public Composite getComposite() {
+  @Override public Control getControl() {
     return composite;
-  }
-
-  /**
-   * @param composite The composite to set
-   */
-  public void setComposite( Composite composite ) {
-    this.composite = composite;
-  }
-
-  /**
-   * Gets formData
-   *
-   * @return value of formData
-   */
-  @Override public FormData getFormData() {
-    return formData;
-  }
-
-  /**
-   * @param formData The formData to set
-   */
-  public void setFormData( FormData formData ) {
-    this.formData = formData;
   }
 
   /**

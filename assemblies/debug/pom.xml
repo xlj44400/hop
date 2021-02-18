@@ -1,104 +1,177 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~       http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~
+  -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+    <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>hop-assemblies-debug</artifactId>
-  <packaging>pom</packaging>
+    <artifactId>hop-assemblies-debug</artifactId>
+    <packaging>pom</packaging>
 
-  <name>Hop Assemblies Debug</name>
+    <name>Hop Assemblies Debug</name>
 
-  <parent>
-    <groupId>org.hop</groupId>
-    <artifactId>hop-assemblies</artifactId>
-    <version>0.20-SNAPSHOT</version>
-  </parent>
+    <parent>
+        <groupId>org.apache.hop</groupId>
+        <artifactId>hop-assemblies</artifactId>
+        <version>0.70-SNAPSHOT</version>
+    </parent>
 
-  <properties>
+    <properties>
+        <!-- swt -->
+        <org.eclipse.swt.gtk.linux.x86_64.version>${org.eclipse.platform.version}
+        </org.eclipse.swt.gtk.linux.x86_64.version>
+        <org.eclipse.swt.win32.win32.x86_64.version>${org.eclipse.platform.version}
+        </org.eclipse.swt.win32.win32.x86_64.version>
+        <org.eclipse.swt.cocoa.macosx.x86_64.version>${org.eclipse.platform.version}
+        </org.eclipse.swt.cocoa.macosx.x86_64.version>
+    </properties>
 
-    <!-- swt -->
-    <org.eclipse.swt.gtk.linux.x86_64.version>${org.eclipse.platform.version}</org.eclipse.swt.gtk.linux.x86_64.version>
-    <org.eclipse.swt.win32.win32.x86_64.version>${org.eclipse.platform.version}</org.eclipse.swt.win32.win32.x86_64.version>
-    <org.eclipse.swt.cocoa.macosx.x86_64.version>${org.eclipse.platform.version}</org.eclipse.swt.cocoa.macosx.x86_64.version>
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.hop</groupId>
+            <artifactId>hop-core</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hop</groupId>
+            <artifactId>hop-engine</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hop</groupId>
+            <artifactId>hop-ui-rcp</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hop</groupId>
+            <artifactId>hop-ui</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
 
-    <jfreechart.version>1.0.13</jfreechart.version>
-  </properties>
+        <!-- Batik -->
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>xmlgraphics-commons</artifactId>
+            <version>2.3</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.hop</groupId>
-      <artifactId>hop-core</artifactId>
-      <version>${project.version}</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.hop</groupId>
-      <artifactId>hop-engine</artifactId>
-      <version>${project.version}</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.hop</groupId>
-      <artifactId>hop-ui-swt</artifactId>
-      <version>${project.version}</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.hop</groupId>
-      <artifactId>hop-metastore</artifactId>
-      <version>${project.version}</version>
-      <scope>compile</scope>
-    </dependency>
+    </dependencies>
 
-    <!-- Batik -->
-    <dependency>
-      <groupId>org.apache.xmlgraphics</groupId>
-      <artifactId>xmlgraphics-commons</artifactId>
-      <version>2.3</version>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+    <build>
+        <plugins>
 
-    <!-- swt -->
+        </plugins>
+    </build>
 
-    <dependency>
-      <groupId>org.eclipse.platform</groupId>
-      <artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId>
-      <version>${org.eclipse.swt.gtk.linux.x86_64.version}</version>
-      <scope>compile</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+    <profiles>
+        <profile>
+            <id>swt-unix</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                </os>
+            </activation>
+            <properties>
+                <swt.artifactId>org.eclipse.swt.gtk.linux.x86_64</swt.artifactId>
+                <env>linux</env>
+            </properties>
+            <dependencyManagement>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.eclipse.platform</groupId>
+                        <artifactId>${swt.artifactId}</artifactId>
+                        <version>${org.eclipse.platform.version}</version>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>*</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
+        </profile>
+        <profile>
+            <id>swt-mac</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                </os>
+            </activation>
+            <properties>
+                <swt.artifactId>org.eclipse.swt.cocoa.macosx.x86_64</swt.artifactId>
+                <env>mac</env>
+            </properties>
+            <dependencyManagement>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.eclipse.platform</groupId>
+                        <artifactId>${swt.artifactId}</artifactId>
+                        <version>${org.eclipse.platform.version}</version>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>*</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
+        </profile>
+        <profile>
+            <id>swt-windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <swt.artifactId>org.eclipse.swt.win32.win32.x86_64</swt.artifactId>
+                <env>windows</env>
+            </properties>
+            <dependencyManagement>
+                <dependencies>
 
-    <dependency>
-      <groupId>org.eclipse.platform</groupId>
-      <artifactId>org.eclipse.swt.win32.win32.x86_64</artifactId>
-      <version>${org.eclipse.swt.win32.win32.x86_64.version}</version>
-      <exclusions><exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion></exclusions>
-    </dependency>
+                    <dependency>
+                        <groupId>org.eclipse.platform</groupId>
+                        <artifactId>${swt.artifactId}</artifactId>
+                        <version>${org.eclipse.platform.version}</version>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>*</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
+        </profile>
+    </profiles>
 
-    <!--
-    <dependency>
-      <groupId>org.eclipse.platform</groupId>
-      <artifactId>org.eclipse.swt.cocoa.macosx.x86_64</artifactId>
-      <version>${org.eclipse.swt.cocoa.macosx.x86_64.version}</version>
-      <scope>compile</scope>
-      <exclusions><exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion></exclusions>
-    </dependency>
-    -->
-  </dependencies>
-
-  <build>
-    <plugins>
-
-    </plugins>
-  </build>
 </project>

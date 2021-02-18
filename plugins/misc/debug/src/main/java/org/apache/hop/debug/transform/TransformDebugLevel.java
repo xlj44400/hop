@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.hop.debug.transform;
 
 import org.apache.hop.core.Condition;
@@ -26,6 +43,20 @@ public class TransformDebugLevel implements Cloneable {
     this.startRow = startRow;
     this.endRow = endRow;
     this.condition = condition;
+  }
+
+  @Override public String toString() {
+    String s = logLevel.toString();
+    if ( startRow >= 0 ) {
+      s += ", start row=" + startRow;
+    }
+    if ( endRow >= 0 ) {
+      s += ", end row=" + endRow;
+    }
+    if ( condition != null && !condition.isEmpty() ) {
+      s += ", condition=" + condition.toString();
+    }
+    return s;
   }
 
   @Override public TransformDebugLevel clone() {

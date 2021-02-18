@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.gui;
 
@@ -26,7 +21,7 @@ import org.apache.hop.core.Const;
 import org.apache.hop.core.util.EnvUtil;
 import org.apache.hop.workflow.ActionResult;
 import org.apache.hop.workflow.WorkflowMeta;
-import org.apache.hop.workflow.action.ActionCopy;
+import org.apache.hop.workflow.action.ActionMeta;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -88,7 +83,7 @@ public class WorkflowTracker<T extends WorkflowMeta> {
   }
 
   /**
-   * Creates a jobtracker with a single result (maxChildren children are kept)
+   * Creates a workflow tracker with a single result (maxChildren children are kept)
    *
    * @param workflowMeta the workflow metadata to keep track of
    * @param result  the action result to track.
@@ -99,7 +94,7 @@ public class WorkflowTracker<T extends WorkflowMeta> {
   }
 
   /**
-   * Creates a jobtracker with a single result
+   * Creates a workflow tracker with a single result
    *
    * @param workflowMeta     the workflow metadata to keep track of
    * @param maxChildren The maximum number of children to keep track of
@@ -150,7 +145,7 @@ public class WorkflowTracker<T extends WorkflowMeta> {
   public List<WorkflowTracker> getWorkflowTrackers() {
     lock.readLock().lock();
     try {
-      return new ArrayList<WorkflowTracker>( workflowTrackers );
+      return new ArrayList<>( workflowTrackers );
     } finally {
       lock.readLock().unlock();
     }
@@ -196,11 +191,11 @@ public class WorkflowTracker<T extends WorkflowMeta> {
   /**
    * Finds the WorkflowTracker for the action specified. Use this to
    *
-   * @param actionCopy The entry to search the workflow tracker for
+   * @param actionMeta The action to search the workflow tracker for
    * @return The WorkflowTracker of null if none could be found...
    */
-  public WorkflowTracker findWorkflowTracker( ActionCopy actionCopy ) {
-    if ( actionCopy.getName() == null ) {
+  public WorkflowTracker findWorkflowTracker( ActionMeta actionMeta ) {
+    if ( actionMeta.getName() == null ) {
       return null;
     }
 
@@ -211,8 +206,7 @@ public class WorkflowTracker<T extends WorkflowMeta> {
         WorkflowTracker tracker = it.previous();
         ActionResult result = tracker.getActionResult();
         if ( result != null ) {
-          if ( actionCopy.getName().equals( result.getActionName() )
-            && actionCopy.getNr() == result.getActionNr() ) {
+          if ( actionMeta.getName().equals( result.getActionName() ) ) {
             return tracker;
           }
         }

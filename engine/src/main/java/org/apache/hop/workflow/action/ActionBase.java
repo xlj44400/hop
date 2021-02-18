@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.action;
 
@@ -49,9 +44,8 @@ import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.variables.Variables;
 import org.apache.hop.core.xml.XmlHandler;
-import org.apache.hop.workflow.Workflow;
 import org.apache.hop.workflow.WorkflowMeta;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.resource.ResourceDefinition;
 import org.apache.hop.resource.IResourceHolder;
 import org.apache.hop.resource.IResourceNaming;
@@ -74,7 +68,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Matt Created on 18-jun-04
  */
-public class ActionBase implements Cloneable, IVariables, ILoggingObject,
+public abstract class ActionBase implements IAction, Cloneable, ILoggingObject,
   IAttributes, IExtensionData, ICheckResultSource, IResourceHolder {
 
   /**
@@ -90,7 +84,7 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
   /**
    * ID as defined in the xml or annotation.
    */
-  private String configId;
+  private String pluginId;
 
   /**
    * Whether the action has changed.
@@ -100,7 +94,7 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
   /**
    * The variable bindings for the action
    */
-  protected IVariables variables = new Variables();
+  private IVariables variables = new Variables();
 
   /**
    * The map for transform variable bindings for the action
@@ -127,7 +121,7 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
    */
   protected String containerObjectId;
 
-  protected IMetaStore metaStore;
+  private IHopMetadataProvider metadataProvider;
 
   protected Map<String, Map<String, String>> attributesMap;
 
@@ -138,7 +132,7 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
   /**
    * Instantiates a new action base object.
    */
-  public ActionBase() {
+  protected ActionBase() {
     name = null;
     description = null;
     log = new LogChannel( this );
@@ -152,7 +146,7 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
    * @param name        the name of the action
    * @param description the description of the action
    */
-  public ActionBase( String name, String description ) {
+  protected ActionBase( String name, String description ) {
     setName( name );
     setDescription( description );
     log = new LogChannel( this );
@@ -164,7 +158,7 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
    * Checks if the Action object is equal to the specified object
    *
    * @return true if the two objects are equal, false otherwise
-   * @see java.lang.Object#equals(java.lang.Object)
+   * @see Object#equals(Object)
    */
   @Override
   public boolean equals( Object obj ) {
@@ -198,7 +192,7 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
    * @return the plug-in type description
    */
   public String getTypeDesc() {
-    IPlugin plugin = PluginRegistry.getInstance().findPluginWithId( ActionPluginType.class, configId );
+    IPlugin plugin = PluginRegistry.getInstance().findPluginWithId( ActionPluginType.class, pluginId );
     return plugin.getDescription();
   }
 
@@ -226,8 +220,8 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
    *
    * @param Description the new description
    */
-  public void setDescription( String Description ) {
-    this.description = Description;
+  public void setDescription( String description ) {
+    this.description = description;
   }
 
   /**
@@ -241,7 +235,7 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
   }
 
   @Override public String getTypeId() {
-    return "JOBENTRY";
+    return ActionPluginType.ID;
   }
 
   /**
@@ -281,57 +275,12 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
   }
 
   /**
-   * Checks if the action is a dummy entry
-   *
-   * @return true if the action is a dummy entry, false otherwise
-   */
-  public boolean isDummy() {
-    return false;
-  }
-
-  /**
-   * Checks if the action is an evaluation.
-   *
-   * @return true if the action is an evaluation, false otherwise
-   */
-  public boolean isEvaluation() {
-    return true;
-  }
-
-  /**
    * Checks if the action executes a workflow
    *
    * @return true if the action executes a workflow, false otherwise
    */
-  public boolean isJob() {
-    return "WORKFLOW".equals( configId );
-  }
-
-  /**
-   * Checks if the action sends email
-   *
-   * @return true if the action sends email, false otherwise
-   */
-  public boolean isMail() {
-    return "MAIL".equals( configId );
-  }
-
-  /**
-   * Checks if the action executes a shell program
-   *
-   * @return true if the action executes a shell program, false otherwise
-   */
-  public boolean isShell() {
-    return "SHELL".equals( configId );
-  }
-
-  /**
-   * Checks if the action is of a special type (Start, Dummy, etc.)
-   *
-   * @return true if the action is of a special type, false otherwise
-   */
-  public boolean isSpecial() {
-    return "SPECIAL".equals( configId );
+  public boolean isWorkflow() {
+    return "WORKFLOW".equals( pluginId );
   }
 
   /**
@@ -340,40 +289,11 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
    * @return true if this action executes a pipeline, false otherwise
    */
   public boolean isPipeline() {
-    return "PIPELINE".equals( configId );
+    return "PIPELINE".equals( pluginId );
   }
 
   /**
-   * Checks if this action performs an FTP operation
-   *
-   * @return true if this action performs an FTP operation, false otherwise
-   */
-  public boolean isFtp() {
-    return "FTP".equals( configId );
-  }
-
-  /**
-   * Checks if this action performs an SFTP operation
-   *
-   * @return true if this action performs an SFTP operation, false otherwise
-   */
-  public boolean isSftp() {
-    return "SFTP".equals( configId );
-  }
-
-  /**
-   * Checks if this action performs an HTTP operation
-   *
-   * @return true if this action performs an HTTP operation, false otherwise
-   */
-  public boolean isHttp() {
-    return "HTTP".equals( configId );
-  }
-
-  // Add here for the new types?
-
-  /**
-   * This method is called by PDI whenever a action needs to serialize its settings to XML. It is called when saving
+   * This method is called by Hop whenever a action needs to serialize its settings to XML. It is called when saving
    * a workflow in HopGui. The method returns an XML string, containing the serialized settings. The string contains a series
    * of XML tags, typically one tag per setting. The helper class org.apache.hop.core.xml.XmlHandler is typically used
    * to construct the XML string.
@@ -384,7 +304,7 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
     StringBuilder retval = new StringBuilder();
     retval.append( "      " ).append( XmlHandler.addTagValue( "name", getName() ) );
     retval.append( "      " ).append( XmlHandler.addTagValue( "description", getDescription() ) );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "type", configId ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "type", pluginId ) );
 
     retval.append( AttributesUtil.getAttributesXml( attributesMap ) );
 
@@ -392,21 +312,21 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
   }
 
   /**
-   * This method is called by PDI whenever a action needs to read its settings from XML. The XML node containing the
+   * This method is called by Hop whenever a action needs to read its settings from XML. The XML node containing the
    * action's settings is passed in as an argument. Again, the helper class org.apache.hop.core.xml.XmlHandler is
    * typically used to conveniently read the settings from the XML node.
    *
-   * @param entrynode the top-level XML node
+   * @param node the top-level XML node
    * @throws HopXmlException if any errors occur during the loading of the XML
    */
-  public void loadXml( Node entrynode ) throws HopXmlException {
+  public void loadXml( Node node ) throws HopXmlException {
     try {
-      setName( XmlHandler.getTagValue( entrynode, "name" ) );
-      setDescription( XmlHandler.getTagValue( entrynode, "description" ) );
+      setName( XmlHandler.getTagValue( node, "name" ) );
+      setDescription( XmlHandler.getTagValue( node, "description" ) );
 
       // Load the attribute groups map
       //
-      attributesMap = AttributesUtil.loadAttributes( XmlHandler.getSubNode( entrynode, AttributesUtil.XML_TAG ) );
+      attributesMap = AttributesUtil.loadAttributes( XmlHandler.getSubNode( node, AttributesUtil.XML_TAG ) );
 
     } catch ( Exception e ) {
       throw new HopXmlException( "Unable to load base info for action", e );
@@ -434,7 +354,7 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
   /**
    * Returns a string representation of the object. For ActionBase, this method returns the name
    *
-   * @see java.lang.Object#toString()
+   * @see Object#toString()
    */
   @Override
   public String toString() {
@@ -456,7 +376,7 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
    *
    * @return false
    */
-  public boolean evaluates() {
+  public boolean isEvaluation() {
     return false;
   }
 
@@ -474,11 +394,11 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
    * Gets the SQL statements needed by this action to execute successfully, given a set of variables. For
    * ActionBase, this method returns an empty list.
    *
-   * @param variables a variable space object containing variable bindings
+   * @param variables a variable variables object containing variable bindings
    * @return an empty list
    * @throws HopException if any errors occur during the generation of SQL statements
    */
-  public List<SqlStatement> getSqlStatements( IMetaStore metaStore, IVariables variables ) throws HopException {
+  public List<SqlStatement> getSqlStatements( IHopMetadataProvider metadataProvider, IVariables variables ) throws HopException {
     return new ArrayList<>();
   }
 
@@ -514,69 +434,69 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
   }
 
   /**
-   * Copies variables from a given variable space to this action
+   * Copies variables from a given variable variables to this action
    *
-   * @see IVariables#copyVariablesFrom(IVariables)
+   * @see IVariables#copyFrom(IVariables)
    */
   @Override
-  public void copyVariablesFrom( IVariables variables ) {
-    this.variables.copyVariablesFrom( variables );
+  public void copyFrom( IVariables variables ) {
+    this.variables.copyFrom( variables );
   }
 
   /**
    * Substitutes any variable values into the given string, and returns the resolved string
    *
    * @return the string with any environment variables resolved and substituted
-   * @see IVariables#environmentSubstitute(java.lang.String)
+   * @see IVariables#resolve(String)
    */
   @Override
-  public String environmentSubstitute( String aString ) {
-    return variables.environmentSubstitute( aString );
+  public String resolve( String aString ) {
+    return variables.resolve( aString );
   }
 
   /**
    * Substitutes any variable values into each of the given strings, and returns an array containing the resolved
    * string(s)
    *
-   * @see IVariables#environmentSubstitute(java.lang.String[])
+   * @see IVariables#resolve(String[])
    */
   @Override
-  public String[] environmentSubstitute( String[] aString ) {
-    return variables.environmentSubstitute( aString );
+  public String[] resolve( String[] aString ) {
+    return variables.resolve( aString );
   }
 
   @Override
-  public String fieldSubstitute( String aString, IRowMeta rowMeta, Object[] rowData ) throws HopValueException {
-    return variables.fieldSubstitute( aString, rowMeta, rowData );
+  public String resolve( String aString, IRowMeta rowMeta, Object[] rowData ) throws HopValueException {
+    return variables.resolve( aString, rowMeta, rowData );
   }
 
   /**
-   * Gets the parent variable space
+   * Gets the parent variable variables
    *
-   * @return the parent variable space
-   * @see IVariables#getParentVariableSpace()
+   * @return the parent variable variables
+   * @see IVariables#getParentVariables()
    */
   @Override
-  public IVariables getParentVariableSpace() {
-    return variables.getParentVariableSpace();
+  public IVariables getParentVariables() {
+    return variables.getParentVariables();
   }
 
   /**
-   * Sets the parent variable space
+   * Sets the parent variable variables
    *
-   * @see IVariables#setParentVariableSpace(
+   * @see IVariables#setParentVariables(
    *IVariables)
    */
   @Override
-  public void setParentVariableSpace( IVariables parent ) {
-    variables.setParentVariableSpace( parent );
+  public void setParentVariables( IVariables parent ) {
+    variables.setParentVariables( parent );
   }
 
   /**
    * Gets the value of the specified variable, or returns a default value if no such variable exists
    *
    * @return the value of the specified variable, or returns a default value if no such variable exists
-   * @see IVariables#getVariable(java.lang.String, java.lang.String)
+   * @see IVariables#getVariable(String, String)
    */
   @Override
   public String getVariable( String variableName, String defaultValue ) {
@@ -587,7 +507,7 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
    * Gets the value of the specified variable, or returns a default value if no such variable exists
    *
    * @return the value of the specified variable, or returns a default value if no such variable exists
-   * @see IVariables#getVariable(java.lang.String)
+   * @see IVariables#getVariable(String)
    */
   @Override
   public String getVariable( String variableName ) {
@@ -601,12 +521,12 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
    * @param variableName the name of the variable to interrogate
    * @return a boolean representation of the specified variable after performing any necessary substitution
    * @boolean defaultValue the value to use if the specified variable is unassigned.
-   * @see IVariables#getBooleanValueOfVariable(java.lang.String, boolean)
+   * @see IVariables#getVariableBoolean(String, boolean)
    */
   @Override
-  public boolean getBooleanValueOfVariable( String variableName, boolean defaultValue ) {
+  public boolean getVariableBoolean( String variableName, boolean defaultValue ) {
     if ( !Utils.isEmpty( variableName ) ) {
-      String value = environmentSubstitute( variableName );
+      String value = resolve( variableName );
       if ( !Utils.isEmpty( value ) ) {
         return ValueMetaString.convertStringToBoolean( value );
       }
@@ -617,29 +537,29 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
   /**
    * Sets the values of the action's variables to the values from the parent variables
    *
-   * @see IVariables#initializeVariablesFrom(
+   * @see IVariables#initializeFrom(
    *IVariables)
    */
   @Override
-  public void initializeVariablesFrom( IVariables parent ) {
-    variables.initializeVariablesFrom( parent );
+  public void initializeFrom( IVariables parent ) {
+    variables.initializeFrom( parent );
   }
 
   /**
    * Gets a list of variable names for the action
    *
    * @return a list of variable names
-   * @see IVariables#listVariables()
+   * @see IVariables#getVariableNames()
    */
   @Override
-  public String[] listVariables() {
-    return variables.listVariables();
+  public String[] getVariableNames() {
+    return variables.getVariableNames();
   }
 
   /**
    * Sets the value of the specified variable to the specified value
    *
-   * @see IVariables#setVariable(java.lang.String, java.lang.String)
+   * @see IVariables#setVariable(String, String)
    */
   @Override
   public void setVariable( String variableName, String variableValue ) {
@@ -647,26 +567,26 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
   }
 
   /**
-   * Shares a variable space from another variable space. This means that the object should take over the space used as
+   * Shares a variable variables from another variable variables. This means that the object should take over the variables used as
    * argument.
    *
-   * @see IVariables#shareVariablesWith(IVariables)
+   * @see IVariables#shareWith(IVariables)
    */
   @Override
-  public void shareVariablesWith( IVariables variables ) {
+  public void shareWith( IVariables variables ) {
     this.variables = variables;
   }
 
   /**
    * Injects variables using the given Map. The behavior should be that the properties object will be stored and at the
-   * time the IVariables is initialized (or upon calling this method if the space is already initialized). After
+   * time the IVariables is initialized (or upon calling this method if the variables is already initialized). After
    * injecting the link of the properties object should be removed.
    *
-   * @see IVariables#injectVariables(java.util.Map)
+   * @see IVariables#setVariables(Map)
    */
   @Override
-  public void injectVariables( Map<String, String> prop ) {
-    variables.injectVariables( prop );
+  public void setVariables( Map<String, String> map ) {
+    variables.setVariables( map );
   }
 
   /**
@@ -674,10 +594,10 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
    *
    * @param remarks   List of CheckResult objects indicating consistency status
    * @param workflowMeta   the metadata object for the action
-   * @param variables     the variable space to resolve string expressions with variables with
-   * @param metaStore the MetaStore to load common elements from
+   * @param variables     the variable variables to resolve string expressions with variables with
+   * @param metadataProvider the MetaStore to load common elements from
    */
-  public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables, IMetaStore metaStore ) {
+  public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables, IHopMetadataProvider metadataProvider ) {
 
   }
 
@@ -688,8 +608,8 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
    * @return an empty list of ResourceReferences
    * @see ResourceReference
    */
-  public List<ResourceReference> getResourceDependencies( WorkflowMeta workflowMeta ) {
-    return new ArrayList<ResourceReference>( 5 ); // default: return an empty resource dependency list. Lower the
+  public List<ResourceReference> getResourceDependencies( IVariables variables, WorkflowMeta workflowMeta ) {
+    return new ArrayList<>( 5 ); // default: return an empty resource dependency list. Lower the
     // initial capacity
   }
 
@@ -698,15 +618,15 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
    * resource naming interface allows the object to name appropriately without worrying about those parts of the
    * implementation specific details.
    *
-   * @param variables           The variable space to resolve (environment) variables with.
+   * @param variables           The variable variables to resolve (environment) variables with.
    * @param definitions     The map containing the filenames and content
    * @param namingInterface The resource naming interface allows the object to be named appropriately
-   * @param metaStore       the metaStore to load external metadata from
+   * @param metadataProvider       the metadataProvider to load external metadata from
    * @return The filename for this object. (also contained in the definitions map)
    * @throws HopException in case something goes wrong during the export
    */
   public String exportResources( IVariables variables, Map<String, ResourceDefinition> definitions,
-                                 IResourceNaming namingInterface, IMetaStore metaStore ) throws HopException {
+                                 IResourceNaming namingInterface, IHopMetadataProvider metadataProvider ) throws HopException {
     return null;
   }
 
@@ -716,37 +636,26 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
    * @return the plugin id
    */
   public String getPluginId() {
-    return configId;
+    return pluginId;
   }
 
   /**
    * Sets the plugin id.
    *
-   * @param configId the new plugin id
+   * @param pluginId the new plugin id
    */
-  public void setPluginId( String configId ) {
-    this.configId = configId;
+  public void setPluginId( String pluginId ) {
+    this.pluginId = pluginId;
   }
 
   /**
-   * This returns the expected name for the dialog that edits a action. The expected name is in the org.apache.hop.ui
-   * tree and has a class name that is the name of the action with 'Dialog' added to the end.
-   * <p>
-   * e.g. if the action is org.apache.hop.workflow.actions.zipfile.JobEntryZipFile the dialog would be
-   * org.apache.hop.ui.workflow.actions.zipfile.JobEntryZipFileDialog
-   * <p>
-   * If the dialog class for a action does not match this pattern it should override this method and return the
-   * appropriate class name
+   * You can use this to point to an alternate class for the Dialog.
+   * By default we return null.  This means we simply add Dialog to the Action plugin class name.
    *
-   * @return full class name of the dialog
-   * @deprecated As of release 8.1, use annotated-based dialog instead {@see org.apache.hop.core.annotations.PluginDialog}
+   * @return full class name of the action dialog class (null by default)
    */
-  @Deprecated
   public String getDialogClassName() {
-    String className = getClass().getCanonicalName();
-    className = className.replaceFirst( "\\.hop\\.", ".hop.ui." );
-    className += "Dialog";
-    return className;
+    return null;
   }
 
   /**
@@ -767,7 +676,7 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
     this.parentWorkflow = parentWorkflow;
     this.logLevel = parentWorkflow.getLogLevel();
     this.log = new LogChannel( this, parentWorkflow );
-    this.containerObjectId = parentWorkflow.getContainerObjectId();
+    this.containerObjectId = parentWorkflow.getContainerId();
   }
 
   /**
@@ -1030,7 +939,7 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
    * @return the container object id
    */
   @Override
-  public String getContainerObjectId() {
+  public String getContainerId() {
     return containerObjectId;
   }
 
@@ -1071,12 +980,12 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
    * Load the referenced object
    *
    * @param index     the referenced object index to load (in case there are multiple references)
-   * @param metaStore the metaStore to load from
-   * @param variables     the variable space to use
+   * @param metadataProvider the metadataProvider to load from
+   * @param variables     the variable variables to use
    * @return the referenced object once loaded
    * @throws HopException
    */
-  public IHasFilename loadReferencedObject( int index, IMetaStore metaStore, IVariables variables ) throws HopException {
+  public IHasFilename loadReferencedObject( int index, IHopMetadataProvider metadataProvider, IVariables variables ) throws HopException {
     return null;
   }
 
@@ -1104,12 +1013,12 @@ public class ActionBase implements Cloneable, IVariables, ILoggingObject,
     }
   }
 
-  public IMetaStore getMetaStore() {
-    return metaStore;
+  public IHopMetadataProvider getMetadataProvider() {
+    return metadataProvider;
   }
 
-  public void setMetaStore( IMetaStore metaStore ) {
-    this.metaStore = metaStore;
+  public void setMetadataProvider( IHopMetadataProvider metadataProvider ) {
+    this.metadataProvider = metadataProvider;
   }
 
   @Override

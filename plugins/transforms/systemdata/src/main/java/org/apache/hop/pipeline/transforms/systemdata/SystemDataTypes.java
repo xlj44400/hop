@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License" );
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.systemdata;
 
@@ -130,8 +125,7 @@ public enum SystemDataTypes {
 
   private String code;
   private String description;
-  private static Class<?> PKG = SystemDataMeta.class; // for i18n purposes, needed by Translator!!
-
+ 
   public String getCode() {
     return code;
   }
@@ -157,15 +151,8 @@ public enum SystemDataTypes {
     return TYPE_SYSTEM_INFO_NONE;
   }
 
-  private static String getDescription( String name ) {
-    if ( PKG == null ) {
-      PKG = SystemDataMeta.class;
-    }
-    return BaseMessages.getString( PKG, "SystemDataMeta.TypeDesc." + name );
-  }
-
   SystemDataTypes( String code, String descriptionName ) {
     this.code = code;
-    this.description = getDescription( descriptionName );
+    this.description = BaseMessages.getString( SystemDataTypes.class, "SystemDataMeta.TypeDesc." + descriptionName );
   }
 }

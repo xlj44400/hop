@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.mssqlbulkload;
 
@@ -47,7 +42,7 @@ import org.apache.hop.workflow.action.validator.AbstractFileValidator;
 import org.apache.hop.workflow.action.validator.ActionValidatorUtils;
 import org.apache.hop.workflow.action.validator.AndValidator;
 import org.apache.hop.workflow.action.validator.ValidatorContext;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.resource.ResourceEntry;
 import org.apache.hop.resource.ResourceEntry.ResourceType;
 import org.apache.hop.resource.ResourceReference;
@@ -66,17 +61,17 @@ import java.util.List;
  */
 @Action(
 	  id = "MSSQL_BULK_LOAD",
-	  i18nPackageName = "org.apache.hop.workflow.actions.mssqlbulkload",
-	  name = "ActionMssqlBulkLoad.Name",
-	  description = "ActionMssqlBulkLoad.Description",
+	  name = "i18n::ActionMssqlBulkLoad.Name",
+	  description = "i18n::ActionMssqlBulkLoad.Description",
 	  image = "MssqlBulkLoad.svg",
-	  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.BulkLoading"
+	  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.BulkLoading",
+	  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/mssqlbulkload.html"
 )
 public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionMssqlBulkLoad.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionMssqlBulkLoad.class; // For Translator
 
   private String schemaname;
-  private String tablename;
+  private String tableName;
   private String filename;
   private String datafiletype;
   private String fieldterminator;
@@ -105,7 +100,7 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
 
   public ActionMssqlBulkLoad( String n ) {
     super( n, "" );
-    tablename = null;
+    tableName = null;
     schemaname = null;
     filename = null;
     datafiletype = "char";
@@ -149,7 +144,7 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
 
     retval.append( super.getXml() );
     retval.append( "      " ).append( XmlHandler.addTagValue( "schemaname", schemaname ) );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "tablename", tablename ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "tablename", tableName ) );
     retval.append( "      " ).append( XmlHandler.addTagValue( "filename", filename ) );
 
     retval.append( "      " ).append( XmlHandler.addTagValue( "datafiletype", datafiletype ) );
@@ -181,11 +176,11 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
     return retval.toString();
   }
 
-  public void loadXml( Node entrynode, IMetaStore metaStore ) throws HopXmlException {
+  public void loadXml( Node entrynode, IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
       schemaname = XmlHandler.getTagValue( entrynode, "schemaname" );
-      tablename = XmlHandler.getTagValue( entrynode, "tablename" );
+      tableName = XmlHandler.getTagValue( entrynode, "tablename" );
       filename = XmlHandler.getTagValue( entrynode, "filename" );
       datafiletype = XmlHandler.getTagValue( entrynode, "datafiletype" );
       fieldterminator = XmlHandler.getTagValue( entrynode, "fieldterminator" );
@@ -217,15 +212,15 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
       addfiletoresult = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "addfiletoresult" ) );
       truncate = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "truncate" ) );
 
-      connection = DatabaseMeta.loadDatabase( metaStore, dbname );
+      connection = DatabaseMeta.loadDatabase( metadataProvider, dbname );
 
     } catch ( HopException e ) {
       throw new HopXmlException( "Unable to load action of type 'MSsql bulk load' from XML node", e );
     }
   }
 
-  public void setTablename( String tablename ) {
-    this.tablename = tablename;
+  public void setTablename( String tableName ) {
+    this.tableName = tableName;
   }
 
   public void setSchemaname( String schemaname ) {
@@ -237,7 +232,7 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
   }
 
   public String getTablename() {
-    return tablename;
+    return tableName;
   }
 
   public void setMaxErrors( int maxerrors ) {
@@ -272,7 +267,7 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
     return connection;
   }
 
-  public boolean evaluates() {
+  @Override public boolean isEvaluation() {
     return true;
   }
 
@@ -291,7 +286,7 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
     Result result = previousResult;
     result.setResult( false );
 
-    String vfsFilename = environmentSubstitute( filename );
+    String vfsFilename = resolve( filename );
     FileObject fileObject = null;
     // Let's check the filename ...
     if ( !Utils.isEmpty( vfsFilename ) ) {
@@ -302,7 +297,7 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
         // As such, we're going to verify that it's a local file...
         // We're also going to convert VFS FileObject to File
         //
-        fileObject = HopVfs.getFileObject( vfsFilename, this );
+        fileObject = HopVfs.getFileObject( vfsFilename );
         if ( !( fileObject instanceof LocalFile ) ) {
           // MSSQL BUKL INSERT can only use local files, so that's what we limit ourselves to.
           //
@@ -325,7 +320,7 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
 
           if ( connection != null ) {
             // User has specified a connection, We can continue ...
-            Database db = new Database( this, connection );
+            Database db = new Database( this, this, connection );
 
             if ( !"MSSQL".equals(db.getDatabaseMeta().getPluginId()) ) {
 
@@ -335,13 +330,12 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
                 .getDatabaseName() ) );
               return result;
             }
-            db.shareVariablesWith( this );
             try {
               db.connect();
               // Get schemaname
-              String realSchemaname = environmentSubstitute( schemaname );
+              String realSchemaname = resolve( schemaname );
               // Get tablename
-              String realTablename = environmentSubstitute( tablename );
+              String realTablename = resolve( tableName );
 
               // Add schemaname (Most the time Schemaname.Tablename)
               if ( schemaname != null ) {
@@ -368,7 +362,7 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
                 }
                 // Check Specific Code page
                 if ( codepage.equals( "Specific" ) ) {
-                  String realCodePage = environmentSubstitute( codepage );
+                  String realCodePage = resolve( codepage );
                   if ( specificcodepage.length() < 0 ) {
                     logError( BaseMessages.getString( PKG, "JobMssqlBulkLoad.Error.SpecificCodePageMissing" ) );
                     return result;
@@ -381,7 +375,7 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
                 }
 
                 // Check Error file
-                String realErrorFile = environmentSubstitute( errorfilename );
+                String realErrorFile = resolve( errorfilename );
                 if ( realErrorFile != null ) {
                   File errorfile = new File( realErrorFile );
                   if ( errorfile.exists() && !adddatetime ) {
@@ -446,7 +440,7 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
                 if ( UseCodepage.length() > 0 ) {
                   SqlBulkLoad = SqlBulkLoad + "," + UseCodepage;
                 }
-                String realFormatFile = environmentSubstitute( formatfilename );
+                String realFormatFile = resolve( formatfilename );
                 if ( realFormatFile != null ) {
                   SqlBulkLoad = SqlBulkLoad + ", FORMATFILE='" + realFormatFile + "'";
                 }
@@ -494,7 +488,7 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
                     // Add filename to output files
                     ResultFile resultFile =
                       new ResultFile(
-                        ResultFile.FILE_TYPE_GENERAL, HopVfs.getFileObject( realFilename, this ), parentWorkflow
+                        ResultFile.FILE_TYPE_GENERAL, HopVfs.getFileObject( realFilename ), parentWorkflow
                         .getWorkflowName(), toString() );
                     result.getResultFiles().put( resultFile.getFile().toString(), resultFile );
                   }
@@ -615,11 +609,11 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
   }
 
   public String getRealLineterminated() {
-    return environmentSubstitute( getLineterminated() );
+    return resolve( getLineterminated() );
   }
 
   public String getRealFieldTerminator() {
-    return environmentSubstitute( getFieldTerminator() );
+    return resolve( getFieldTerminator() );
   }
 
   public void setStartFile( int startfile ) {
@@ -663,7 +657,7 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
   }
 
   public String getRealOrderBy() {
-    return environmentSubstitute( getOrderBy() );
+    return resolve( getOrderBy() );
   }
 
   public void setAddFileToResult( boolean addfiletoresultin ) {
@@ -730,8 +724,8 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
     return tablock;
   }
 
-  public List<ResourceReference> getResourceDependencies( WorkflowMeta workflowMeta ) {
-    List<ResourceReference> references = super.getResourceDependencies( workflowMeta );
+  public List<ResourceReference> getResourceDependencies( IVariables variables, WorkflowMeta workflowMeta ) {
+    List<ResourceReference> references = super.getResourceDependencies( variables, workflowMeta );
     ResourceReference reference = null;
     if ( connection != null ) {
       reference = new ResourceReference( this );
@@ -752,7 +746,7 @@ public class ActionMssqlBulkLoad extends ActionBase implements Cloneable, IActio
 
   @Override
   public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     ValidatorContext ctx = new ValidatorContext();
     AbstractFileValidator.putVariableSpace( ctx, getVariables() );
     AndValidator.putValidators( ctx, ActionValidatorUtils.notBlankValidator(),

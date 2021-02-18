@@ -1,4 +1,22 @@
 <?xml version="1.0"?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~       http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~
+  -->
+
 <project
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
 	xmlns="http://maven.apache.org/POM/4.0.0"
@@ -6,9 +24,9 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>org.hop</groupId>
+		<groupId>org.apache.hop</groupId>
 		<artifactId>hop-plugins-actions</artifactId>
-		<version>0.20-SNAPSHOT</version>
+		<version>0.70-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>hop-action-snmptrap</artifactId>
@@ -17,7 +35,7 @@
 	<name>Hop Plugins Actions Send SNMP trap</name>
 
 	<properties>
-		<snmp4j.version>1.9.3d</snmp4j.version>
+		<snmp4j.version>1.9.1f</snmp4j.version>
 	</properties>
 
 	<dependencies>

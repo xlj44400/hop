@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.databaselookup;
 
@@ -55,7 +50,7 @@ import java.util.List;
  */
 public class DatabaseLookup extends BaseTransform<DatabaseLookupMeta, DatabaseLookupData> implements ITransform<DatabaseLookupMeta, DatabaseLookupData> {
 
-  private static Class<?> PKG = DatabaseLookupMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = DatabaseLookupMeta.class; // For Translator
 
   public DatabaseLookup( TransformMeta transformMeta, DatabaseLookupMeta meta, DatabaseLookupData data, int copyNr, PipelineMeta pipelineMeta, Pipeline pipeline ) {
     super( transformMeta, meta, data, copyNr, pipelineMeta, pipeline );
@@ -208,8 +203,7 @@ public class DatabaseLookup extends BaseTransform<DatabaseLookupMeta, DatabaseLo
     data.keytypes = new int[ keyFields.length ];
 
     String schemaTable =
-      meta.getDatabaseMeta().getQuotedSchemaTableCombination(
-        environmentSubstitute( meta.getSchemaName() ), environmentSubstitute( meta.getTablename() ) );
+      meta.getDatabaseMeta().getQuotedSchemaTableCombination( this, meta.getSchemaName(), meta.getTableName() );
 
     IRowMeta fields = data.db.getTableFields( schemaTable );
     if ( fields != null ) {
@@ -314,10 +308,10 @@ public class DatabaseLookup extends BaseTransform<DatabaseLookupMeta, DatabaseLo
 
       // create the output metadata
       data.outputRowMeta = getInputRowMeta().clone();
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
       data.db.setLookup(
-        environmentSubstitute( meta.getSchemaName() ), environmentSubstitute( meta.getTablename() ),
+        resolve( meta.getSchemaName() ), resolve( meta.getTableName() ),
         meta.getTableKeyField(), meta.getKeyCondition(), meta.getReturnValueField(),
         meta.getReturnValueNewName(), meta.getOrderByClause(), meta.isFailingOnMultipleResults()
       );
@@ -441,9 +435,7 @@ public class DatabaseLookup extends BaseTransform<DatabaseLookupMeta, DatabaseLo
       // The schema/table
       //
       sql += " FROM "
-        + dbMeta.getQuotedSchemaTableCombination(
-        environmentSubstitute( meta.getSchemaName() ),
-        environmentSubstitute( meta.getTablename() ) );
+        + dbMeta.getQuotedSchemaTableCombination( this, meta.getSchemaName(), meta.getTableName() );
 
       // order by?
       if ( meta.getOrderByClause() != null && meta.getOrderByClause().length() != 0 ) {
@@ -608,11 +600,10 @@ public class DatabaseLookup extends BaseTransform<DatabaseLookupMeta, DatabaseLo
    * (@see org.apache.hop.pipeline.transforms.databaselookup.PDI5436Test)
    */
   Database getDatabase( DatabaseMeta meta ) {
-    return new Database( this, meta );
+    return new Database( this, this, meta );
   }
 
   private void connectDatabase( Database database ) throws HopDatabaseException {
-    database.shareVariablesWith( this );
     database.connect( getPartitionId() );
 
     database.setCommit( 100 ); // we never get a commit, but it just turns off auto-commit.

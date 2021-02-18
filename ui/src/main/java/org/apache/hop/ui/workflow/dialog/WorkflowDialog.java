@@ -1,64 +1,47 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.workflow.dialog;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.DbCache;
 import org.apache.hop.core.Props;
-import org.apache.hop.core.database.Database;
-import org.apache.hop.core.database.DatabaseMeta;
-import org.apache.hop.core.logging.LogStatus;
-import org.apache.hop.core.logging.LogTableField;
 import org.apache.hop.core.parameters.DuplicateParamException;
 import org.apache.hop.core.parameters.UnknownParamException;
 import org.apache.hop.core.plugins.ActionPluginType;
 import org.apache.hop.core.plugins.IPlugin;
 import org.apache.hop.core.plugins.PluginRegistry;
-import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
-import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.ui.core.gui.GuiResource;
 import org.apache.hop.workflow.WorkflowMeta;
 import org.apache.hop.workflow.action.IAction;
 import org.apache.hop.ui.core.ConstUi;
 import org.apache.hop.ui.core.PropsUi;
-import org.apache.hop.ui.core.database.dialog.DatabaseDialog;
-import org.apache.hop.ui.core.database.dialog.SqlEditor;
 import org.apache.hop.ui.core.dialog.ErrorDialog;
 import org.apache.hop.ui.core.gui.WindowProperty;
 import org.apache.hop.ui.core.widget.ColumnInfo;
-import org.apache.hop.ui.core.widget.IFieldDisabledListener;
-import org.apache.hop.ui.core.widget.MetaSelectionLine;
 import org.apache.hop.ui.core.widget.TableView;
-import org.apache.hop.ui.core.widget.TextVar;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.apache.hop.ui.util.HelpUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CCombo;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
-import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -75,13 +58,10 @@ import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.List;
-import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 
 /**
@@ -91,7 +71,8 @@ import java.util.ArrayList;
  * @since 02-jul-2003
  */
 public class WorkflowDialog extends Dialog {
-  private static Class<?> PKG = WorkflowDialog.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = WorkflowDialog.class; // For Translator
+
   private static Class<?> PKGBASE = WorkflowMeta.class;
 
   private CTabFolder wTabFolder;
@@ -102,10 +83,9 @@ public class WorkflowDialog extends Dialog {
   private Button wNameFilenameSync;
   private Text wFilename;
 
-  private Button wBatchPipeline;
-
   protected Button wOk, wCancel;
 
+  private final IVariables variables;
   private WorkflowMeta workflowMeta;
 
   private Shell shell;
@@ -158,8 +138,9 @@ public class WorkflowDialog extends Dialog {
 
   private ArrayList<IWorkflowDialogPlugin> extraTabs;
 
-  public WorkflowDialog( Shell parent, int style, WorkflowMeta workflowMeta ) {
+  public WorkflowDialog( Shell parent, int style, IVariables variables, WorkflowMeta workflowMeta ) {
     super( parent, style );
+    this.variables = variables;
     this.workflowMeta = workflowMeta;
     this.props = PropsUi.getInstance();
   }
@@ -170,13 +151,9 @@ public class WorkflowDialog extends Dialog {
 
     shell = new Shell( parent, SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MAX | SWT.MIN | SWT.APPLICATION_MODAL );
     props.setLook( shell );
-    shell.setImage( GuiResource.getInstance().getImageWorkflowGraph() );
+    shell.setImage( GuiResource.getInstance().getImageWorkflow() );
 
-    lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        changed = true;
-      }
-    };
+    lsMod = e -> changed = true;
 
     FormLayout formLayout = new FormLayout();
     formLayout.marginWidth = Const.FORM_MARGIN;
@@ -568,7 +545,7 @@ public class WorkflowDialog extends Dialog {
 
     wParamFields =
       new TableView(
-        workflowMeta, wParamComp, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
+        variables, wParamComp, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
 
     FormData fdFields = new FormData();
     fdFields.left = new FormAttachment( 0, 0 );
@@ -608,22 +585,6 @@ public class WorkflowDialog extends Dialog {
     props.setLook( wSettingsComp );
     wSettingsComp.setLayout( LogLayout );
 
-    Label wlBatchPipeline = new Label( wSettingsComp, SWT.RIGHT );
-    wlBatchPipeline.setText( BaseMessages.getString( PKG, "WorkflowDialog.PassBatchID.Label" ) );
-    props.setLook( wlBatchPipeline );
-    FormData fdlBatchPipeline = new FormData();
-    fdlBatchPipeline.left = new FormAttachment( 0, 0 );
-    fdlBatchPipeline.top = new FormAttachment( 0, margin );
-    fdlBatchPipeline.right = new FormAttachment( middle, -margin );
-    wlBatchPipeline.setLayoutData( fdlBatchPipeline );
-    wBatchPipeline = new Button( wSettingsComp, SWT.CHECK );
-    props.setLook( wBatchPipeline );
-    wBatchPipeline.setToolTipText( BaseMessages.getString( PKG, "WorkflowDialog.PassBatchID.Tooltip" ) );
-    FormData fdBatchPipeline = new FormData();
-    fdBatchPipeline.left = new FormAttachment( middle, 0 );
-    fdBatchPipeline.top = new FormAttachment( 0, margin );
-    fdBatchPipeline.right = new FormAttachment( 100, 0 );
-    wBatchPipeline.setLayoutData( fdBatchPipeline );
 
     FormData fdLogComp = new FormData();
     fdLogComp.left = new FormAttachment( 0, 0 );
@@ -656,7 +617,7 @@ public class WorkflowDialog extends Dialog {
     updateNameFilenameSync( null );
     wDescription.setText( Const.NVL( workflowMeta.getDescription(), "" ) );
     wExtendedDescription.setText( Const.NVL( workflowMeta.getExtendedDescription(), "" ) );
-    wVersion.setText( Const.NVL( workflowMeta.getJobversion(), "" ) );
+    wVersion.setText( Const.NVL( workflowMeta.getWorkflowVersion(), "" ) );
     wWorkflowStatus.select( workflowMeta.getWorkflowStatus() - 1 );
 
     if ( workflowMeta.getCreatedUser() != null ) {
@@ -672,8 +633,6 @@ public class WorkflowDialog extends Dialog {
     if ( workflowMeta.getModifiedDate() != null && workflowMeta.getModifiedDate() != null ) {
       wModDate.setText( workflowMeta.getModifiedDate().toString() );
     }
-
-    wBatchPipeline.setSelection( workflowMeta.isBatchIdPassed() );
 
     // The named parameters
     String[] parameters = workflowMeta.listParameters();
@@ -716,7 +675,7 @@ public class WorkflowDialog extends Dialog {
     workflowMeta.setName( wWorkflowName.getText() );
     workflowMeta.setDescription( wDescription.getText() );
     workflowMeta.setExtendedDescription( wExtendedDescription.getText() );
-    workflowMeta.setJobversion( wVersion.getText() );
+    workflowMeta.setWorkflowVersion( wVersion.getText() );
     if ( wWorkflowStatus.getSelectionIndex() != 2 ) {
       // Saving the index as meta data is in fact pretty bad, but since
       // it was already in ...
@@ -726,7 +685,7 @@ public class WorkflowDialog extends Dialog {
     }
 
     // Clear and add parameters
-    workflowMeta.eraseParameters();
+    workflowMeta.removeAllParameters();
     int nrNonEmptyFields = wParamFields.nrNonEmpty();
     for ( int i = 0; i < nrNonEmptyFields; i++ ) {
       TableItem item = wParamFields.getNonEmpty( i );
@@ -737,9 +696,6 @@ public class WorkflowDialog extends Dialog {
         // Ignore the duplicate parameter.
       }
     }
-    workflowMeta.activateParameters();
-
-    workflowMeta.setBatchIdPassed( wBatchPipeline.getSelection() );
 
     for ( IWorkflowDialogPlugin extraTab : extraTabs ) {
       extraTab.ok( workflowMeta );
@@ -755,11 +711,12 @@ public class WorkflowDialog extends Dialog {
     try {
       final IPlugin plugin = getPlugin( action );
 
-      if ( plugin.getCategory().equals( BaseMessages.getString( PKGBASE, "ActionCategory.Category.Deprecated" ) ) ) {
-
+      // Check if action is deprecated by annotation
+      Deprecated deprecated = action.getClass().getDeclaredAnnotation(Deprecated.class);
+      if ( deprecated!=null ) {
         addDeprecation( shell );
       }
-
+      
       helpButton = HelpUtils.createHelpButton( shell, HelpUtils.getHelpDialogTitle( plugin ), plugin );
 
       shell.setImage( getImage( shell, plugin ) );
@@ -785,7 +742,7 @@ public class WorkflowDialog extends Dialog {
         if ( deprecation ) {
           return;
         }
-        String deprecated = BaseMessages.getString( PKGBASE, "ActionCategory.Category.Deprecated" ).toLowerCase();
+        String deprecated = BaseMessages.getString( PKGBASE, "System.Deprecated" ).toLowerCase();
         shell.setText( shell.getText() + " (" + deprecated + ")" );
         deprecation = true;
       }

@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.javascript;
 
@@ -53,7 +48,7 @@ import org.mozilla.javascript.ScriptableObject;
  * @since 5-April-2003
  */
 public class ScriptValuesMod extends BaseTransform<ScriptValuesMetaMod, ScriptValuesModData> implements ITransform<ScriptValuesMetaMod, ScriptValuesModData> {
-  private static Class<?> PKG = ScriptValuesMetaMod.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ScriptValuesMetaMod.class; // For Translator
 
   public static final int SKIP_PIPELINE = 1;
 
@@ -101,7 +96,7 @@ public class ScriptValuesMod extends BaseTransform<ScriptValuesMetaMod, ScriptVa
     }
 
     // Allocate fields_used
-    data.fields_used = new int[ nr ];
+    data.fieldsUsed = new int[ nr ];
 //    data.values_used = new Value[ nr ];
 
     nr = 0;
@@ -117,14 +112,14 @@ public class ScriptValuesMod extends BaseTransform<ScriptValuesMetaMod, ScriptVa
           logDetailed( BaseMessages.getString(
             PKG, "ScriptValuesMod.Log.UsedValueName", String.valueOf( i ), valname ) );
         }
-        data.fields_used[ nr ] = i;
+        data.fieldsUsed[ nr ] = i;
         nr++;
       }
     }
 
     if ( log.isDetailed() ) {
       logDetailed( BaseMessages.getString( PKG, "ScriptValuesMod.Log.UsingValuesFromInputStream", String
-        .valueOf( data.fields_used.length ) ) );
+        .valueOf( data.fieldsUsed.length ) ) );
     }
   }
 
@@ -135,7 +130,7 @@ public class ScriptValuesMod extends BaseTransform<ScriptValuesMetaMod, ScriptVa
       // What is the output row looking like?
       //
       data.outputRowMeta = getInputRowMeta().clone();
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
       // Determine the indexes of the fields used!
       //
@@ -167,10 +162,10 @@ public class ScriptValuesMod extends BaseTransform<ScriptValuesMetaMod, ScriptVa
       data.cx = ContextFactory.getGlobal().enterContext();
 
       try {
-        String optimizationLevelAsString = environmentSubstitute( meta.getOptimizationLevel() );
+        String optimizationLevelAsString = resolve( meta.getOptimizationLevel() );
         if ( !Utils.isEmpty( Const.trim( optimizationLevelAsString ) ) ) {
           data.cx.setOptimizationLevel( Integer.parseInt( optimizationLevelAsString.trim() ) );
-          logBasic( BaseMessages.getString( PKG, "ScriptValuesMod.Optimization.Level", environmentSubstitute( meta
+          logBasic( BaseMessages.getString( PKG, "ScriptValuesMod.Optimization.Level", resolve( meta
             .getOptimizationLevel() ) ) );
         } else {
           data.cx.setOptimizationLevel( Integer.parseInt( ScriptValuesMetaMod.OPTIMIZATION_LEVEL_DEFAULT ) );
@@ -179,7 +174,7 @@ public class ScriptValuesMod extends BaseTransform<ScriptValuesMetaMod, ScriptVa
         }
       } catch ( NumberFormatException nfe ) {
         throw new HopTransformException( BaseMessages.getString(
-          PKG, "ScriptValuesMetaMod.Exception.NumberFormatException", environmentSubstitute( meta
+          PKG, "ScriptValuesMetaMod.Exception.NumberFormatException", resolve( meta
             .getOptimizationLevel() ) ) );
       } catch ( IllegalArgumentException iae ) {
         throw new HopException( iae.getMessage() );
@@ -212,9 +207,9 @@ public class ScriptValuesMod extends BaseTransform<ScriptValuesMetaMod, ScriptVa
 
         // Add the used fields...
         //
-        for ( int i = 0; i < data.fields_used.length; i++ ) {
-          IValueMeta valueMeta = rowMeta.getValueMeta( data.fields_used[ i ] );
-          Object valueData = row[ data.fields_used[ i ] ];
+        for ( int i = 0; i < data.fieldsUsed.length; i++ ) {
+          IValueMeta valueMeta = rowMeta.getValueMeta( data.fieldsUsed[ i ] );
+          Object valueData = row[ data.fieldsUsed[ i ] ];
 
           Object normalStorageValueData = valueMeta.convertToNormalStorageType( valueData );
           Scriptable jsarg;
@@ -309,9 +304,9 @@ public class ScriptValuesMod extends BaseTransform<ScriptValuesMetaMod, ScriptVa
           Scriptable jsrow = Context.toObject( row, data.scope );
           data.scope.put( "row", data.scope, jsrow );
 
-        for ( int i = 0; i < data.fields_used.length; i++ ) {
-          IValueMeta valueMeta = rowMeta.getValueMeta( data.fields_used[ i ] );
-          Object valueData = row[ data.fields_used[ i ] ];
+        for ( int i = 0; i < data.fieldsUsed.length; i++ ) {
+          IValueMeta valueMeta = rowMeta.getValueMeta( data.fieldsUsed[ i ] );
+          Object valueData = row[ data.fieldsUsed[ i ] ];
 
           Object normalStorageValueData = valueMeta.convertToNormalStorageType( valueData );
           Scriptable jsarg;
@@ -336,8 +331,8 @@ public class ScriptValuesMod extends BaseTransform<ScriptValuesMetaMod, ScriptVa
       if ( bFirstRun ) {
         bFirstRun = false;
         // Check if we had a Pipeline Status
-        Object tran_stat = data.scope.get( "pipeline_Status", data.scope );
-        if ( tran_stat != ScriptableObject.NOT_FOUND ) {
+        Object pipelineStatus = data.scope.get( "pipeline_Status", data.scope );
+        if ( pipelineStatus != ScriptableObject.NOT_FOUND ) {
           bWithPipelineStat = true;
           if ( log.isDetailed() ) {
             logDetailed( ( "tran_Status found. Checking pipeline status while script execution." ) );
@@ -452,7 +447,7 @@ public class ScriptValuesMod extends BaseTransform<ScriptValuesMetaMod, ScriptVa
       } catch ( Exception e ) {
         logError( BaseMessages.getString( PKG, "ScriptValuesMod.Log.UnexpectedeError" ) + " : " + e.toString() );
         logError( BaseMessages.getString( PKG, "ScriptValuesMod.Log.ErrorStackTrace" )
-          + Const.CR + Const.getStackTracker( e ) );
+          + Const.CR + Const.getSimpleStackTrace( e ) + Const.CR + Const.getStackTracker( e ) );
         setErrors( 1 );
         stopAll();
       }

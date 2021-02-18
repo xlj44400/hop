@@ -1,42 +1,40 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.insertupdate;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hop.core.Const;
 import org.apache.hop.core.DbCache;
-import org.apache.hop.core.SqlStatement;
 import org.apache.hop.core.SourceToTargetMapping;
-import org.apache.hop.core.annotations.PluginDialog;
+import org.apache.hop.core.SqlStatement;
 import org.apache.hop.core.database.Database;
 import org.apache.hop.core.database.DatabaseMeta;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.PipelineMeta;
-import org.apache.hop.pipeline.transform.*;
+import org.apache.hop.pipeline.transform.BaseTransformMeta;
+import org.apache.hop.pipeline.transform.ITransformDialog;
+import org.apache.hop.pipeline.transform.ITransformMeta;
+import org.apache.hop.pipeline.transform.TransformMeta;
 import org.apache.hop.ui.core.database.dialog.DatabaseExplorerDialog;
 import org.apache.hop.ui.core.database.dialog.SqlEditor;
 import org.apache.hop.ui.core.dialog.EnterMappingDialog;
@@ -52,94 +50,49 @@ import org.apache.hop.ui.pipeline.transform.ComponentSelectionListener;
 import org.apache.hop.ui.pipeline.transform.ITableItemInsertListener;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.MessageBox;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-@PluginDialog(
-        id = "InsertUpdate",
-        image = "insertupdate.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = "http://www.project-hop.org/manual/latest/plugins/transforms/insertupdate.html"
-)
 public class InsertUpdateDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = InsertUpdateMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = InsertUpdateMeta.class; // For Translator
 
   private MetaSelectionLine<DatabaseMeta> wConnection;
 
-  private Label wlKey;
   private TableView wKey;
-  private FormData fdlKey, fdKey;
 
-  private Label wlSchema;
   private TextVar wSchema;
-  private FormData fdlSchema, fdSchema;
-  private Button wbSchema;
-  private FormData fdbSchema;
 
-  private Label wlTable;
-  private Button wbTable;
   private TextVar wTable;
-  private FormData fdlTable, fdbTable, fdTable;
 
-  private Label wlReturn;
   private TableView wReturn;
-  private FormData fdlReturn, fdReturn;
 
-  private Label wlCommit;
   private TextVar wCommit;
-  private FormData fdlCommit, fdCommit;
 
-  private Label wlUpdateBypassed;
   private Button wUpdateBypassed;
-  private FormData fdlUpdateBypassed, fdUpdateBypassed;
 
-  private Button wGetLU;
-  private FormData fdGetLU;
-  private Listener lsGetLU;
+  private final InsertUpdateMeta input;
 
-  private InsertUpdateMeta input;
-
-  private Map<String, Integer> inputFields;
+  private final Map<String, Integer> inputFields;
 
   private ColumnInfo[] ciKey;
 
   private ColumnInfo[] ciReturn;
 
-  private Button wDoMapping;
-  private FormData fdDoMapping;
-
   /**
    * List of ColumnInfo that should have the field names of the selected database table
    */
-  private List<ColumnInfo> tableFieldColumns = new ArrayList<ColumnInfo>();
+  private final List<ColumnInfo> tableFieldColumns = new ArrayList<>();
 
-  public InsertUpdateDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public InsertUpdateDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (InsertUpdateMeta) in;
-    inputFields = new HashMap<String, Integer>();
+    inputFields = new HashMap<>();
   }
 
   public String open() {
@@ -150,16 +103,10 @@ public class InsertUpdateDialog extends BaseTransformDialog implements ITransfor
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
-    ModifyListener lsTableMod = new ModifyListener() {
-      public void modifyText( ModifyEvent arg0 ) {
-        input.setChanged();
-        setTableFieldCombo();
-      }
+    ModifyListener lsMod = e -> input.setChanged();
+    ModifyListener lsTableMod = arg0 -> {
+      input.setChanged();
+      setTableFieldCombo();
     };
     SelectionListener lsSelection = new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
@@ -203,102 +150,102 @@ public class InsertUpdateDialog extends BaseTransformDialog implements ITransfor
     wConnection.addSelectionListener( lsSelection );
 
     // Schema line...
-    wlSchema = new Label( shell, SWT.RIGHT );
+    Label wlSchema = new Label(shell, SWT.RIGHT);
     wlSchema.setText( BaseMessages.getString( PKG, "InsertUpdateDialog.TargetSchema.Label" ) );
-    props.setLook( wlSchema );
-    fdlSchema = new FormData();
+    props.setLook(wlSchema);
+    FormData fdlSchema = new FormData();
     fdlSchema.left = new FormAttachment( 0, 0 );
     fdlSchema.right = new FormAttachment( middle, -margin );
     fdlSchema.top = new FormAttachment( wConnection, margin * 2 );
-    wlSchema.setLayoutData( fdlSchema );
+    wlSchema.setLayoutData(fdlSchema);
 
-    wbSchema = new Button( shell, SWT.PUSH | SWT.CENTER );
-    props.setLook( wbSchema );
+    Button wbSchema = new Button(shell, SWT.PUSH | SWT.CENTER);
+    props.setLook(wbSchema);
     wbSchema.setText( BaseMessages.getString( PKG, "System.Button.Browse" ) );
-    fdbSchema = new FormData();
+    FormData fdbSchema = new FormData();
     fdbSchema.top = new FormAttachment( wConnection, 2 * margin );
     fdbSchema.right = new FormAttachment( 100, 0 );
-    wbSchema.setLayoutData( fdbSchema );
+    wbSchema.setLayoutData(fdbSchema);
 
-    wSchema = new TextVar( pipelineMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wSchema = new TextVar( variables, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wSchema );
     wSchema.addModifyListener( lsTableMod );
-    fdSchema = new FormData();
+    FormData fdSchema = new FormData();
     fdSchema.left = new FormAttachment( middle, 0 );
     fdSchema.top = new FormAttachment( wConnection, margin * 2 );
-    fdSchema.right = new FormAttachment( wbSchema, -margin );
-    wSchema.setLayoutData( fdSchema );
+    fdSchema.right = new FormAttachment(wbSchema, -margin );
+    wSchema.setLayoutData(fdSchema);
 
     // Table line...
-    wlTable = new Label( shell, SWT.RIGHT );
+    Label wlTable = new Label(shell, SWT.RIGHT);
     wlTable.setText( BaseMessages.getString( PKG, "InsertUpdateDialog.TargetTable.Label" ) );
-    props.setLook( wlTable );
-    fdlTable = new FormData();
+    props.setLook(wlTable);
+    FormData fdlTable = new FormData();
     fdlTable.left = new FormAttachment( 0, 0 );
     fdlTable.right = new FormAttachment( middle, -margin );
-    fdlTable.top = new FormAttachment( wbSchema, margin );
-    wlTable.setLayoutData( fdlTable );
+    fdlTable.top = new FormAttachment(wbSchema, margin );
+    wlTable.setLayoutData(fdlTable);
 
-    wbTable = new Button( shell, SWT.PUSH | SWT.CENTER );
-    props.setLook( wbTable );
+    Button wbTable = new Button(shell, SWT.PUSH | SWT.CENTER);
+    props.setLook(wbTable);
     wbTable.setText( BaseMessages.getString( PKG, "InsertUpdateDialog.Browse.Button" ) );
-    fdbTable = new FormData();
+    FormData fdbTable = new FormData();
     fdbTable.right = new FormAttachment( 100, 0 );
-    fdbTable.top = new FormAttachment( wbSchema, margin );
-    wbTable.setLayoutData( fdbTable );
+    fdbTable.top = new FormAttachment(wbSchema, margin );
+    wbTable.setLayoutData(fdbTable);
 
-    wTable = new TextVar( pipelineMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wTable = new TextVar( variables, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wTable );
     wTable.addModifyListener( lsTableMod );
-    fdTable = new FormData();
+    FormData fdTable = new FormData();
     fdTable.left = new FormAttachment( middle, 0 );
-    fdTable.top = new FormAttachment( wbSchema, margin );
-    fdTable.right = new FormAttachment( wbTable, -margin );
-    wTable.setLayoutData( fdTable );
+    fdTable.top = new FormAttachment(wbSchema, margin );
+    fdTable.right = new FormAttachment(wbTable, -margin );
+    wTable.setLayoutData(fdTable);
 
     // Commit line
-    wlCommit = new Label( shell, SWT.RIGHT );
+    Label wlCommit = new Label(shell, SWT.RIGHT);
     wlCommit.setText( BaseMessages.getString( PKG, "InsertUpdateDialog.CommitSize.Label" ) );
-    props.setLook( wlCommit );
-    fdlCommit = new FormData();
+    props.setLook(wlCommit);
+    FormData fdlCommit = new FormData();
     fdlCommit.left = new FormAttachment( 0, 0 );
     fdlCommit.top = new FormAttachment( wTable, margin );
     fdlCommit.right = new FormAttachment( middle, -margin );
-    wlCommit.setLayoutData( fdlCommit );
-    wCommit = new TextVar( pipelineMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wlCommit.setLayoutData(fdlCommit);
+    wCommit = new TextVar( variables, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wCommit );
     wCommit.addModifyListener( lsMod );
-    fdCommit = new FormData();
+    FormData fdCommit = new FormData();
     fdCommit.left = new FormAttachment( middle, 0 );
     fdCommit.top = new FormAttachment( wTable, margin );
     fdCommit.right = new FormAttachment( 100, 0 );
-    wCommit.setLayoutData( fdCommit );
+    wCommit.setLayoutData(fdCommit);
 
     // UpdateBypassed line
-    wlUpdateBypassed = new Label( shell, SWT.RIGHT );
+    Label wlUpdateBypassed = new Label(shell, SWT.RIGHT);
     wlUpdateBypassed.setText( BaseMessages.getString( PKG, "InsertUpdateDialog.UpdateBypassed.Label" ) );
-    props.setLook( wlUpdateBypassed );
-    fdlUpdateBypassed = new FormData();
+    props.setLook(wlUpdateBypassed);
+    FormData fdlUpdateBypassed = new FormData();
     fdlUpdateBypassed.left = new FormAttachment( 0, 0 );
     fdlUpdateBypassed.top = new FormAttachment( wCommit, margin );
     fdlUpdateBypassed.right = new FormAttachment( middle, -margin );
-    wlUpdateBypassed.setLayoutData( fdlUpdateBypassed );
+    wlUpdateBypassed.setLayoutData(fdlUpdateBypassed);
     wUpdateBypassed = new Button( shell, SWT.CHECK );
     props.setLook( wUpdateBypassed );
-    fdUpdateBypassed = new FormData();
+    FormData fdUpdateBypassed = new FormData();
     fdUpdateBypassed.left = new FormAttachment( middle, 0 );
-    fdUpdateBypassed.top = new FormAttachment( wCommit, margin );
+    fdUpdateBypassed.top = new FormAttachment( wlUpdateBypassed, 0, SWT.CENTER );
     fdUpdateBypassed.right = new FormAttachment( 100, 0 );
-    wUpdateBypassed.setLayoutData( fdUpdateBypassed );
+    wUpdateBypassed.setLayoutData(fdUpdateBypassed);
     wUpdateBypassed.addSelectionListener( new ComponentSelectionListener( input ) );
 
-    wlKey = new Label( shell, SWT.NONE );
+    Label wlKey = new Label(shell, SWT.NONE);
     wlKey.setText( BaseMessages.getString( PKG, "InsertUpdateDialog.Keys.Label" ) );
-    props.setLook( wlKey );
-    fdlKey = new FormData();
+    props.setLook(wlKey);
+    FormData fdlKey = new FormData();
     fdlKey.left = new FormAttachment( 0, 0 );
     fdlKey.top = new FormAttachment( wUpdateBypassed, margin );
-    wlKey.setLayoutData( fdlKey );
+    wlKey.setLayoutData(fdlKey);
 
     int nrKeyCols = 4;
     int nrKeyRows = ( input.getKeyStream() != null ? input.getKeyStream().length : 1 );
@@ -324,41 +271,43 @@ public class InsertUpdateDialog extends BaseTransformDialog implements ITransfor
     tableFieldColumns.add( ciKey[ 0 ] );
     wKey =
       new TableView(
-        pipelineMeta, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL, ciKey,
+        variables, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL, ciKey,
         nrKeyRows, lsMod, props );
 
     wGet = new Button( shell, SWT.PUSH );
     wGet.setText( BaseMessages.getString( PKG, "InsertUpdateDialog.GetFields.Button" ) );
     fdGet = new FormData();
     fdGet.right = new FormAttachment( 100, 0 );
-    fdGet.top = new FormAttachment( wlKey, margin );
+    fdGet.top = new FormAttachment(wlKey, margin );
     wGet.setLayoutData( fdGet );
 
-    fdKey = new FormData();
+    FormData fdKey = new FormData();
     fdKey.left = new FormAttachment( 0, 0 );
-    fdKey.top = new FormAttachment( wlKey, margin );
+    fdKey.top = new FormAttachment(wlKey, margin );
     fdKey.right = new FormAttachment( wGet, -margin );
-    fdKey.bottom = new FormAttachment( wlKey, 190 );
-    wKey.setLayoutData( fdKey );
+    fdKey.bottom = new FormAttachment(wlKey, 190 );
+    wKey.setLayoutData(fdKey);
 
     // THE BUTTONS
     wOk = new Button( shell, SWT.PUSH );
     wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
+    wOk.addListener( SWT.Selection, e -> ok() );
     wSql = new Button( shell, SWT.PUSH );
     wSql.setText( BaseMessages.getString( PKG, "InsertUpdateDialog.SQL.Button" ) );
+    wSql.addListener( SWT.Selection, e -> create() );
     wCancel = new Button( shell, SWT.PUSH );
     wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
-
-    setButtonPositions( new Button[] { wOk, wCancel, wSql }, margin, null );
+    wCancel.addListener( SWT.Selection, e -> cancel() );
+    setButtonPositions( new Button[] { wOk, wSql, wCancel }, margin, null );
 
     // THE UPDATE/INSERT TABLE
-    wlReturn = new Label( shell, SWT.NONE );
+    Label wlReturn = new Label(shell, SWT.NONE);
     wlReturn.setText( BaseMessages.getString( PKG, "InsertUpdateDialog.UpdateFields.Label" ) );
-    props.setLook( wlReturn );
-    fdlReturn = new FormData();
+    props.setLook(wlReturn);
+    FormData fdlReturn = new FormData();
     fdlReturn.left = new FormAttachment( 0, 0 );
     fdlReturn.top = new FormAttachment( wKey, margin );
-    wlReturn.setLayoutData( fdlReturn );
+    wlReturn.setLayoutData(fdlReturn);
 
     int UpInsCols = 3;
     int UpInsRows = ( input.getUpdateLookup() != null ? input.getUpdateLookup().length : 1 );
@@ -379,93 +328,58 @@ public class InsertUpdateDialog extends BaseTransformDialog implements ITransfor
     tableFieldColumns.add( ciReturn[ 0 ] );
     wReturn =
       new TableView(
-        pipelineMeta, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL, ciReturn,
+        variables, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL, ciReturn,
         UpInsRows, lsMod, props );
 
-    wGetLU = new Button( shell, SWT.PUSH );
+    Button wGetLU = new Button(shell, SWT.PUSH);
     wGetLU.setText( BaseMessages.getString( PKG, "InsertUpdateDialog.GetAndUpdateFields.Label" ) );
-    fdGetLU = new FormData();
-    fdGetLU.top = new FormAttachment( wlReturn, margin );
+    FormData fdGetLU = new FormData();
+    fdGetLU.top = new FormAttachment(wlReturn, margin );
     fdGetLU.right = new FormAttachment( 100, 0 );
-    wGetLU.setLayoutData( fdGetLU );
+    wGetLU.setLayoutData(fdGetLU);
 
-    wDoMapping = new Button( shell, SWT.PUSH );
+    Button wDoMapping = new Button(shell, SWT.PUSH);
     wDoMapping.setText( BaseMessages.getString( PKG, "InsertUpdateDialog.EditMapping.Label" ) );
-    fdDoMapping = new FormData();
-    fdDoMapping.top = new FormAttachment( wGetLU, margin );
+    FormData fdDoMapping = new FormData();
+    fdDoMapping.top = new FormAttachment(wGetLU, margin );
     fdDoMapping.right = new FormAttachment( 100, 0 );
-    wDoMapping.setLayoutData( fdDoMapping );
+    wDoMapping.setLayoutData(fdDoMapping);
 
-    wDoMapping.addListener( SWT.Selection, new Listener() {
-      public void handleEvent( Event arg0 ) {
-        generateMappings();
-      }
-    } );
+    wDoMapping.addListener( SWT.Selection, arg0 -> generateMappings() );
 
-    fdReturn = new FormData();
+    FormData fdReturn = new FormData();
     fdReturn.left = new FormAttachment( 0, 0 );
-    fdReturn.top = new FormAttachment( wlReturn, margin );
-    fdReturn.right = new FormAttachment( wGetLU, -margin );
+    fdReturn.top = new FormAttachment(wlReturn, margin );
+    fdReturn.right = new FormAttachment(wGetLU, -margin );
     fdReturn.bottom = new FormAttachment( wOk, -2 * margin );
-    wReturn.setLayoutData( fdReturn );
+    wReturn.setLayoutData(fdReturn);
 
     //
     // Search the fields in the background
     //
 
-    final Runnable runnable = new Runnable() {
-      public void run() {
-        TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
-        if ( transformMeta != null ) {
-          try {
-            IRowMeta row = pipelineMeta.getPrevTransformFields( transformMeta );
+    final Runnable runnable = () -> {
+      TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
+      if ( transformMeta != null ) {
+        try {
+          IRowMeta row = pipelineMeta.getPrevTransformFields( variables, transformMeta );
 
-            // Remember these fields...
-            for ( int i = 0; i < row.size(); i++ ) {
-              inputFields.put( row.getValueMeta( i ).getName(), i );
-            }
-
-            setComboBoxes();
-          } catch ( HopException e ) {
-            logError( BaseMessages.getString( PKG, "System.Dialog.GetFieldsFailed.Message" ) );
+          // Remember these fields...
+          for ( int i = 0; i < row.size(); i++ ) {
+            inputFields.put( row.getValueMeta( i ).getName(), i );
           }
+
+          setComboBoxes();
+        } catch ( HopException e ) {
+          logError( BaseMessages.getString( PKG, "System.Dialog.GetFieldsFailed.Message" ) );
         }
       }
     };
     new Thread( runnable ).start();
 
     // Add listeners
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
-    lsGet = new Listener() {
-      public void handleEvent( Event e ) {
-        get();
-      }
-    };
-    lsGetLU = new Listener() {
-      public void handleEvent( Event e ) {
-        getUpdate();
-      }
-    };
-    lsSql = new Listener() {
-      public void handleEvent( Event e ) {
-        create();
-      }
-    };
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-
-    wOk.addListener( SWT.Selection, lsOk );
-    wGet.addListener( SWT.Selection, lsGet );
-    wGetLU.addListener( SWT.Selection, lsGetLU );
-    wSql.addListener( SWT.Selection, lsSql );
-    wCancel.addListener( SWT.Selection, lsCancel );
+    wGet.addListener( SWT.Selection, e -> get() );
+    wGetLU.addListener( SWT.Selection, e -> getUpdate());
 
     lsDef = new SelectionAdapter() {
       public void widgetDefaultSelected( SelectionEvent e ) {
@@ -485,12 +399,12 @@ public class InsertUpdateDialog extends BaseTransformDialog implements ITransfor
       }
     } );
 
-    wbSchema.addSelectionListener( new SelectionAdapter() {
+    wbSchema.addSelectionListener(new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         getSchemaNames();
       }
     } );
-    wbTable.addSelectionListener( new SelectionAdapter() {
+    wbTable.addSelectionListener(new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         getTableName();
       }
@@ -515,7 +429,7 @@ public class InsertUpdateDialog extends BaseTransformDialog implements ITransfor
   protected void setComboBoxes() {
     // Something was changed in the row.
     //
-    final Map<String, Integer> fields = new HashMap<String, Integer>();
+    final Map<String, Integer> fields = new HashMap<>();
 
     // Add the currentMeta fields...
     fields.putAll( inputFields );
@@ -544,7 +458,7 @@ public class InsertUpdateDialog extends BaseTransformDialog implements ITransfor
     IRowMeta targetFields;
 
     try {
-      sourceFields = pipelineMeta.getPrevTransformFields( transformMeta );
+      sourceFields = pipelineMeta.getPrevTransformFields( variables, transformMeta );
     } catch ( HopException e ) {
       new ErrorDialog( shell,
         BaseMessages.getString( PKG, "InsertUpdateDialog.DoMapping.UnableToFindSourceFields.Title" ),
@@ -553,10 +467,10 @@ public class InsertUpdateDialog extends BaseTransformDialog implements ITransfor
     }
     // refresh data
     input.setDatabaseMeta( pipelineMeta.findDatabase( wConnection.getText() ) );
-    input.setTableName( pipelineMeta.environmentSubstitute( wTable.getText() ) );
+    input.setTableName( variables.resolve( wTable.getText() ) );
     ITransformMeta transformMetaInterface = transformMeta.getTransform();
     try {
-      targetFields = transformMetaInterface.getRequiredFields( pipelineMeta );
+      targetFields = transformMetaInterface.getRequiredFields( variables );
     } catch ( HopException e ) {
       new ErrorDialog( shell,
         BaseMessages.getString( PKG, "InsertUpdateDialog.DoMapping.UnableToFindTargetFields.Title" ),
@@ -567,13 +481,13 @@ public class InsertUpdateDialog extends BaseTransformDialog implements ITransfor
     String[] inputNames = new String[ sourceFields.size() ];
     for ( int i = 0; i < sourceFields.size(); i++ ) {
       IValueMeta value = sourceFields.getValueMeta( i );
-      inputNames[ i ] = value.getName() + EnterMappingDialog.STRING_ORIGIN_SEPARATOR + value.getOrigin() + ")";
+      inputNames[ i ] = value.getName();
     }
 
     // Create the existing mapping list...
     // Also copy the update status of targets in to a hashmap
     //
-    List<SourceToTargetMapping> mappings = new ArrayList<SourceToTargetMapping>();
+    List<SourceToTargetMapping> mappings = new ArrayList<>();
     Map<String, String> targetUpdateStatus = new HashMap<>();
     StringBuilder missingSourceFields = new StringBuilder();
     StringBuilder missingTargetFields = new StringBuilder();
@@ -769,50 +683,48 @@ public class InsertUpdateDialog extends BaseTransformDialog implements ITransfor
   }
 
   private void setTableFieldCombo() {
-    Runnable fieldLoader = new Runnable() {
-      public void run() {
-        if ( !wTable.isDisposed() && !wConnection.isDisposed() && !wSchema.isDisposed() ) {
-          final String tableName = wTable.getText(), connectionName = wConnection.getText(), schemaName =
-            wSchema.getText();
+    Runnable fieldLoader = () -> {
+      if ( !wTable.isDisposed() && !wConnection.isDisposed() && !wSchema.isDisposed() ) {
+        final String tableName = wTable.getText(), connectionName = wConnection.getText(), schemaName =
+          wSchema.getText();
 
-          // clear
-          for ( ColumnInfo colInfo : tableFieldColumns ) {
-            colInfo.setComboValues( new String[] {} );
-          }
-          if ( !Utils.isEmpty( tableName ) ) {
-            DatabaseMeta ci = pipelineMeta.findDatabase( connectionName );
-            if ( ci != null ) {
-              Database db = new Database( loggingObject, ci );
+        // clear
+        for ( ColumnInfo colInfo : tableFieldColumns ) {
+          colInfo.setComboValues( new String[] {} );
+        }
+        if ( !Utils.isEmpty( tableName ) ) {
+          DatabaseMeta databaseMeta = pipelineMeta.findDatabase( connectionName );
+          if ( databaseMeta != null ) {
+            Database db = new Database( loggingObject, variables, databaseMeta );
+            try {
+              db.connect();
+
+              IRowMeta r =
+                db.getTableFieldsMeta(
+                  variables.resolve( schemaName ),
+                  variables.resolve( tableName ) );
+              if ( null != r ) {
+                String[] fieldNames = r.getFieldNames();
+                if ( null != fieldNames ) {
+                  for ( ColumnInfo colInfo : tableFieldColumns ) {
+                    colInfo.setComboValues( fieldNames );
+                  }
+                }
+              }
+            } catch ( Exception e ) {
+              for ( ColumnInfo colInfo : tableFieldColumns ) {
+                colInfo.setComboValues( new String[] {} );
+              }
+              // ignore any errors here. drop downs will not be
+              // filled, but no problem for the user
+            } finally {
               try {
-                db.connect();
-
-                IRowMeta r =
-                  db.getTableFieldsMeta(
-                    pipelineMeta.environmentSubstitute( schemaName ),
-                    pipelineMeta.environmentSubstitute( tableName ) );
-                if ( null != r ) {
-                  String[] fieldNames = r.getFieldNames();
-                  if ( null != fieldNames ) {
-                    for ( ColumnInfo colInfo : tableFieldColumns ) {
-                      colInfo.setComboValues( fieldNames );
-                    }
-                  }
+                if ( db != null ) {
+                  db.disconnect();
                 }
-              } catch ( Exception e ) {
-                for ( ColumnInfo colInfo : tableFieldColumns ) {
-                  colInfo.setComboValues( new String[] {} );
-                }
-                // ignore any errors here. drop downs will not be
-                // filled, but no problem for the user
-              } finally {
-                try {
-                  if ( db != null ) {
-                    db.disconnect();
-                  }
-                } catch ( Exception ignored ) {
-                  // ignore any errors here.
-                  db = null;
-                }
+              } catch ( Exception ignored ) {
+                // ignore any errors here.
+                db = null;
               }
             }
           }
@@ -843,7 +755,7 @@ public class InsertUpdateDialog extends BaseTransformDialog implements ITransfor
   private void getSchemaNames() {
     DatabaseMeta databaseMeta = pipelineMeta.findDatabase( wConnection.getText() );
     if ( databaseMeta != null ) {
-      Database database = new Database( loggingObject, databaseMeta );
+      Database database = new Database( loggingObject, variables, databaseMeta );
       try {
         database.connect();
         String[] schemas = database.getSchemas();
@@ -886,7 +798,7 @@ public class InsertUpdateDialog extends BaseTransformDialog implements ITransfor
         logDebug( BaseMessages.getString( PKG, "InsertUpdateDialog.Log.LookingAtConnection" ) + databaseMeta.toString() );
       }
 
-      DatabaseExplorerDialog std = new DatabaseExplorerDialog( shell, SWT.NONE, databaseMeta, pipelineMeta.getDatabases() );
+      DatabaseExplorerDialog std = new DatabaseExplorerDialog( shell, SWT.NONE, variables, databaseMeta, pipelineMeta.getDatabases() );
       std.setSelectedSchemaAndTable( wSchema.getText(), wTable.getText() );
       if ( std.open() ) {
         wSchema.setText( Const.NVL( std.getSchemaName(), "" ) );
@@ -903,13 +815,11 @@ public class InsertUpdateDialog extends BaseTransformDialog implements ITransfor
 
   private void get() {
     try {
-      IRowMeta r = pipelineMeta.getPrevTransformFields( transformName );
+      IRowMeta r = pipelineMeta.getPrevTransformFields( variables, transformName );
       if ( r != null ) {
-        ITableItemInsertListener listener = new ITableItemInsertListener() {
-          public boolean tableItemInserted( TableItem tableItem, IValueMeta v ) {
-            tableItem.setText( 2, "=" );
-            return true;
-          }
+        ITableItemInsertListener listener = ( tableItem, v ) -> {
+          tableItem.setText( 2, "=" );
+          return true;
         };
         BaseTransformDialog.getFieldsFromPrevious( r, wKey, 1, new int[] { 1, 3 }, new int[] {}, -1, -1, listener );
       }
@@ -922,13 +832,11 @@ public class InsertUpdateDialog extends BaseTransformDialog implements ITransfor
 
   private void getUpdate() {
     try {
-      IRowMeta r = pipelineMeta.getPrevTransformFields( transformName );
+      IRowMeta r = pipelineMeta.getPrevTransformFields( variables, transformName );
       if ( r != null ) {
-        ITableItemInsertListener listener = new ITableItemInsertListener() {
-          public boolean tableItemInserted( TableItem tableItem, IValueMeta v ) {
-            tableItem.setText( 3, "Y" );
-            return true;
-          }
+        ITableItemInsertListener listener = ( tableItem, v ) -> {
+          tableItem.setText( 3, "Y" );
+          return true;
         };
         BaseTransformDialog.getFieldsFromPrevious( r, wReturn, 1, new int[] { 1, 2 }, new int[] {}, -1, -1, listener );
       }
@@ -949,13 +857,13 @@ public class InsertUpdateDialog extends BaseTransformDialog implements ITransfor
       String name = transformName; // new name might not yet be linked to other transforms!
       TransformMeta transformMeta =
         new TransformMeta( BaseMessages.getString( PKG, "InsertUpdateDialog.TransformMeta.Title" ), name, info );
-      IRowMeta prev = pipelineMeta.getPrevTransformFields( transformName );
+      IRowMeta prev = pipelineMeta.getPrevTransformFields( variables, transformName );
 
-      SqlStatement sql = info.getSqlStatements( pipelineMeta, transformMeta, prev, metaStore );
+      SqlStatement sql = info.getSqlStatements( variables, pipelineMeta, transformMeta, prev, metadataProvider );
       if ( !sql.hasError() ) {
         if ( sql.hasSql() ) {
           SqlEditor sqledit =
-            new SqlEditor( pipelineMeta, shell, SWT.NONE, info.getDatabaseMeta(), DbCache.getInstance(), sql
+            new SqlEditor( shell, SWT.NONE, variables, info.getDatabaseMeta(), DbCache.getInstance(), sql
               .getSql() );
           sqledit.open();
         } else {

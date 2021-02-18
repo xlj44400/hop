@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 /**
  * Author = Shailesh Ahuja
@@ -67,7 +62,7 @@ public class StaxPoiWorkbook implements IKWorkbook {
   private OPCPackage opcpkg;
 
   protected StaxPoiWorkbook() {
-    openSheetsMap = new HashMap<String, StaxPoiSheet>();
+    openSheetsMap = new HashMap<>();
     this.log = HopLogStore.getLogChannelFactory().create( this );
   }
 
@@ -91,14 +86,14 @@ public class StaxPoiWorkbook implements IKWorkbook {
     }
   }
 
-  private void openFile( OPCPackage pkg, String encoding ) throws HopException {
+  private void openFile( OPCPackage pkg, String encoding ) throws HopException, IOException, XMLStreamException {
     InputStream workbookData = null;
     XMLStreamReader workbookReader = null;
     try {
       reader = new XSSFReader( pkg );
-      sheetNameIDMap = new LinkedHashMap<String, String>();
+      sheetNameIDMap = new LinkedHashMap<>();
       workbookData = reader.getWorkbookData();
-      XMLInputFactory factory = XMLInputFactory.newInstance();
+      XMLInputFactory factory = StaxUtil.safeXMLInputFactory();
       workbookReader = factory.createXMLStreamReader( workbookData );
       while ( workbookReader.hasNext() ) {
         if ( workbookReader.next() == XMLStreamConstants.START_ELEMENT
@@ -117,18 +112,10 @@ public class StaxPoiWorkbook implements IKWorkbook {
       throw new HopException( e );
     } finally {
       if ( workbookReader != null ) {
-        try {
           workbookReader.close();
-        } catch ( XMLStreamException e ) {
-          throw new HopException( e );
-        }
       }
       if ( workbookData != null ) {
-        try {
           workbookData.close();
-        } catch ( IOException e ) {
-          throw new HopException( e );
-        }
       }
     }
   }
@@ -143,6 +130,7 @@ public class StaxPoiWorkbook implements IKWorkbook {
       return null;
     }
     StaxPoiSheet sheet = openSheetsMap.get( sheetID );
+
     if ( sheet == null ) {
       try {
         sheet = new StaxPoiSheet( reader, sheetName, sheetID );

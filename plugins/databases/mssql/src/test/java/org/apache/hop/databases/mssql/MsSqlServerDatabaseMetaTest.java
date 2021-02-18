@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.databases.mssql;
 
@@ -31,6 +26,8 @@ import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.exception.HopPluginException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.value.*;
+import org.apache.hop.core.variables.IVariables;
+import org.apache.hop.core.variables.Variables;
 import org.apache.hop.junit.rules.RestoreHopEnvironment;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -43,14 +40,18 @@ import org.mockito.stubbing.Answer;
 import java.sql.ResultSet;
 
 import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
 public class MsSqlServerDatabaseMetaTest {
-  MsSqlServerDatabaseMeta nativeMeta, odbcMeta;
+  MsSqlServerDatabaseMeta nativeMeta;
   @ClassRule public static RestoreHopEnvironment env = new RestoreHopEnvironment();
 
   private DatabaseMeta databaseMeta;
   private IDatabase iDatabase;
+  private IVariables variables;
 
   @BeforeClass
   public static void setUpOnce() throws HopPluginException, HopException {
@@ -64,30 +65,22 @@ public class MsSqlServerDatabaseMetaTest {
   public void setupOnce() throws Exception {
     nativeMeta = new MsSqlServerDatabaseMeta();
     nativeMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_NATIVE );
-    odbcMeta = new MsSqlServerDatabaseMeta();
-    odbcMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_ODBC );
     databaseMeta = new DatabaseMeta();
     iDatabase = mock( IDatabase.class );
     databaseMeta.setIDatabase( iDatabase );
+    variables = spy( new Variables() );
   }
 
   @Test
   public void testSettings() throws Exception {
     assertFalse( nativeMeta.supportsCatalogs() );
-    assertArrayEquals( new int[] { DatabaseMeta.TYPE_ACCESS_NATIVE, DatabaseMeta.TYPE_ACCESS_ODBC },
+    assertArrayEquals( new int[] { DatabaseMeta.TYPE_ACCESS_NATIVE },
       nativeMeta.getAccessTypeList() );
     assertEquals( 1433, nativeMeta.getDefaultDatabasePort() );
-    assertEquals( -1, odbcMeta.getDefaultDatabasePort() );
     assertEquals( "net.sourceforge.jtds.jdbc.Driver", nativeMeta.getDriverClass() );
 
     assertEquals( "jdbc:jtds:sqlserver://FOO/WIBBLE", nativeMeta.getURL( "FOO", "", "WIBBLE" ) );
     assertEquals( "jdbc:jtds:sqlserver://FOO:1234/WIBBLE", nativeMeta.getURL( "FOO", "1234", "WIBBLE" ) );
-
-    assertEquals( "jdbc:odbc:FOO", odbcMeta.getURL( null, null, "FOO" ) );
-    assertEquals( "jdbc:odbc:FOO", odbcMeta.getURL( "xxxxxx", "zzzzzzz", "FOO" ) );
-
-    odbcMeta.setUsingDoubleDecimalAsSchemaTableSeparator( true );
-    assertEquals( "FOO..BAR", odbcMeta.getSchemaTableCombination( "FOO", "BAR" ) );
 
     assertEquals( "FOO.BAR", nativeMeta.getSchemaTableCombination( "FOO", "BAR" ) );
     assertFalse( nativeMeta.supportsBitmapIndex() );
@@ -169,11 +162,6 @@ public class MsSqlServerDatabaseMetaTest {
 
     assertEquals( "ALTER TABLE FOO ALTER COLUMN BAR VARCHAR(100)",
       nativeMeta.getModifyColumnStatement( "FOO", new ValueMetaString( "BAR" ), "", false, "", true ) );
-
-    odbcMeta.setSupportsBooleanDataType( true ); // some subclass of the MSSQL meta probably ...
-    assertEquals( "ALTER TABLE FOO ADD BAR BIT",
-      odbcMeta.getAddColumnStatement( "FOO", new ValueMetaBoolean( "BAR" ), "", false, "", false ) );
-    odbcMeta.setSupportsBooleanDataType( false );
 
     assertEquals( "select o.name from sysobjects o, sysusers u where  xtype in ( 'FN', 'P' ) and o.uid = u.uid order by o.name",
       nativeMeta.getSqlListOfProcedures() );
@@ -257,28 +245,25 @@ public class MsSqlServerDatabaseMetaTest {
   public void testCheckIndexExists() throws Exception {
     String expectedSQL =
       "select i.name table_name, c.name column_name from     sysindexes i, sysindexkeys k, syscolumns c where    i.name = 'FOO' AND      i.id = k.id AND      i.id = c.id AND      k.colid = c.colid "
-      ; // yes, space at the end like in the dbmeta
+      ; // yes, variables at the end like in the dbmeta
     Database db = Mockito.mock( Database.class );
     IRowMeta rm = Mockito.mock( IRowMeta.class );
     ResultSet rs = Mockito.mock( ResultSet.class );
     DatabaseMeta dm = Mockito.mock( DatabaseMeta.class );
-    Mockito.when( dm.getQuotedSchemaTableCombination( "", "FOO" ) ).thenReturn( "FOO" );
+    Mockito.when( dm.getQuotedSchemaTableCombination( any(IVariables.class), eq(""), eq("FOO") ) ).thenReturn( "FOO" );
     Mockito.when( rs.next() ).thenReturn( rowCnt < 2 );
     Mockito.when( db.openQuery( expectedSQL ) ).thenReturn( rs );
     Mockito.when( db.getReturnRowMeta() ).thenReturn( rm );
     Mockito.when( rm.getString( row1, "column_name", "" ) ).thenReturn( "ROW1COL2" );
     Mockito.when( rm.getString( row2, "column_name", "" ) ).thenReturn( "ROW2COL2" );
-    Mockito.when( db.getRow( rs ) ).thenAnswer( new Answer<Object[]>() {
-      @Override
-      public Object[] answer( InvocationOnMock invocation ) throws Throwable {
-        rowCnt++;
-        if ( rowCnt == 1 ) {
-          return row1;
-        } else if ( rowCnt == 2 ) {
-          return row2;
-        } else {
-          return null;
-        }
+    Mockito.when( db.getRow( rs ) ).thenAnswer( (Answer<Object[]>) invocation -> {
+      rowCnt++;
+      if ( rowCnt == 1 ) {
+        return row1;
+      } else if ( rowCnt == 2 ) {
+        return row2;
+      } else {
+        return null;
       }
     } );
     Mockito.when( db.getDatabaseMeta() ).thenReturn( dm );

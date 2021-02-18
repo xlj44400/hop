@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.columnexists;
 
@@ -31,9 +26,7 @@ import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransform;
-import org.apache.hop.pipeline.transform.ITransformData;
 import org.apache.hop.pipeline.transform.ITransform;
-import org.apache.hop.pipeline.transform.ITransformMeta;
 import org.apache.hop.pipeline.transform.TransformMeta;
 
 /**
@@ -45,7 +38,7 @@ import org.apache.hop.pipeline.transform.TransformMeta;
 
 public class ColumnExists extends BaseTransform<ColumnExistsMeta, ColumnExistsData> implements ITransform<ColumnExistsMeta, ColumnExistsData> {
 
-  private static final Class<?> PKG = ColumnExistsMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ColumnExistsMeta.class; // For Translator
 
   public ColumnExists( TransformMeta transformMeta, ColumnExistsMeta meta, ColumnExistsData data, int copyNr, PipelineMeta pipelineMeta,
                        Pipeline pipeline ) {
@@ -71,7 +64,7 @@ public class ColumnExists extends BaseTransform<ColumnExistsMeta, ColumnExistsDa
       first = false;
 
       data.outputRowMeta = getInputRowMeta().clone();
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
       // Check is columnname field is provided
       if ( Utils.isEmpty( meta.getDynamicColumnnameField() ) ) {
@@ -98,9 +91,9 @@ public class ColumnExists extends BaseTransform<ColumnExistsMeta, ColumnExistsDa
         }
       } else {
         if ( !Utils.isEmpty( data.schemaname ) ) {
-          data.tablename = data.db.getDatabaseMeta().getQuotedSchemaTableCombination( data.schemaname, data.tablename );
+          data.tableName = data.db.getDatabaseMeta().getQuotedSchemaTableCombination( this, data.schemaname, data.tableName );
         } else {
-          data.tablename = data.db.getDatabaseMeta().quoteField( data.tablename );
+          data.tableName = data.db.getDatabaseMeta().quoteField( data.tableName );
         }
       }
 
@@ -122,11 +115,11 @@ public class ColumnExists extends BaseTransform<ColumnExistsMeta, ColumnExistsDa
     try {
       // get tablename
       if ( meta.isTablenameInField() ) {
-        data.tablename = getInputRowMeta().getString( r, data.indexOfTablename );
+        data.tableName = getInputRowMeta().getString( r, data.indexOfTablename );
         if ( !Utils.isEmpty( data.schemaname ) ) {
-          data.tablename = data.db.getDatabaseMeta().getQuotedSchemaTableCombination( data.schemaname, data.tablename );
+          data.tableName = data.db.getDatabaseMeta().getQuotedSchemaTableCombination( this, data.schemaname, data.tableName );
         } else {
-          data.tablename = data.db.getDatabaseMeta().quoteField( data.tablename );
+          data.tableName = data.db.getDatabaseMeta().quoteField( data.tableName );
         }
       }
       // get columnname
@@ -134,7 +127,7 @@ public class ColumnExists extends BaseTransform<ColumnExistsMeta, ColumnExistsDa
       columnname = data.db.getDatabaseMeta().quoteField( columnname );
 
       // Check if table exists on the specified connection
-      columnexists = data.db.checkColumnExists( columnname, data.tablename );
+      columnexists = data.db.checkColumnExists( columnname, data.tableName );
 
       Object[] outputRowData = RowDataUtil.addValueData( r, getInputRowMeta().size(), columnexists );
 
@@ -171,19 +164,18 @@ public class ColumnExists extends BaseTransform<ColumnExistsMeta, ColumnExistsDa
           logError( BaseMessages.getString( PKG, "ColumnExists.Error.TablenameMissing" ) );
           return false;
         }
-        data.tablename = environmentSubstitute( meta.getTablename() );
+        data.tableName = resolve( meta.getTablename() );
       }
       data.schemaname = meta.getSchemaname();
       if ( !Utils.isEmpty( data.schemaname ) ) {
-        data.schemaname = environmentSubstitute( data.schemaname );
+        data.schemaname = resolve( data.schemaname );
       }
 
       if ( Utils.isEmpty( meta.getResultFieldName() ) ) {
         logError( BaseMessages.getString( PKG, "ColumnExists.Error.ResultFieldMissing" ) );
         return false;
       }
-      data.db = new Database( this, meta.getDatabase() );
-      data.db.shareVariablesWith( this );
+      data.db = new Database( this, this, meta.getDatabase() );
       try {
         data.db.connect( getPartitionId() );
 

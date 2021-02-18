@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.core.widget;
 
@@ -34,6 +29,7 @@ import org.eclipse.swt.dnd.DropTargetEvent;
 import org.eclipse.swt.dnd.DropTargetListener;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.TransferData;
+import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -151,11 +147,13 @@ public class TabFolderReorder {
       Image dragImage = dragItem.getImage();
       String dragToolTip = dragItem.getToolTipText();
       boolean dragShowClose = dragItem.getShowClose();
+      Font dragFont = dragItem.getFont();
       Object dragData = dragItem.getData();
 
       dragItem.setText( item.getText() );
       dragItem.setImage( item.getImage() );
       dragItem.setToolTipText( item.getToolTipText() );
+      dragItem.setFont( item.getFont() );
       dragItem.setData( item.getData() );
       dragItem.setShowClose( item.getShowClose() );
       dragItem.setControl( item.getControl() );
@@ -163,6 +161,7 @@ public class TabFolderReorder {
       item.setText( dragText );
       item.setImage( dragImage );
       item.setToolTipText( dragToolTip );
+      item.setFont( dragFont );
       item.setData( dragData );
       item.setShowClose( dragShowClose );
       item.setControl( dragControl );

@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.update;
 
@@ -48,7 +43,7 @@ import java.util.ArrayList;
  *
  */
 public class Update extends BaseTransform<UpdateMeta, UpdateData> implements ITransform<UpdateMeta, UpdateData> {
-  private static Class<?> PKG = UpdateMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = UpdateMeta.class; // For Translator
 
   public Update(TransformMeta transformMeta, UpdateMeta meta, UpdateData data, int copyNr, PipelineMeta pipelineMeta,
                 Pipeline pipeline ) {
@@ -212,19 +207,18 @@ public class Update extends BaseTransform<UpdateMeta, UpdateData> implements ITr
 
       // What's the output Row format?
       data.outputRowMeta = getInputRowMeta().clone();
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
       data.schemaTable =
-        meta.getDatabaseMeta().getQuotedSchemaTableCombination(
-          environmentSubstitute( meta.getSchemaName() ), environmentSubstitute( meta.getTableName() ) );
+        meta.getDatabaseMeta().getQuotedSchemaTableCombination( this, meta.getSchemaName(), meta.getTableName() );
 
       // lookup the values!
       if ( log.isDetailed() ) {
         logDetailed( BaseMessages.getString( PKG, "Update.Log.CheckingRow" ) + getInputRowMeta().getString( r ) );
       }
 
-      ArrayList<Integer> keynrs = new ArrayList<Integer>( meta.getKeyStream().length );
-      ArrayList<Integer> keynrs2 = new ArrayList<Integer>( meta.getKeyStream().length );
+      ArrayList<Integer> keynrs = new ArrayList<>( meta.getKeyStream().length );
+      ArrayList<Integer> keynrs2 = new ArrayList<>( meta.getKeyStream().length );
 
       for ( int i = 0; i < meta.getKeyStream().length; i++ ) {
         int keynr = getInputRowMeta().indexOfValue( meta.getKeyStream()[ i ] );
@@ -475,8 +469,7 @@ public class Update extends BaseTransform<UpdateMeta, UpdateData> implements ITr
         logError( BaseMessages.getString( PKG, "Update.Init.ConnectionMissing", getTransformName() ) );
         return false;
       }
-      data.db = new Database( this, meta.getDatabaseMeta() );
-      data.db.shareVariablesWith( this );
+      data.db = new Database( this, this, meta.getDatabaseMeta() );
       try {
         data.db.connect( getPartitionId() );
 

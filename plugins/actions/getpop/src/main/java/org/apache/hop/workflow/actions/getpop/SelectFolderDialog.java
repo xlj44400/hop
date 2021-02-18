@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.getpop;
 
@@ -34,14 +29,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Dialog;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Tree;
-import org.eclipse.swt.widgets.TreeItem;
+import org.eclipse.swt.widgets.*;
 
 import javax.mail.Folder;
 import javax.mail.MessagingException;
@@ -53,19 +41,16 @@ import javax.mail.MessagingException;
  * @since 12-08-2009
  */
 public class SelectFolderDialog extends Dialog {
-  private static Class<?> PKG = ActionGetPOP.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionGetPOP.class; // For Translator
 
-  private PropsUi props;
+  private final PropsUi props;
   private Shell shell;
 
   private Tree wTree;
   private TreeItem tiTree;
-  private Button wOk;
-  private Button wRefresh;
-  private Button wCancel;
   private String selection;
-  private Folder folder;
-  private GuiResource guiresource = GuiResource.getInstance();
+  private final Folder folder;
+  private final GuiResource guiresource = GuiResource.getInstance();
 
   public SelectFolderDialog( Shell parent, int style, Folder folder ) {
     super( parent, style );
@@ -96,13 +81,13 @@ public class SelectFolderDialog extends Dialog {
     }
 
     // Buttons
-    wOk = new Button( shell, SWT.PUSH );
+    Button wOk = new Button(shell, SWT.PUSH);
     wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
 
-    wRefresh = new Button( shell, SWT.PUSH );
+    Button wRefresh = new Button(shell, SWT.PUSH);
     wRefresh.setText( BaseMessages.getString( PKG, "System.Button.Refresh" ) );
 
-    wCancel = new Button( shell, SWT.PUSH );
+    Button wCancel = new Button(shell, SWT.PUSH);
     wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
 
     FormData fdTree = new FormData();
@@ -112,21 +97,13 @@ public class SelectFolderDialog extends Dialog {
     fdTree.bottom = new FormAttachment( 100, -50 );
     wTree.setLayoutData( fdTree );
 
-    BaseTransformDialog.positionBottomButtons( shell, new Button[] { wOk, wRefresh, wCancel }, Const.MARGIN, null );
+    BaseTransformDialog.positionBottomButtons( shell, new Button[] {wOk, wRefresh, wCancel}, Const.MARGIN, null );
 
     // Add listeners
-    wCancel.addListener( SWT.Selection, new Listener() {
-      public void handleEvent( Event e ) {
-        dispose();
-      }
-    } );
+    wCancel.addListener( SWT.Selection, e -> dispose() );
 
     // Add listeners
-    wOk.addListener( SWT.Selection, new Listener() {
-      public void handleEvent( Event e ) {
-        handleOK();
-      }
-    } );
+    wOk.addListener( SWT.Selection, e -> handleOK() );
 
     wTree.addSelectionListener( new SelectionAdapter() {
       public void widgetDefaultSelected( SelectionEvent arg0 ) {
@@ -134,11 +111,7 @@ public class SelectFolderDialog extends Dialog {
       }
     } );
 
-    wRefresh.addListener( SWT.Selection, new Listener() {
-      public void handleEvent( Event e ) {
-        getData();
-      }
-    } );
+    wRefresh.addListener( SWT.Selection, e -> getData() );
 
     BaseTransformDialog.setSize( shell );
 
@@ -170,13 +143,13 @@ public class SelectFolderDialog extends Dialog {
   private void buildFoldersTree( Folder folder, TreeItem parentTreeItem, boolean topfolder ) throws MessagingException {
     if ( ( folder.getType() & Folder.HOLDS_FOLDERS ) != 0 ) {
       Folder[] f = folder.list();
-      for ( int i = 0; i < f.length; i++ ) {
-        tiTree = topfolder ? new TreeItem( wTree, SWT.NONE ) : new TreeItem( parentTreeItem, SWT.NONE );
-        tiTree.setImage( guiresource.getImageBol() );
-        tiTree.setText( f[ i ].getName() );
+      for (Folder value : f) {
+        tiTree = topfolder ? new TreeItem(wTree, SWT.NONE) : new TreeItem(parentTreeItem, SWT.NONE);
+        tiTree.setImage(guiresource.getImageBol());
+        tiTree.setText(value.getName());
         // Search for sub folders
-        if ( ( f[ i ].getType() & Folder.HOLDS_FOLDERS ) != 0 ) {
-          buildFoldersTree( f[ i ], tiTree, false );
+        if ((value.getType() & Folder.HOLDS_FOLDERS) != 0) {
+          buildFoldersTree(value, tiTree, false);
         }
       }
     }

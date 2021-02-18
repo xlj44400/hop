@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.fileinput.text;
 
@@ -330,9 +325,9 @@ public class TextFileInputReader implements IBaseFileInputReader {
     if ( putrow && r != null ) {
       // See if the previous values need to be repeated!
       if ( data.nr_repeats > 0 ) {
-        if ( data.previous_row == null ) { // First invocation...
+        if ( data.previousRow == null ) { // First invocation...
 
-          data.previous_row = data.outputRowMeta.cloneRow( r );
+          data.previousRow = data.outputRowMeta.cloneRow( r );
         } else {
           // int repnr = 0;
           for ( int i = 0; i < meta.inputFields.length; i++ ) {
@@ -340,11 +335,11 @@ public class TextFileInputReader implements IBaseFileInputReader {
               if ( r[ i ] == null ) {
                 // if it is empty: take the previous value!
 
-                r[ i ] = data.previous_row[ i ];
+                r[ i ] = data.previousRow[ i ];
               } else {
                 // not empty: change the previous_row entry!
 
-                data.previous_row[ i ] = r[ i ];
+                data.previousRow[ i ] = r[ i ];
               }
               // repnr++;
             }

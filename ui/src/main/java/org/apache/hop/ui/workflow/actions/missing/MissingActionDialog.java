@@ -1,26 +1,23 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.workflow.actions.missing;
+
+import java.util.List;
 
 import org.apache.hop.core.Const;
 import org.apache.hop.i18n.BaseMessages;
@@ -28,9 +25,9 @@ import org.apache.hop.ui.core.PropsUi;
 import org.apache.hop.ui.core.gui.GuiResource;
 import org.apache.hop.ui.workflow.action.ActionDialog;
 import org.apache.hop.workflow.WorkflowMeta;
+import org.apache.hop.workflow.action.IAction;
 import org.apache.hop.workflow.action.IActionDialog;
 import org.apache.hop.workflow.actions.missing.MissingAction;
-import org.apache.hop.workflow.action.IAction;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -43,31 +40,32 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
-import java.util.List;
-
 public class MissingActionDialog extends ActionDialog implements IActionDialog {
-  private static Class<?> PKG = MissingActionDialog.class;
+  private static final Class<?> PKG = MissingActionDialog.class; // For Translator
 
   private Shell shell;
-  private Shell shellParent;
   private List<MissingAction> missingActions;
   private int mode;
   private PropsUi props;
-  private IAction action;
 
+  /**
+   * A reference to the action interface
+   */
+  protected IAction action;
+  
   public static final int MISSING_ACTIONS = 1;
   public static final int MISSING_ACTION_ID = 2;
 
   public MissingActionDialog( Shell parent, List<MissingAction> missingActions ) {
-    super( parent, null, null );
-    this.shellParent = parent;
+    super( parent, null );
+   
     this.missingActions = missingActions;
     this.mode = MISSING_ACTIONS;
   }
 
   public MissingActionDialog( Shell parent, IAction action, WorkflowMeta workflowMeta ) {
-    super( parent, action, workflowMeta );
-    this.shellParent = parent;
+    super( parent, workflowMeta );
+    this.action = action;
     this.mode = MISSING_ACTION_ID;
   }
 
@@ -75,11 +73,11 @@ public class MissingActionDialog extends ActionDialog implements IActionDialog {
     String message = "";
     if ( mode == MISSING_ACTIONS ) {
       StringBuilder entries = new StringBuilder();
-      for ( MissingAction entry : missingEntries ) {
-        if ( missingEntries.indexOf( entry ) == missingEntries.size() - 1 ) {
-          entries.append( "- " + entry.getName() + " - " + entry.getMissingPluginId() + "\n\n" );
+      for ( MissingAction action : missingEntries ) {
+        if ( missingEntries.indexOf( action ) == missingEntries.size() - 1 ) {
+          entries.append( "- " + action.getName() + " - " + action.getMissingPluginId() + "\n\n" );
         } else {
-          entries.append( "- " + entry.getName() + " - " + entry.getMissingPluginId() + "\n" );
+          entries.append( "- " + action.getName() + " - " + action.getMissingPluginId() + "\n" );
         }
       }
       message = BaseMessages.getString( PKG, "MissingActionDialog.MissingActions", entries.toString() );
@@ -87,8 +85,8 @@ public class MissingActionDialog extends ActionDialog implements IActionDialog {
 
     if ( mode == MISSING_ACTION_ID ) {
       message =
-        BaseMessages.getString( PKG, "MissingActionDialog.MissingActionId", iAction.getName() + " - "
-          + ( (MissingAction) iAction ).getMissingPluginId() );
+        BaseMessages.getString( PKG, "MissingActionDialog.MissingActionId", action.getName() + " - "
+          + ( (MissingAction) action ).getMissingPluginId() );
     }
     return message;
   }
@@ -96,11 +94,13 @@ public class MissingActionDialog extends ActionDialog implements IActionDialog {
   public IAction open() {
 
     this.props = PropsUi.getInstance();
-    Display display = shellParent.getDisplay();
+    
+    Shell parent = this.getParent();
+    Display display = parent.getDisplay();
     int margin = props.getMargin();
 
     shell =
-      new Shell( shellParent, SWT.DIALOG_TRIM | SWT.CLOSE | SWT.ICON
+      new Shell( parent, SWT.DIALOG_TRIM | SWT.CLOSE | SWT.ICON
         | SWT.APPLICATION_MODAL );
 
     props.setLook( shell );
@@ -179,6 +179,7 @@ public class MissingActionDialog extends ActionDialog implements IActionDialog {
     props.setLook( searchButton );
     searchButton.setText( BaseMessages.getString( PKG, "MissingActionDialog.SearchMarketplace" ) );
     searchButton.setLayoutData( fdSearch );
+    searchButton.setEnabled(false);
     searchButton.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         try {

@@ -1,32 +1,27 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.numberrange;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
@@ -37,8 +32,8 @@ import org.apache.hop.ui.core.widget.TableView;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CCombo;
+import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
-import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -51,36 +46,23 @@ import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 
-/**
- * Configuration dialog for the NumberRange
- *
- */
-@PluginDialog(
-        id = "NumberRange",
-        image = "numberrange.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = "" )
 public class NumberRangeDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = NumberRangeMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = NumberRangeMeta.class; // For Translator
 
-  private NumberRangeMeta input;
+  private final NumberRangeMeta input;
 
   private CCombo inputFieldControl;
   private Text outputFieldControl;
   private Text fallBackValueControl;
   private TableView rulesControl;
 
-  private FormData fdFields;
-
-  public NumberRangeDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public NumberRangeDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (NumberRangeMeta) in;
   }
 
@@ -92,11 +74,7 @@ public class NumberRangeDialog extends BaseTransformDialog implements ITransform
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
     changed = input.hasChanged();
 
     FormLayout formLayout = new FormLayout();
@@ -106,18 +84,25 @@ public class NumberRangeDialog extends BaseTransformDialog implements ITransform
     shell.setLayout( formLayout );
     shell.setText( BaseMessages.getString( PKG, "NumberRange.TypeLongDesc" ) );
 
+    // Some buttons at the bottom
+    wOk = new Button( shell, SWT.PUSH );
+    wOk.setText( "OK" );
+    wOk.addListener( SWT.Selection, e -> ok() );
+    wCancel = new Button( shell, SWT.PUSH );
+    wCancel.setText( "Cancel" );
+    wCancel.addListener( SWT.Selection, e -> cancel() );
+    BaseTransformDialog.positionBottomButtons( shell, new Button[] { wOk, wCancel }, props.getMargin(), null );
+
     // Create controls
     wTransformName = createLine( lsMod, BaseMessages.getString( PKG, "NumberRange.TransformName" ), null );
-    inputFieldControl =
-      createLineCombo( lsMod, BaseMessages.getString( PKG, "NumberRange.InputField" ), wTransformName );
-    outputFieldControl =
-      createLine( lsMod, BaseMessages.getString( PKG, "NumberRange.OutputField" ), inputFieldControl );
+    inputFieldControl = createLineCombo( lsMod, BaseMessages.getString( PKG, "NumberRange.InputField" ), wTransformName );
+    outputFieldControl = createLine( lsMod, BaseMessages.getString( PKG, "NumberRange.OutputField" ), inputFieldControl );
 
     inputFieldControl.addFocusListener( new FocusListener() {
-      public void focusLost( org.eclipse.swt.events.FocusEvent e ) {
+      public void focusLost( FocusEvent e ) {
       }
 
-      public void focusGained( org.eclipse.swt.events.FocusEvent e ) {
+      public void focusGained( FocusEvent e ) {
         Cursor busy = new Cursor( shell.getDisplay(), SWT.CURSOR_WAIT );
         shell.setCursor( busy );
         loadComboOptions();
@@ -125,33 +110,11 @@ public class NumberRangeDialog extends BaseTransformDialog implements ITransform
         busy.dispose();
       }
     } );
-    fallBackValueControl =
-      createLine( lsMod, BaseMessages.getString( PKG, "NumberRange.DefaultValue" ), outputFieldControl );
+    fallBackValueControl = createLine( lsMod, BaseMessages.getString( PKG, "NumberRange.DefaultValue" ), outputFieldControl );
 
     createRulesTable( lsMod );
 
-    // Some buttons
-    wOk = new Button( shell, SWT.PUSH );
-    wOk.setText( "OK" );
-    wCancel = new Button( shell, SWT.PUSH );
-    wCancel.setText( "Cancel" );
-
-    BaseTransformDialog.positionBottomButtons( shell, new Button[] { wOk, wCancel }, props.getMargin(), rulesControl );
-
     // Add listeners
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
-
-    wCancel.addListener( SWT.Selection, lsCancel );
-    wOk.addListener( SWT.Selection, lsOk );
 
     lsDef = new SelectionAdapter() {
       public void widgetDefaultSelected( SelectionEvent e ) {
@@ -209,15 +172,13 @@ public class NumberRangeDialog extends BaseTransformDialog implements ITransform
     colinf[ 2 ] =
       new ColumnInfo( BaseMessages.getString( PKG, "NumberRange.Value" ), ColumnInfo.COLUMN_TYPE_TEXT, false );
 
-    rulesControl =
-      new TableView(
-        pipelineMeta, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
+    rulesControl = new TableView( variables, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
 
-    fdFields = new FormData();
+    FormData fdFields = new FormData();
     fdFields.left = new FormAttachment( 0, 0 );
     fdFields.top = new FormAttachment( rulesLable, props.getMargin() );
     fdFields.right = new FormAttachment( 100, 0 );
-    fdFields.bottom = new FormAttachment( 100, -50 );
+    fdFields.bottom = new FormAttachment( wOk, -2 * props.getMargin() );
     rulesControl.setLayoutData( fdFields );
   }
 
@@ -382,7 +343,7 @@ public class NumberRangeDialog extends BaseTransformDialog implements ITransform
       if ( inputFieldControl.getText() != null ) {
         fieldvalue = inputFieldControl.getText();
       }
-      IRowMeta r = pipelineMeta.getPrevTransformFields( transformName );
+      IRowMeta r = pipelineMeta.getPrevTransformFields( variables, transformName );
       if ( r != null ) {
         inputFieldControl.setItems( r.getFieldNames() );
       }

@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.folderscompare;
 
@@ -43,7 +38,7 @@ import org.apache.hop.workflow.action.validator.AbstractFileValidator;
 import org.apache.hop.workflow.action.validator.ActionValidatorUtils;
 import org.apache.hop.workflow.action.validator.AndValidator;
 import org.apache.hop.workflow.action.validator.ValidatorContext;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.w3c.dom.Node;
 
 import java.io.BufferedInputStream;
@@ -67,14 +62,14 @@ import java.util.regex.Pattern;
 
 @Action(
   id = "FOLDERS_COMPARE",
-  i18nPackageName = "org.apache.hop.workflow.actions.folderscompare",
-  name = "ActionFoldersCompare.Name",
-  description = "ActionFoldersCompare.Description",
+  name = "i18n::ActionFoldersCompare.Name",
+  description = "i18n::ActionFoldersCompare.Description",
   image = "FoldersCompare.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.FileManagement"
+  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.FileManagement",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/folderscompare.html"
 )
 public class ActionFoldersCompare extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionFoldersCompare.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionFoldersCompare.class; // For Translator
 
   private String filename1;
   private String filename2;
@@ -130,7 +125,7 @@ public class ActionFoldersCompare extends ActionBase implements Cloneable, IActi
   }
 
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
       includesubfolders = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "include_subfolders" ) );
@@ -172,15 +167,15 @@ public class ActionFoldersCompare extends ActionBase implements Cloneable, IActi
   }
 
   public String getRealWildcard() {
-    return environmentSubstitute( getWildcard() );
+    return resolve( getWildcard() );
   }
 
   public String getRealFilename1() {
-    return environmentSubstitute( getFilename1() );
+    return resolve( getFilename1() );
   }
 
   public String getRealFilename2() {
-    return environmentSubstitute( getFilename2() );
+    return resolve( getFilename2() );
   }
 
   /**
@@ -198,12 +193,8 @@ public class ActionFoldersCompare extends ActionBase implements Cloneable, IActi
     try {
       // Really read the contents and do comparisons
 
-      in1 =
-        new DataInputStream( new BufferedInputStream( HopVfs.getInputStream(
-          HopVfs.getFilename( file1 ), this ) ) );
-      in2 =
-        new DataInputStream( new BufferedInputStream( HopVfs.getInputStream(
-          HopVfs.getFilename( file2 ), this ) ) );
+      in1 = new DataInputStream( new BufferedInputStream( HopVfs.getInputStream( HopVfs.getFilename( file1 ) ) ) );
+      in2 = new DataInputStream( new BufferedInputStream( HopVfs.getInputStream( HopVfs.getFilename( file2 ) ) ) );
 
       char ch1, ch2;
       while ( in1.available() != 0 && in2.available() != 0 ) {
@@ -254,8 +245,8 @@ public class ActionFoldersCompare extends ActionBase implements Cloneable, IActi
     try {
       if ( filename1 != null && filename2 != null ) {
         // Get Folders/Files to compare
-        folder1 = HopVfs.getFileObject( realFilename1, this );
-        folder2 = HopVfs.getFileObject( realFilename2, this );
+        folder1 = HopVfs.getFileObject( realFilename1 );
+        folder2 = HopVfs.getFileObject( realFilename2 );
 
         if ( folder1.exists() && folder2.exists() ) {
           if ( !folder1.getType().equals( folder2.getType() ) ) {
@@ -338,8 +329,8 @@ public class ActionFoldersCompare extends ActionBase implements Cloneable, IActi
                         .getKey().toString(), realFilename2 ) );
                     }
 
-                    filefolder1 = HopVfs.getFileObject( entree.getValue().toString(), this );
-                    filefolder2 = HopVfs.getFileObject( collection2.get( entree.getKey() ).toString(), this );
+                    filefolder1 = HopVfs.getFileObject( entree.getValue() );
+                    filefolder2 = HopVfs.getFileObject( collection2.get( entree.getKey() ) );
 
                     if ( !filefolder2.getType().equals( filefolder1.getType() ) ) {
                       // The file1 exist in the folder2..but they don't have the same type
@@ -474,11 +465,11 @@ public class ActionFoldersCompare extends ActionBase implements Cloneable, IActi
   }
 
   private class TextFileSelector implements FileSelector {
-    String source_folder = null;
+    String sourceFolder = null;
 
     public TextFileSelector( String sourcefolderin ) {
       if ( !Utils.isEmpty( sourcefolderin ) ) {
-        source_folder = sourcefolderin;
+        sourceFolder = sourcefolderin;
       }
 
     }
@@ -486,15 +477,15 @@ public class ActionFoldersCompare extends ActionBase implements Cloneable, IActi
     public boolean includeFile( FileSelectInfo info ) {
       boolean returncode = false;
       try {
-        if ( !info.getFile().toString().equals( source_folder ) ) {
+        if ( !info.getFile().toString().equals( sourceFolder ) ) {
           // Pass over the Base folder itself
-          String short_filename = info.getFile().getName().getBaseName();
+          String shortFilename = info.getFile().getName().getBaseName();
 
           if ( info.getFile().getParent().equals( info.getBaseFolder() ) ) {
             // In the Base Folder...
             if ( ( info.getFile().getType() == FileType.FILE && compareonly.equals( "only_files" ) )
               || ( info.getFile().getType() == FileType.FOLDER && compareonly.equals( "only_folders" ) )
-              || ( GetFileWildcard( short_filename ) && compareonly.equals( "specify" ) )
+              || ( GetFileWildcard( shortFilename ) && compareonly.equals( "specify" ) )
               || ( compareonly.equals( "all" ) ) ) {
               returncode = true;
             }
@@ -503,7 +494,7 @@ public class ActionFoldersCompare extends ActionBase implements Cloneable, IActi
             if ( includesubfolders ) {
               if ( ( info.getFile().getType() == FileType.FILE && compareonly.equals( "only_files" ) )
                 || ( info.getFile().getType() == FileType.FOLDER && compareonly.equals( "only_folders" ) )
-                || ( GetFileWildcard( short_filename ) && compareonly.equals( "specify" ) )
+                || ( GetFileWildcard( shortFilename ) && compareonly.equals( "specify" ) )
                 || ( compareonly.equals( "all" ) ) ) {
                 returncode = true;
               }
@@ -546,7 +537,7 @@ public class ActionFoldersCompare extends ActionBase implements Cloneable, IActi
     return getIt;
   }
 
-  public boolean evaluates() {
+  @Override public boolean isEvaluation() {
     return true;
   }
 
@@ -575,7 +566,7 @@ public class ActionFoldersCompare extends ActionBase implements Cloneable, IActi
   }
 
   public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     ValidatorContext ctx = new ValidatorContext();
     AbstractFileValidator.putVariableSpace( ctx, getVariables() );
     AndValidator.putValidators( ctx, ActionValidatorUtils.notNullValidator(), ActionValidatorUtils.fileExistsValidator() );

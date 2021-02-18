@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.databases.oraclerdb;
 
@@ -46,7 +41,7 @@ public class OracleRDBDatabaseMeta extends BaseDatabaseMeta implements IDatabase
   @Override
   public int[] getAccessTypeList() {
     return new int[] {
-      DatabaseMeta.TYPE_ACCESS_NATIVE, DatabaseMeta.TYPE_ACCESS_ODBC };
+      DatabaseMeta.TYPE_ACCESS_NATIVE };
   }
 
   /**
@@ -77,13 +72,13 @@ public class OracleRDBDatabaseMeta extends BaseDatabaseMeta implements IDatabase
   }
 
   @Override
-  public String getSqlTableExists( String tablename ) {
-    return getSqlQueryFields( tablename );
+  public String getSqlTableExists( String tableName ) {
+    return getSqlQueryFields( tableName );
   }
 
   @Override
-  public String getSqlColumnExists( String columnname, String tablename ) {
-    return getSqlQueryColumnFields( columnname, tablename );
+  public String getSqlColumnExists( String columnname, String tableName ) {
+    return getSqlQueryColumnFields( columnname, tableName );
   }
 
   public String getSqlQueryColumnFields( String columnname, String tableName ) {
@@ -97,12 +92,7 @@ public class OracleRDBDatabaseMeta extends BaseDatabaseMeta implements IDatabase
 
   @Override
   public String getURL( String hostname, String port, String databaseName ) throws HopDatabaseException {
-    if ( getAccessType() == DatabaseMeta.TYPE_ACCESS_ODBC ) {
-      return "jdbc:odbc:" + databaseName;
-    } else {
       return "jdbc:rdbThin://" + hostname + ":" + port + "/" + databaseName;
-    }
-
   }
 
   /**
@@ -178,7 +168,7 @@ public class OracleRDBDatabaseMeta extends BaseDatabaseMeta implements IDatabase
   /**
    * Generates the SQL statement to add a column to the specified table
    *
-   * @param tablename   The table to add
+   * @param tableName   The table to add
    * @param v           The column defined as a value
    * @param tk          the name of the technical key field
    * @param useAutoinc whether or not this field uses auto increment
@@ -187,16 +177,16 @@ public class OracleRDBDatabaseMeta extends BaseDatabaseMeta implements IDatabase
    * @return the SQL statement to add a column to the specified table
    */
   @Override
-  public String getAddColumnStatement( String tablename, IValueMeta v, String tk, boolean useAutoinc,
+  public String getAddColumnStatement( String tableName, IValueMeta v, String tk, boolean useAutoinc,
                                        String pk, boolean semicolon ) {
     return "ALTER TABLE "
-      + tablename + " ADD ( " + getFieldDefinition( v, tk, pk, useAutoinc, true, false ) + " ) ";
+      + tableName + " ADD ( " + getFieldDefinition( v, tk, pk, useAutoinc, true, false ) + " ) ";
   }
 
   /**
    * Generates the SQL statement to drop a column from the specified table
    *
-   * @param tablename   The table to add
+   * @param tableName   The table to add
    * @param v           The column defined as a value
    * @param tk          the name of the technical key field
    * @param useAutoinc whether or not this field uses auto increment
@@ -205,15 +195,15 @@ public class OracleRDBDatabaseMeta extends BaseDatabaseMeta implements IDatabase
    * @return the SQL statement to drop a column from the specified table
    */
   @Override
-  public String getDropColumnStatement( String tablename, IValueMeta v, String tk, boolean useAutoinc,
+  public String getDropColumnStatement( String tableName, IValueMeta v, String tk, boolean useAutoinc,
                                         String pk, boolean semicolon ) {
-    return "ALTER TABLE " + tablename + " DROP ( " + v.getName() + " ) " + Const.CR;
+    return "ALTER TABLE " + tableName + " DROP ( " + v.getName() + " ) " + Const.CR;
   }
 
   /**
    * Generates the SQL statement to modify a column in the specified table
    *
-   * @param tablename   The table to add
+   * @param tableName   The table to add
    * @param v           The column defined as a value
    * @param tk          the name of the technical key field
    * @param useAutoinc whether or not this field uses auto increment
@@ -222,22 +212,22 @@ public class OracleRDBDatabaseMeta extends BaseDatabaseMeta implements IDatabase
    * @return the SQL statement to modify a column in the specified table
    */
   @Override
-  public String getModifyColumnStatement( String tablename, IValueMeta v, String tk, boolean useAutoinc,
+  public String getModifyColumnStatement( String tableName, IValueMeta v, String tk, boolean useAutoinc,
                                           String pk, boolean semicolon ) {
     return "ALTER TABLE "
-      + tablename + " MODIFY (" + getFieldDefinition( v, tk, pk, useAutoinc, true, false ) + " )";
+      + tableName + " MODIFY (" + getFieldDefinition( v, tk, pk, useAutoinc, true, false ) + " )";
   }
 
   @Override
   public String getFieldDefinition( IValueMeta v, String tk, String pk, boolean useAutoinc,
-                                    boolean addFieldname, boolean addCr ) {
+                                    boolean addFieldName, boolean addCr ) {
     StringBuilder retval = new StringBuilder( 128 );
 
     String fieldname = v.getName();
     int length = v.getLength();
     int precision = v.getPrecision();
 
-    if ( addFieldname ) {
+    if ( addFieldName ) {
       retval.append( fieldname ).append( ' ' );
     }
 

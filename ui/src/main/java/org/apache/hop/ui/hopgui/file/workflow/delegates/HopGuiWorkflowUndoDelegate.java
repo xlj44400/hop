@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.file.workflow.delegates;
 
@@ -27,13 +22,13 @@ import org.apache.hop.core.gui.Point;
 import org.apache.hop.core.undo.ChangeAction;
 import org.apache.hop.workflow.WorkflowHopMeta;
 import org.apache.hop.workflow.WorkflowMeta;
-import org.apache.hop.workflow.action.ActionCopy;
+import org.apache.hop.workflow.action.ActionMeta;
 import org.apache.hop.ui.hopgui.HopGui;
 import org.apache.hop.ui.hopgui.file.IHopFileTypeHandler;
 import org.apache.hop.ui.hopgui.file.workflow.HopGuiWorkflowGraph;
 
 public class HopGuiWorkflowUndoDelegate {
-  private static Class<?> PKG = HopGui.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = HopGui.class; // For Translator
 
   private HopGuiWorkflowGraph workflowGraph;
   private HopGui hopGui;
@@ -46,17 +41,17 @@ public class HopGuiWorkflowUndoDelegate {
     this.workflowGraph = workflowGraph;
   }
 
-  public void undoJobAction( IHopFileTypeHandler handler, WorkflowMeta workflowMeta ) {
+  public void undoWorkflowAction( IHopFileTypeHandler handler, WorkflowMeta workflowMeta ) {
     ChangeAction changeAction = workflowMeta.previousUndo();
     if ( changeAction == null ) {
       return;
     }
-    undoJobAction( handler, workflowMeta, changeAction );
+    undoWorkflowAction( handler, workflowMeta, changeAction );
     handler.updateGui();
   }
 
 
-  public void undoJobAction( IHopFileTypeHandler handler, WorkflowMeta workflowMeta, ChangeAction changeAction ) {
+  public void undoWorkflowAction( IHopFileTypeHandler handler, WorkflowMeta workflowMeta, ChangeAction changeAction ) {
     switch ( changeAction.getType() ) {
       // We created a new transform : undo this...
       case NewAction:
@@ -93,7 +88,7 @@ public class HopGuiWorkflowUndoDelegate {
       case DeleteAction:
         // un-Delete the transform at correct location: re-insert
         for ( int i = 0; i < changeAction.getCurrent().length; i++ ) {
-          ActionCopy action = (ActionCopy) changeAction.getCurrent()[ i ];
+          ActionMeta action = (ActionMeta) changeAction.getCurrent()[ i ];
           int idx = changeAction.getCurrentIndex()[ i ];
           workflowMeta.addAction( idx, action );
         }
@@ -116,8 +111,8 @@ public class HopGuiWorkflowUndoDelegate {
           WorkflowHopMeta hopMeta = (WorkflowHopMeta) changeAction.getCurrent()[ i ];
           int idx = changeAction.getCurrentIndex()[ i ];
           // Build a new hop:
-          ActionCopy from = workflowMeta.findAction( hopMeta.getFromAction().getName() );
-          ActionCopy to = workflowMeta.findAction( hopMeta.getToAction().getName() );
+          ActionMeta from = workflowMeta.findAction( hopMeta.getFromAction().getName() );
+          ActionMeta to = workflowMeta.findAction( hopMeta.getToAction().getName() );
           WorkflowHopMeta newHopMeta = new WorkflowHopMeta( from, to );
           workflowMeta.addWorkflowHop( idx, newHopMeta );
         }
@@ -131,7 +126,7 @@ public class HopGuiWorkflowUndoDelegate {
       case ChangeAction:
         // Delete the current transform, insert previous version.
         for ( int i = 0; i < changeAction.getCurrent().length; i++ ) {
-          ActionCopy prev = ( (ActionCopy) changeAction.getPrevious()[ i ] ).clone();
+          ActionMeta prev = ( (ActionMeta) changeAction.getPrevious()[ i ] ).clone();
           int idx = changeAction.getCurrentIndex()[ i ];
 
           workflowMeta.getAction( idx ).replaceMeta( prev );
@@ -169,7 +164,7 @@ public class HopGuiWorkflowUndoDelegate {
       case PositionAction:
         // Find the location of the transform:
         for ( int i = 0; i < changeAction.getCurrentIndex().length; i++ ) {
-          ActionCopy action = workflowMeta.getAction( changeAction.getCurrentIndex()[ i ] );
+          ActionMeta action = workflowMeta.getAction( changeAction.getCurrentIndex()[ i ] );
           action.setLocation( changeAction.getPreviousLocation()[ i ] );
         }
         break;
@@ -190,26 +185,26 @@ public class HopGuiWorkflowUndoDelegate {
     // OK, now check if we need to do this again...
     if ( workflowMeta.viewNextUndo() != null ) {
       if ( workflowMeta.viewNextUndo().getNextAlso() ) {
-        undoJobAction( handler, workflowMeta );
+        undoWorkflowAction( handler, workflowMeta );
       }
     }
   }
 
-  public void redoJobAction( IHopFileTypeHandler handler, WorkflowMeta workflowMeta ) {
+  public void redoWorkflowAction( IHopFileTypeHandler handler, WorkflowMeta workflowMeta ) {
     ChangeAction changeAction = workflowMeta.nextUndo();
     if ( changeAction == null ) {
       return;
     }
-    redoJobAction( handler, workflowMeta, changeAction );
+    redoWorkflowAction( handler, workflowMeta, changeAction );
     handler.updateGui();
   }
 
-  public void redoJobAction( IHopFileTypeHandler handler, WorkflowMeta workflowMeta, ChangeAction changeAction ) {
+  public void redoWorkflowAction( IHopFileTypeHandler handler, WorkflowMeta workflowMeta, ChangeAction changeAction ) {
     switch ( changeAction.getType() ) {
       case NewAction:
         // re-delete the transform at correct location:
         for ( int i = 0; i < changeAction.getCurrent().length; i++ ) {
-          ActionCopy entryCopy = (ActionCopy) changeAction.getCurrent()[ i ];
+          ActionMeta entryCopy = (ActionMeta) changeAction.getCurrent()[ i ];
           int idx = changeAction.getCurrentIndex()[ i ];
           workflowMeta.addAction( idx, entryCopy );
         }
@@ -268,7 +263,7 @@ public class HopGuiWorkflowUndoDelegate {
       case ChangeTransform:
         // Delete the current transform, insert previous version.
         for ( int i = 0; i < changeAction.getCurrent().length; i++ ) {
-          ActionCopy clonedEntry = ( (ActionCopy) changeAction.getCurrent()[ i ] ).clone();
+          ActionMeta clonedEntry = ( (ActionMeta) changeAction.getCurrent()[ i ] ).clone();
           workflowMeta.getAction( changeAction.getCurrentIndex()[ i ] ).replaceMeta( clonedEntry );
         }
         break;
@@ -303,7 +298,7 @@ public class HopGuiWorkflowUndoDelegate {
       case PositionTransform:
         for ( int i = 0; i < changeAction.getCurrentIndex().length; i++ ) {
           // Find & change the location of the transform:
-          ActionCopy action = workflowMeta.getAction( changeAction.getCurrentIndex()[ i ] );
+          ActionMeta action = workflowMeta.getAction( changeAction.getCurrentIndex()[ i ] );
           action.setLocation( changeAction.getCurrentLocation()[ i ] );
         }
         break;
@@ -322,7 +317,7 @@ public class HopGuiWorkflowUndoDelegate {
     // OK, now check if we need to do this again...
     if ( workflowMeta.viewNextUndo() != null ) {
       if ( workflowMeta.viewNextUndo().getNextAlso() ) {
-        redoJobAction( handler, workflowMeta );
+        redoWorkflowAction( handler, workflowMeta );
       }
     }
   }
@@ -332,14 +327,14 @@ public class HopGuiWorkflowUndoDelegate {
    *
    * @return value of workflowGraph
    */
-  public HopGuiWorkflowGraph getJobGraph() {
+  public HopGuiWorkflowGraph getWorkflowGraph() {
     return workflowGraph;
   }
 
   /**
    * @param workflowGraph The workflowGraph to set
    */
-  public void setJobGraph( HopGuiWorkflowGraph workflowGraph ) {
+  public void setWorkflowGraph( HopGuiWorkflowGraph workflowGraph ) {
     this.workflowGraph = workflowGraph;
   }
 

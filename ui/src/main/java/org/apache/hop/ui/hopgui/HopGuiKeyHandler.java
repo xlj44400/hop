@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui;
 
@@ -77,12 +72,19 @@ public class HopGuiKeyHandler extends KeyAdapter {
 
   private boolean handleKey( Object parentObject, KeyEvent event, KeyboardShortcut shortcut ) {
     int keyCode = ( event.keyCode & SWT.KEY_MASK );
+
     boolean alt = ( event.stateMask & SWT.ALT ) != 0;
     boolean shift = ( event.stateMask & SWT.SHIFT ) != 0;
     boolean control = ( event.stateMask & SWT.CONTROL ) != 0;
     boolean command = ( event.stateMask & SWT.COMMAND ) != 0;
 
     boolean matchOS = Const.isOSX() == shortcut.isOsx();
+
+    if ( keyCode == SWT.KEYPAD_ADD ) keyCode = '+';
+    else if ( keyCode == SWT.KEYPAD_SUBTRACT ) keyCode = '-';
+    else if ( keyCode == SWT.KEYPAD_MULTIPLY ) keyCode = '*';
+    else if ( keyCode == SWT.KEYPAD_DIVIDE ) keyCode = '/';
+    else if ( keyCode == SWT.KEYPAD_EQUAL ) keyCode = '=';
 
     boolean keyMatch = keyCode == shortcut.getKeyCode();
     boolean altMatch = shortcut.isAlt() == alt;

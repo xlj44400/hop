@@ -1,35 +1,27 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.database;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hop.core.Const;
-import org.apache.hop.core.exception.HopPluginException;
 import org.apache.hop.core.plugins.BasePluginType;
 import org.apache.hop.core.plugins.IPluginType;
-import org.apache.hop.core.plugins.PluginAnnotationType;
-import org.apache.hop.core.plugins.PluginMainClassType;
 
-import java.lang.annotation.Annotation;
 import java.util.Map;
 
 /**
@@ -37,14 +29,16 @@ import java.util.Map;
  *
  * @author matt
  */
-@PluginMainClassType( IDatabase.class )
-@PluginAnnotationType( DatabaseMetaPlugin.class )
-public class DatabasePluginType extends BasePluginType implements IPluginType {
+public class DatabasePluginType extends BasePluginType<DatabaseMetaPlugin> {
   private static DatabasePluginType pluginType;
 
   private DatabasePluginType() {
     super( DatabaseMetaPlugin.class, "DATABASE", "Database" );
-    populateFolders( "databases" );
+
+    String sharedJdbcDirectory = System.getProperty( Const.HOP_SHARED_JDBC_FOLDER );
+    if ( StringUtils.isNotEmpty(sharedJdbcDirectory)) {
+      getExtraLibraryFolders().add(sharedJdbcDirectory);
+    }
   }
 
   public static DatabasePluginType getInstance() {
@@ -54,95 +48,71 @@ public class DatabasePluginType extends BasePluginType implements IPluginType {
     return pluginType;
   }
 
-  protected void registerPluginJars() throws HopPluginException {
-    super.registerPluginJars();
-  }
-
-  @Override
-  protected String getXmlPluginFile() {
-    return Const.XML_FILE_HOP_DATABASE_TYPES;
-  }
-
-  @Override
-  protected String getMainTag() {
-    return "database-types";
-  }
-
-  @Override
-  protected String getSubTag() {
-    return "database-type";
-  }
-
-  @Override
-  protected String getPath() {
-    return "./";
-  }
-
   public String[] getNaturalCategoriesOrder() {
     return new String[ 0 ];
   }
 
   @Override
-  protected String extractCategory( Annotation annotation ) {
+  protected String extractCategory( DatabaseMetaPlugin annotation ) {
     return "";
   }
 
   @Override
-  protected String extractDesc( Annotation annotation ) {
-    return ( (DatabaseMetaPlugin) annotation ).typeDescription();
+  protected String extractDesc( DatabaseMetaPlugin annotation ) {
+    return annotation.typeDescription();
   }
 
   @Override
-  protected String extractID( Annotation annotation ) {
-    return ( (DatabaseMetaPlugin) annotation ).type();
+  protected String extractID( DatabaseMetaPlugin annotation ) {
+    return annotation.type();
   }
 
   @Override
-  protected String extractName( Annotation annotation ) {
-    return ( (DatabaseMetaPlugin) annotation ).typeDescription();
+  protected String extractName( DatabaseMetaPlugin annotation ) {
+    return annotation.typeDescription();
   }
 
   @Override
-  protected String extractImageFile( Annotation annotation ) {
+  protected String extractImageFile( DatabaseMetaPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected boolean extractSeparateClassLoader( Annotation annotation ) {
+  protected boolean extractSeparateClassLoader( DatabaseMetaPlugin annotation ) {
     return false;
   }
 
   @Override
-  protected String extractI18nPackageName( Annotation annotation ) {
+  protected String extractI18nPackageName( DatabaseMetaPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected void addExtraClasses( Map<Class<?>, String> classMap, Class<?> clazz, Annotation annotation ) {
+  protected void addExtraClasses( Map<Class<?>, String> classMap, Class<?> clazz, DatabaseMetaPlugin annotation ) {
   }
 
   @Override
-  protected String extractDocumentationUrl( Annotation annotation ) {
+  protected String extractDocumentationUrl( DatabaseMetaPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected String extractCasesUrl( Annotation annotation ) {
+  protected String extractCasesUrl( DatabaseMetaPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected String extractForumUrl( Annotation annotation ) {
+  protected String extractForumUrl( DatabaseMetaPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected String extractSuggestion( Annotation annotation ) {
+  protected String extractSuggestion( DatabaseMetaPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected String extractClassLoaderGroup( Annotation annotation ) {
-    return ( (DatabaseMetaPlugin) annotation ).classLoaderGroup();
+  protected String extractClassLoaderGroup( DatabaseMetaPlugin annotation ) {
+    return annotation.classLoaderGroup();
   }
 }

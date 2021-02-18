@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 package org.apache.hop.core.database;
 
 import org.apache.hop.core.HopClientEnvironment;
@@ -48,20 +43,18 @@ import static org.junit.Assert.assertTrue;
 
 public class BaseDatabaseMetaTest {
   @ClassRule public static RestoreHopEnvironment env = new RestoreHopEnvironment();
-  BaseDatabaseMeta nativeMeta, odbcMeta;
+  BaseDatabaseMeta nativeMeta;
 
   @Before
   public void setupOnce() throws Exception {
     nativeMeta = new ConcreteBaseDatabaseMeta();
     nativeMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_NATIVE );
-    odbcMeta = new ConcreteBaseDatabaseMeta();
-    nativeMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_ODBC );
     HopClientEnvironment.init();
   }
 
   @Test
   public void testDefaultSettings() throws Exception {
-    // Note - this method should only use native or odbc.
+    // Note - this method should only use native.
     // (each test run in its own thread).
     assertEquals( -1, nativeMeta.getDefaultDatabasePort() );
     assertTrue( nativeMeta.supportsSetCharacterStream() );
@@ -186,14 +179,9 @@ public class BaseDatabaseMetaTest {
 
   @Test
   public void testDefaultSqlStatements() {
-    // Note - this method should use only native or odbc metas.
+    // Note - this method should use only native metas.
     String lineSep = System.getProperty( "line.separator" );
     String expected = "ALTER TABLE FOO DROP BAR" + lineSep;
-    assertEquals( expected, odbcMeta.getDropColumnStatement( "FOO", new ValueMetaString( "BAR" ), "", false, "", false ) );
-    assertEquals( "TRUNCATE TABLE FOO", odbcMeta.getTruncateTableStatement( "FOO" ) );
-    assertEquals( "SELECT * FROM FOO", odbcMeta.getSqlQueryFields( "FOO" ) );
-    assertEquals( "SELECT 1 FROM FOO", odbcMeta.getSqlTableExists( "FOO" ) );
-    assertEquals( "SELECT FOO FROM BAR", odbcMeta.getSqlColumnExists( "FOO", "BAR" ) );
     assertEquals( "insert into \"FOO\".\"BAR\"(KEYFIELD, VERSIONFIELD) values (0, 1)",
       nativeMeta.getSqlInsertAutoIncUnknownDimensionRow( "\"FOO\".\"BAR\"", "KEYFIELD", "VERSIONFIELD" ) );
     assertEquals( "select count(*) FROM FOO", nativeMeta.getSelectCountStatement( "FOO" ) );
@@ -225,9 +213,9 @@ public class BaseDatabaseMetaTest {
     assertEquals( "FOO", nativeMeta.getDataTablespace() );
     nativeMeta.setIndexTablespace( "FOO" );
     assertEquals( "FOO", nativeMeta.getIndexTablespace() );
-    Properties attrs = nativeMeta.getAttributes();
-    Properties testAttrs = new Properties();
-    testAttrs.setProperty( "FOO", "BAR" );
+    Map<String,String> attrs = nativeMeta.getAttributes();
+    Map<String,String> testAttrs = new HashMap<>();
+    testAttrs.put( "FOO", "BAR" );
     nativeMeta.setAttributes( testAttrs );
     assertEquals( testAttrs, nativeMeta.getAttributes() );
     nativeMeta.setAttributes( attrs ); // reset attributes back to what they were...
@@ -279,31 +267,23 @@ public class BaseDatabaseMetaTest {
     ResultSet rs = Mockito.mock( ResultSet.class );
     DatabaseMetaData dmd = Mockito.mock( DatabaseMetaData.class );
     DatabaseMeta dm = Mockito.mock( DatabaseMeta.class );
-    Mockito.when( dm.getQuotedSchemaTableCombination( "", "FOO" ) ).thenReturn( "FOO" );
-    Mockito.when( rs.next() ).thenAnswer( new Answer<Boolean>() {
-      public Boolean answer( InvocationOnMock invocation ) throws Throwable {
-        rowCnt++;
-        return new Boolean( rowCnt < 3 );
-      }
+    Mockito.when( dm.getQuotedSchemaTableCombination( db, "", "FOO" ) ).thenReturn( "FOO" );
+    Mockito.when( rs.next() ).thenAnswer( (Answer<Boolean>) invocation -> {
+      rowCnt++;
+      return new Boolean( rowCnt < 3 );
     } );
     Mockito.when( db.getDatabaseMetaData() ).thenReturn( dmd );
     Mockito.when( dmd.getIndexInfo( null, null, "FOO", false, true ) ).thenReturn( rs );
-    Mockito.when( rs.getString( "COLUMN_NAME" ) ).thenAnswer( new Answer<String>() {
-      @Override
-      public String answer( InvocationOnMock invocation ) throws Throwable {
-        if ( rowCnt == 1 ) {
-          return "ROW1COL2";
-        } else if ( rowCnt == 2 ) {
-          return "ROW2COL2";
-        } else {
-          return null;
-        }
+    Mockito.when( rs.getString( "COLUMN_NAME" ) ).thenAnswer( (Answer<String>) invocation -> {
+      if ( rowCnt == 1 ) {
+        return "ROW1COL2";
+      } else if ( rowCnt == 2 ) {
+        return "ROW2COL2";
+      } else {
+        return null;
       }
     } );
     Mockito.when( db.getDatabaseMeta() ).thenReturn( dm );
-    assertTrue( odbcMeta.checkIndexExists( db, "", "FOO", new String[] { "ROW1COL2", "ROW2COL2" } ) );
-    assertFalse( odbcMeta.checkIndexExists( db, "", "FOO", new String[] { "ROW2COL2", "NOTTHERE" } ) );
-    assertFalse( odbcMeta.checkIndexExists( db, "", "FOO", new String[] { "NOTTHERE", "ROW1COL2" } ) );
 
   }
 

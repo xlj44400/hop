@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.evalfilesmetrics;
 
@@ -26,8 +21,8 @@ import org.apache.commons.vfs2.AllFileSelector;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSelectInfo;
 import org.apache.commons.vfs2.FileType;
-import org.apache.hop.core.ICheckResult;
 import org.apache.hop.core.Const;
+import org.apache.hop.core.ICheckResult;
 import org.apache.hop.core.Result;
 import org.apache.hop.core.ResultFile;
 import org.apache.hop.core.RowMetaAndData;
@@ -39,15 +34,14 @@ import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.vfs.HopVfs;
 import org.apache.hop.core.xml.XmlHandler;
 import org.apache.hop.i18n.BaseMessages;
-import org.apache.hop.workflow.Workflow;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.workflow.WorkflowMeta;
 import org.apache.hop.workflow.action.ActionBase;
 import org.apache.hop.workflow.action.IAction;
 import org.apache.hop.workflow.action.validator.AbstractFileValidator;
-import org.apache.hop.workflow.action.validator.AndValidator;
 import org.apache.hop.workflow.action.validator.ActionValidatorUtils;
+import org.apache.hop.workflow.action.validator.AndValidator;
 import org.apache.hop.workflow.action.validator.ValidatorContext;
-import org.apache.hop.metastore.api.IMetaStore;
 import org.apache.hop.workflow.engine.IWorkflowEngine;
 import org.w3c.dom.Node;
 
@@ -67,14 +61,14 @@ import java.util.regex.Pattern;
 
 @Action(
   id = "EVAL_FILES_METRICS",
-  i18nPackageName = "org.apache.hop.workflow.actions.evalfilesmetrics",
-  name = "ActionEvalFilesMetrics.Name",
-  description = "ActionEvalFilesMetrics.Description",
+  name = "i18n::ActionEvalFilesMetrics.Name",
+  description = "i18n::ActionEvalFilesMetrics.Description",
   image = "EvalFilesMetrics.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Conditions"
+  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Conditions",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/evalfilesmetrics.html"
 )
 public class ActionEvalFilesMetrics extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionEvalFilesMetrics.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionEvalFilesMetrics.class; // For Translator
 
   
   public static final int SUCCESS_NUMBER_CONDITION_EQUAL = 0;
@@ -149,7 +143,7 @@ public class ActionEvalFilesMetrics extends ActionBase implements Cloneable, IAc
 
   private String resultFilenamesWildcard;
 
-  public boolean arg_from_previous;
+  public boolean argFromPrevious;
 
   private String[] sourceFileFolder;
   private String[] sourceWildcard;
@@ -262,7 +256,7 @@ public class ActionEvalFilesMetrics extends ActionBase implements Cloneable, IAc
   }
 
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
 
@@ -317,7 +311,7 @@ public class ActionEvalFilesMetrics extends ActionBase implements Cloneable, IAc
     }
 
     // Get source and destination files, also wildcard
-    String[] vsourcefilefolder = sourceFileFolder;
+    String[] vSourceFileFolder = sourceFileFolder;
     String[] vwildcard = sourceWildcard;
     String[] vincludeSubFolders = sourceIncludeSubfolders;
 
@@ -325,9 +319,9 @@ public class ActionEvalFilesMetrics extends ActionBase implements Cloneable, IAc
       case SOURCE_FILES_PREVIOUS_RESULT:
         // Filenames are retrieved from previous result rows
 
-        String realResultFieldFile = environmentSubstitute( getResultFieldFile() );
-        String realResultFieldWildcard = environmentSubstitute( getResultFieldWildcard() );
-        String realResultFieldIncluseSubfolders = environmentSubstitute( getResultFieldIncludeSubfolders() );
+        String realResultFieldFile = resolve( getResultFieldFile() );
+        String realResultFieldWildcard = resolve( getResultFieldWildcard() );
+        String realResultFieldIncluseSubfolders = resolve( getResultFieldIncludeSubfolders() );
 
         int indexOfResultFieldFile = -1;
         if ( Utils.isEmpty( realResultFieldFile ) ) {
@@ -376,23 +370,23 @@ public class ActionEvalFilesMetrics extends ActionBase implements Cloneable, IAc
             resultRow = rows.get( iteration );
 
             // Get source and destination file names, also wildcard
-            String vsourcefilefolder_previous = resultRow.getString( indexOfResultFieldFile, null );
-            String vwildcard_previous = null;
+            String vSourceFileFolderPrevious = resultRow.getString( indexOfResultFieldFile, null );
+            String vWildcardPrevious = null;
             if ( indexOfResultFieldWildcard > -1 ) {
-              vwildcard_previous = resultRow.getString( indexOfResultFieldWildcard, null );
+              vWildcardPrevious = resultRow.getString( indexOfResultFieldWildcard, null );
             }
-            String vincludeSubFolders_previous = NO;
+            String vincludeSubFoldersPrevious = NO;
             if ( indexOfResultFieldIncludeSubfolders > -1 ) {
-              vincludeSubFolders_previous = resultRow.getString( indexOfResultFieldIncludeSubfolders, NO );
+              vincludeSubFoldersPrevious = resultRow.getString( indexOfResultFieldIncludeSubfolders, NO );
             }
 
             if ( isDetailed() ) {
               logDetailed( BaseMessages.getString(
-                PKG, "JobEvalFilesMetrics.Log.ProcessingRow", vsourcefilefolder_previous, vwildcard_previous ) );
+                PKG, "JobEvalFilesMetrics.Log.ProcessingRow", vSourceFileFolderPrevious, vWildcardPrevious ) );
             }
 
             ProcessFileFolder(
-              vsourcefilefolder_previous, vwildcard_previous, vincludeSubFolders_previous, parentWorkflow, result );
+              vSourceFileFolderPrevious, vWildcardPrevious, vincludeSubFoldersPrevious, parentWorkflow, result );
           }
         }
 
@@ -408,7 +402,7 @@ public class ActionEvalFilesMetrics extends ActionBase implements Cloneable, IAc
         if ( resultFiles != null && resultFiles.size() > 0 ) {
           // Let's check wildcard
           Pattern pattern = null;
-          String realPattern = environmentSubstitute( getResultFilenamesWildcard() );
+          String realPattern = resolve( getResultFilenamesWildcard() );
           if ( !Utils.isEmpty( realPattern ) ) {
             pattern = Pattern.compile( realPattern );
           }
@@ -445,15 +439,15 @@ public class ActionEvalFilesMetrics extends ActionBase implements Cloneable, IAc
       default:
         // static files/folders
         // from grid entered by user
-        if ( vsourcefilefolder != null && vsourcefilefolder.length > 0 ) {
-          for ( int i = 0; i < vsourcefilefolder.length && !parentWorkflow.isStopped(); i++ ) {
+        if ( vSourceFileFolder != null && vSourceFileFolder.length > 0 ) {
+          for ( int i = 0; i < vSourceFileFolder.length && !parentWorkflow.isStopped(); i++ ) {
 
             if ( isDetailed() ) {
               logDetailed( BaseMessages.getString(
-                PKG, "JobEvalFilesMetrics.Log.ProcessingRow", vsourcefilefolder[ i ], vwildcard[ i ] ) );
+                PKG, "JobEvalFilesMetrics.Log.ProcessingRow", vSourceFileFolder[ i ], vwildcard[ i ] ) );
             }
 
-            ProcessFileFolder( vsourcefilefolder[ i ], vwildcard[ i ], vincludeSubFolders[ i ], parentWorkflow, result );
+            ProcessFileFolder( vSourceFileFolder[ i ], vwildcard[ i ], vincludeSubFolders[ i ], parentWorkflow, result );
           }
         } else {
           logError( BaseMessages.getString( PKG, "JobEvalFilesMetrics.Error.FilesGridEmpty" ) );
@@ -571,10 +565,10 @@ public class ActionEvalFilesMetrics extends ActionBase implements Cloneable, IAc
     nrErrors = 0;
 
     if ( successConditionType == SUCCESS_NUMBER_CONDITION_BETWEEN ) {
-      minValue = new BigDecimal( environmentSubstitute( getMinValue() ) );
-      maxValue = new BigDecimal( environmentSubstitute( getMaxValue() ) );
+      minValue = new BigDecimal( resolve( getMinValue() ) );
+      maxValue = new BigDecimal( resolve( getMaxValue() ) );
     } else {
-      compareValue = new BigDecimal( environmentSubstitute( getCompareValue() ) );
+      compareValue = new BigDecimal( resolve( getCompareValue() ) );
     }
 
     if ( evaluationType == EVALUATE_TYPE_SIZE ) {
@@ -600,7 +594,7 @@ public class ActionEvalFilesMetrics extends ActionBase implements Cloneable, IAc
         compareValue = compareValue.multiply( BigDecimal.valueOf( multyply ) );
       }
     }
-    arg_from_previous = ( getSourceFiles() == SOURCE_FILES_PREVIOUS_RESULT );
+    argFromPrevious = ( getSourceFiles() == SOURCE_FILES_PREVIOUS_RESULT );
   }
 
   private void incrementErrors() {
@@ -674,18 +668,18 @@ public class ActionEvalFilesMetrics extends ActionBase implements Cloneable, IAc
     FileObject CurrentFile = null;
 
     // Get real source file and wildcard
-    String realSourceFilefoldername = environmentSubstitute( sourcefilefoldername );
+    String realSourceFilefoldername = resolve( sourcefilefoldername );
     if ( Utils.isEmpty( realSourceFilefoldername ) ) {
       // Filename is empty!
       logError( BaseMessages.getString( PKG, "JobEvalFilesMetrics.log.FileFolderEmpty" ) );
       incrementErrors();
       return;
     }
-    String realWildcard = environmentSubstitute( wildcard );
-    final boolean include_subfolders = YES.equalsIgnoreCase( includeSubfolders );
+    String realWildcard = resolve( wildcard );
+    final boolean includeSubFolders = YES.equalsIgnoreCase( includeSubfolders );
 
     try {
-      sourcefilefolder = HopVfs.getFileObject( realSourceFilefoldername, this );
+      sourcefilefolder = HopVfs.getFileObject( realSourceFilefoldername );
 
       if ( sourcefilefolder.exists() ) {
         // File exists
@@ -704,7 +698,7 @@ public class ActionEvalFilesMetrics extends ActionBase implements Cloneable, IAc
           // we will fetch and extract files
           FileObject[] fileObjects = sourcefilefolder.findFiles( new AllFileSelector() {
             public boolean traverseDescendents( FileSelectInfo info ) {
-              return info.getDepth() == 0 || include_subfolders;
+              return info.getDepth() == 0 || includeSubFolders;
             }
 
             public boolean includeFile( FileSelectInfo info ) {
@@ -738,7 +732,7 @@ public class ActionEvalFilesMetrics extends ActionBase implements Cloneable, IAc
 
               if ( !CurrentFile.getParent().toString().equals( sourcefilefolder.toString() ) ) {
                 // Not in the Base Folder..Only if include sub folders
-                if ( include_subfolders ) {
+                if ( includeSubFolders ) {
                   if ( GetFileWildcard( CurrentFile.getName().getBaseName(), realWildcard ) ) {
                     getFileSize( CurrentFile, result, parentWorkflow );
                   }
@@ -1052,7 +1046,7 @@ public class ActionEvalFilesMetrics extends ActionBase implements Cloneable, IAc
   }
 
   public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     boolean res = ActionValidatorUtils.andValidator().validate( this, "arguments", remarks,
       AndValidator.putValidators( ActionValidatorUtils.notNullValidator() ) );
 
@@ -1070,7 +1064,7 @@ public class ActionEvalFilesMetrics extends ActionBase implements Cloneable, IAc
     }
   }
 
-  public boolean evaluates() {
+  @Override public boolean isEvaluation() {
     return true;
   }
 

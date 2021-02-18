@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.http;
 
@@ -85,7 +80,7 @@ public class ActionHttp_PDI208_Test {
     rowMetaDefault.addValueMeta( new ValueMetaString( "URL" ) );
     rowMetaDefault.addValueMeta( new ValueMetaString( "UPLOAD" ) );
     rowMetaDefault.addValueMeta( new ValueMetaString( "DESTINATION" ) );
-    List<RowMetaAndData> rows = new ArrayList<RowMetaAndData>();
+    List<RowMetaAndData> rows = new ArrayList<>();
     rows.add( new RowMetaAndData( rowMetaDefault, r ) );
     Result previousResult = new Result();
     previousResult.setRows( rows );
@@ -111,7 +106,7 @@ public class ActionHttp_PDI208_Test {
     rowMetaDefault.addValueMeta( new ValueMetaString( "MyURL" ) );
     rowMetaDefault.addValueMeta( new ValueMetaString( "MyUpload" ) );
     rowMetaDefault.addValueMeta( new ValueMetaString( "MyDestination" ) );
-    List<RowMetaAndData> rows = new ArrayList<RowMetaAndData>();
+    List<RowMetaAndData> rows = new ArrayList<>();
     rows.add( new RowMetaAndData( rowMetaDefault, r ) );
     Result previousResult = new Result();
     previousResult.setRows( rows );
@@ -135,23 +130,20 @@ public class ActionHttp_PDI208_Test {
 
   private static void startHttpServer() throws IOException {
     httpServer = HttpServer.create( new InetSocketAddress( ActionHttp_PDI208_Test.HTTP_HOST, ActionHttp_PDI208_Test.HTTP_PORT ), 10 );
-    httpServer.createContext( "/uploadFile", new HttpHandler() {
-      @Override
-      public void handle( HttpExchange httpExchange ) throws IOException {
-        Headers h = httpExchange.getResponseHeaders();
-        h.add( "Content-Type", "application/octet-stream" );
-        httpExchange.sendResponseHeaders( 200, 0 );
-        InputStream is = httpExchange.getRequestBody();
-        OutputStream os = httpExchange.getResponseBody();
-        int inputChar = -1;
-        while ( ( inputChar = is.read() ) >= 0 ) {
-          os.write( inputChar );
-        }
-        is.close();
-        os.flush();
-        os.close();
-        httpExchange.close();
+    httpServer.createContext( "/uploadFile", httpExchange -> {
+      Headers h = httpExchange.getResponseHeaders();
+      h.add( "Content-Type", "application/octet-stream" );
+      httpExchange.sendResponseHeaders( 200, 0 );
+      InputStream is = httpExchange.getRequestBody();
+      OutputStream os = httpExchange.getResponseBody();
+      int inputChar = -1;
+      while ( ( inputChar = is.read() ) >= 0 ) {
+        os.write( inputChar );
       }
+      is.close();
+      os.flush();
+      os.close();
+      httpExchange.close();
     } );
     httpServer.start();
   }

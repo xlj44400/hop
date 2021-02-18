@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.jsonoutput;
 
@@ -152,7 +147,7 @@ public class JsonOutputTest extends TestCase {
    * @return list of metadata/data couples of how the result should look like.
    */
   public List<RowMetaAndData> createResultData1() {
-    List<RowMetaAndData> list = new ArrayList<RowMetaAndData>();
+    List<RowMetaAndData> list = new ArrayList<>();
 
     IRowMeta rowMetaInterface = createResultRowMeta();
 
@@ -202,7 +197,7 @@ public class JsonOutputTest extends TestCase {
    * @return
    */
   public List<RowMetaAndData> createData() {
-    List<RowMetaAndData> list = new ArrayList<RowMetaAndData>();
+    List<RowMetaAndData> list = new ArrayList<>();
     IRowMeta rowMetaInterface = createIRowMeta();
     Object[] r1 = new Object[] {};
     list.add( new RowMetaAndData( rowMetaInterface, r1 ) );
@@ -294,8 +289,8 @@ public class JsonOutputTest extends TestCase {
     pipelineMeta.addTransform( rowGeneratorTransform );
 
     // create a PipelineHopMeta for injector and add it to the pipelineMeta
-    PipelineHopMeta hop_injectory_rowGenerator = new PipelineHopMeta( injectorTransform, rowGeneratorTransform );
-    pipelineMeta.addPipelineHop( hop_injectory_rowGenerator );
+    PipelineHopMeta hop_injectoryRowGenerator = new PipelineHopMeta( injectorTransform, rowGeneratorTransform );
+    pipelineMeta.addPipelineHop( hop_injectoryRowGenerator );
 
     // create the json output transform
     // but first lets get a filename
@@ -305,8 +300,8 @@ public class JsonOutputTest extends TestCase {
     pipelineMeta.addTransform( jsonOutputTransform );
 
     // create a PipelineHopMeta for jsonOutputTransform and add it to the pipelineMeta
-    PipelineHopMeta hop_RowGenerator_outputTextFile = new PipelineHopMeta( rowGeneratorTransform, jsonOutputTransform );
-    pipelineMeta.addPipelineHop( hop_RowGenerator_outputTextFile );
+    PipelineHopMeta hop_RowGeneratorOutputTextFile = new PipelineHopMeta( rowGeneratorTransform, jsonOutputTransform );
+    pipelineMeta.addPipelineHop( hop_RowGeneratorOutputTextFile );
 
     // Create a dummy transform and add it to the tranMeta
     String dummyTransformName = "dummy transform";
@@ -314,8 +309,8 @@ public class JsonOutputTest extends TestCase {
     pipelineMeta.addTransform( dummyTransform );
 
     // create a PipelineHopMeta for the
-    PipelineHopMeta hop_outputJson_dummyTransform = new PipelineHopMeta( jsonOutputTransform, dummyTransform );
-    pipelineMeta.addPipelineHop( hop_outputJson_dummyTransform );
+    PipelineHopMeta hopOutputJson_dummyTransform = new PipelineHopMeta( jsonOutputTransform, dummyTransform );
+    pipelineMeta.addPipelineHop( hopOutputJson_dummyTransform );
 
     // Now execute the transformation...
     Pipeline pipeline = new LocalPipelineEngine( pipelineMeta );
@@ -352,9 +347,9 @@ public class JsonOutputTest extends TestCase {
   /* PDI-7243 */
   public void testNpeIsNotThrownOnNullInput() throws Exception {
     TransformMockHelper<JsonOutputMeta, JsonOutputData> mockHelper =
-        new TransformMockHelper<JsonOutputMeta, JsonOutputData>( "jsonOutput", JsonOutputMeta.class, JsonOutputData.class );
+      new TransformMockHelper<>( "jsonOutput", JsonOutputMeta.class, JsonOutputData.class );
     when( mockHelper.logChannelFactory.create( any(), any( ILoggingObject.class ) ) ).thenReturn(
-        mockHelper.logChannelInterface );
+        mockHelper.iLogChannel );
     when( mockHelper.pipeline.isRunning() ).thenReturn( true );
     when( mockHelper.transformMeta.getTransform() ).thenReturn( new JsonOutputMeta() );
 
@@ -369,9 +364,9 @@ public class JsonOutputTest extends TestCase {
 
   public void testEmptyDoesntWriteToFile() throws Exception {
     TransformMockHelper<JsonOutputMeta, JsonOutputData> mockHelper =
-            new TransformMockHelper<JsonOutputMeta, JsonOutputData>( "jsonOutput", JsonOutputMeta.class, JsonOutputData.class );
+      new TransformMockHelper<>( "jsonOutput", JsonOutputMeta.class, JsonOutputData.class );
     when( mockHelper.logChannelFactory.create( any(), any( ILoggingObject.class ) ) ).thenReturn(
-            mockHelper.logChannelInterface );
+            mockHelper.iLogChannel );
     when( mockHelper.pipeline.isRunning() ).thenReturn( true );
     when( mockHelper.transformMeta.getTransform() ).thenReturn( new JsonOutputMeta() );
 
@@ -395,7 +390,7 @@ public class JsonOutputTest extends TestCase {
     TransformMockHelper<JsonOutputMeta, JsonOutputData> mockHelper =
       new TransformMockHelper<>( "jsonOutput", JsonOutputMeta.class, JsonOutputData.class );
     when( mockHelper.logChannelFactory.create( any(), any( ILoggingObject.class ) ) ).thenReturn(
-            mockHelper.logChannelInterface );
+            mockHelper.iLogChannel );
     when( mockHelper.pipeline.isRunning() ).thenReturn( true );
     when( mockHelper.transformMeta.getTransform() ).thenReturn( new JsonOutputMeta() );
 

@@ -1,100 +1,66 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.analyticquery;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
 import org.apache.hop.pipeline.transform.ITransformDialog;
 import org.apache.hop.pipeline.transform.TransformMeta;
 import org.apache.hop.ui.core.dialog.ErrorDialog;
+import org.apache.hop.ui.core.dialog.MessageDialogWithToggle;
 import org.apache.hop.ui.core.gui.GuiResource;
 import org.apache.hop.ui.core.widget.ColumnInfo;
 import org.apache.hop.ui.core.widget.TableView;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
-import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.dialogs.MessageDialogWithToggle;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-@PluginDialog(
-        id = "AnalyticQuery",
-        image = "analyticquery.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = "http://www.project-hop.org/manual/latest/plugins/transforms/analyticquery.html"
-)
 public class AnalyticQueryDialog extends BaseTransformDialog implements ITransformDialog {
-  private static final Class<?> PKG = AnalyticQueryDialog.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = AnalyticQueryDialog.class; // For Translator
 
   public static final String STRING_SORT_WARNING_PARAMETER = "AnalyticQuerySortWarning";
-  private Label wlGroup;
   private TableView wGroup;
-  private FormData fdlGroup, fdGroup;
 
-  private Label wlAgg;
   private TableView wAgg;
-  private FormData fdlAgg, fdAgg;
-  private Button wGet, wGetAgg;
-  private FormData fdGet, fdGetAgg;
-  private Listener lsGet, lsGetAgg;
 
-  private AnalyticQueryMeta input;
+  private final AnalyticQueryMeta input;
   private ColumnInfo[] ciKey;
   private ColumnInfo[] ciReturn;
 
-  private Map<String, Integer> inputFields;
+  private final Map<String, Integer> inputFields;
 
-  public AnalyticQueryDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public AnalyticQueryDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (AnalyticQueryMeta) in;
-    inputFields = new HashMap<String, Integer>();
+    inputFields = new HashMap<>();
   }
 
   @Override
@@ -106,11 +72,7 @@ public class AnalyticQueryDialog extends BaseTransformDialog implements ITransfo
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
     backupChanged = input.hasChanged();
     // backupAllRows = input.passAllRows();
 
@@ -143,13 +105,13 @@ public class AnalyticQueryDialog extends BaseTransformDialog implements ITransfo
     fdTransformName.right = new FormAttachment( 100, 0 );
     wTransformName.setLayoutData( fdTransformName );
 
-    wlGroup = new Label( shell, SWT.NONE );
+    Label wlGroup = new Label(shell, SWT.NONE);
     wlGroup.setText( BaseMessages.getString( PKG, "AnalyticQueryDialog.Group.Label" ) );
-    props.setLook( wlGroup );
-    fdlGroup = new FormData();
+    props.setLook(wlGroup);
+    FormData fdlGroup = new FormData();
     fdlGroup.left = new FormAttachment( 0, 0 );
     fdlGroup.top = new FormAttachment( wlTransformName, margin );
-    wlGroup.setLayoutData( fdlGroup );
+    wlGroup.setLayoutData(fdlGroup);
 
     int nrKeyCols = 1;
     int nrKeyRows = ( input.getGroupField() != null ? input.getGroupField().length : 1 );
@@ -162,31 +124,31 @@ public class AnalyticQueryDialog extends BaseTransformDialog implements ITransfo
 
     wGroup =
       new TableView(
-        pipelineMeta, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL, ciKey,
+        variables, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL, ciKey,
         nrKeyRows, lsMod, props );
 
-    wGet = new Button( shell, SWT.PUSH );
+    Button wGet = new Button(shell, SWT.PUSH);
     wGet.setText( BaseMessages.getString( PKG, "AnalyticQueryDialog.GetFields.Button" ) );
-    fdGet = new FormData();
-    fdGet.top = new FormAttachment( wlGroup, margin );
+    FormData fdGet = new FormData();
+    fdGet.top = new FormAttachment(wlGroup, margin );
     fdGet.right = new FormAttachment( 100, 0 );
-    wGet.setLayoutData( fdGet );
+    wGet.setLayoutData(fdGet);
 
-    fdGroup = new FormData();
+    FormData fdGroup = new FormData();
     fdGroup.left = new FormAttachment( 0, 0 );
-    fdGroup.top = new FormAttachment( wlGroup, margin );
-    fdGroup.right = new FormAttachment( wGet, -margin );
+    fdGroup.top = new FormAttachment(wlGroup, margin );
+    fdGroup.right = new FormAttachment(wGet, -margin );
     fdGroup.bottom = new FormAttachment( 45, 0 );
-    wGroup.setLayoutData( fdGroup );
+    wGroup.setLayoutData(fdGroup);
 
     // THE Aggregate fields
-    wlAgg = new Label( shell, SWT.NONE );
+    Label wlAgg = new Label(shell, SWT.NONE);
     wlAgg.setText( BaseMessages.getString( PKG, "AnalyticQueryDialog.Aggregates.Label" ) );
-    props.setLook( wlAgg );
-    fdlAgg = new FormData();
+    props.setLook(wlAgg);
+    FormData fdlAgg = new FormData();
     fdlAgg.left = new FormAttachment( 0, 0 );
     fdlAgg.top = new FormAttachment( wGroup, margin );
-    wlAgg.setLayoutData( fdlAgg );
+    wlAgg.setLayoutData(fdlAgg);
 
     int UpInsCols = 4;
     int UpInsRows = ( input.getAggregateField() != null ? input.getAggregateField().length : 1 );
@@ -212,34 +174,32 @@ public class AnalyticQueryDialog extends BaseTransformDialog implements ITransfo
 
     wAgg =
       new TableView(
-        pipelineMeta, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL, ciReturn,
+        variables, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL, ciReturn,
         UpInsRows, lsMod, props );
 
-    wGetAgg = new Button( shell, SWT.PUSH );
+    Button wGetAgg = new Button(shell, SWT.PUSH);
     wGetAgg.setText( BaseMessages.getString( PKG, "AnalyticQueryDialog.GetLookupFields.Button" ) );
-    fdGetAgg = new FormData();
-    fdGetAgg.top = new FormAttachment( wlAgg, margin );
+    FormData fdGetAgg = new FormData();
+    fdGetAgg.top = new FormAttachment(wlAgg, margin );
     fdGetAgg.right = new FormAttachment( 100, 0 );
-    wGetAgg.setLayoutData( fdGetAgg );
+    wGetAgg.setLayoutData(fdGetAgg);
 
     //
     // Search the fields in the background
 
-    final Runnable runnable = new Runnable() {
-      public void run() {
-        TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
-        if ( transformMeta != null ) {
-          try {
-            IRowMeta row = pipelineMeta.getPrevTransformFields( transformMeta );
+    final Runnable runnable = () -> {
+      TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
+      if ( transformMeta != null ) {
+        try {
+          IRowMeta row = pipelineMeta.getPrevTransformFields( variables, transformMeta );
 
-            // Remember these fields...
-            for ( int i = 0; i < row.size(); i++ ) {
-              inputFields.put( row.getValueMeta( i ).getName(), Integer.valueOf( i ) );
-            }
-            setComboBoxes();
-          } catch ( HopException e ) {
-            logError( BaseMessages.getString( PKG, "System.Dialog.GetFieldsFailed.Message" ) );
+          // Remember these fields...
+          for ( int i = 0; i < row.size(); i++ ) {
+            inputFields.put( row.getValueMeta( i ).getName(), i);
           }
+          setComboBoxes();
+        } catch ( HopException e ) {
+          logError( BaseMessages.getString( PKG, "System.Dialog.GetFieldsFailed.Message" ) );
         }
       }
     };
@@ -253,38 +213,22 @@ public class AnalyticQueryDialog extends BaseTransformDialog implements ITransfo
 
     setButtonPositions( new Button[] { wOk, wCancel }, margin, null );
 
-    fdAgg = new FormData();
+    FormData fdAgg = new FormData();
     fdAgg.left = new FormAttachment( 0, 0 );
-    fdAgg.top = new FormAttachment( wlAgg, margin );
-    fdAgg.right = new FormAttachment( wGetAgg, -margin );
+    fdAgg.top = new FormAttachment(wlAgg, margin );
+    fdAgg.right = new FormAttachment(wGetAgg, -margin );
     fdAgg.bottom = new FormAttachment( wOk, -margin );
-    wAgg.setLayoutData( fdAgg );
+    wAgg.setLayoutData(fdAgg);
 
     // Add listeners
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
-    lsGet = new Listener() {
-      public void handleEvent( Event e ) {
-        get();
-      }
-    };
-    lsGetAgg = new Listener() {
-      public void handleEvent( Event e ) {
-        getAgg();
-      }
-    };
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
+    lsOk = e -> ok();
+    Listener lsGet = e -> get();
+    Listener lsGetAgg = e -> getAgg();
+    lsCancel = e -> cancel();
 
     wOk.addListener( SWT.Selection, lsOk );
-    wGet.addListener( SWT.Selection, lsGet );
-    wGetAgg.addListener( SWT.Selection, lsGetAgg );
+    wGet.addListener( SWT.Selection, lsGet);
+    wGetAgg.addListener( SWT.Selection, lsGetAgg);
     wCancel.addListener( SWT.Selection, lsCancel );
 
     lsDef = new SelectionAdapter() {
@@ -320,7 +264,7 @@ public class AnalyticQueryDialog extends BaseTransformDialog implements ITransfo
   protected void setComboBoxes() {
     // Something was changed in the row.
     //
-    final Map<String, Integer> fields = new HashMap<String, Integer>();
+    final Map<String, Integer> fields = new HashMap<>();
 
     // Add the currentMeta fields...
     fields.putAll( inputFields );
@@ -415,13 +359,12 @@ public class AnalyticQueryDialog extends BaseTransformDialog implements ITransfo
     if ( "Y".equalsIgnoreCase( props.getCustomParameter( STRING_SORT_WARNING_PARAMETER, "Y" ) ) ) {
       MessageDialogWithToggle md =
         new MessageDialogWithToggle( shell,
-          BaseMessages.getString( PKG, "AnalyticQueryDialog.GroupByWarningDialog.DialogTitle" ), null,
+          BaseMessages.getString( PKG, "AnalyticQueryDialog.GroupByWarningDialog.DialogTitle" ),
           BaseMessages.getString( PKG, "AnalyticQueryDialog.GroupByWarningDialog.DialogMessage", Const.CR ) + Const.CR,
-          MessageDialog.WARNING,
+          SWT.ICON_WARNING,
           new String[] { BaseMessages.getString( PKG, "AnalyticQueryDialog.GroupByWarningDialog.Option1" ) },
-          0, BaseMessages.getString( PKG, "AnalyticQueryDialog.GroupByWarningDialog.Option2" ),
+          BaseMessages.getString( PKG, "AnalyticQueryDialog.GroupByWarningDialog.Option2" ),
           "N".equalsIgnoreCase( props.getCustomParameter( STRING_SORT_WARNING_PARAMETER, "Y" ) ) );
-      MessageDialogWithToggle.setDefaultImage( GuiResource.getInstance().getImageHopUi() );
       md.open();
       props.setCustomParameter( STRING_SORT_WARNING_PARAMETER, md.getToggleState() ? "N" : "Y" );
     }
@@ -431,7 +374,7 @@ public class AnalyticQueryDialog extends BaseTransformDialog implements ITransfo
 
   private void get() {
     try {
-      IRowMeta r = pipelineMeta.getPrevTransformFields( transformName );
+      IRowMeta r = pipelineMeta.getPrevTransformFields( variables, transformName );
       if ( r != null && !r.isEmpty() ) {
         BaseTransformDialog.getFieldsFromPrevious( r, wGroup, 1, new int[] { 1 }, new int[] {}, -1, -1, null );
       }
@@ -444,7 +387,7 @@ public class AnalyticQueryDialog extends BaseTransformDialog implements ITransfo
 
   private void getAgg() {
     try {
-      IRowMeta r = pipelineMeta.getPrevTransformFields( transformName );
+      IRowMeta r = pipelineMeta.getPrevTransformFields( variables, transformName );
       if ( r != null && !r.isEmpty() ) {
         BaseTransformDialog.getFieldsFromPrevious( r, wAgg, 1, new int[] { 1, 2 }, new int[] {}, -1, -1, null );
       }

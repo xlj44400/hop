@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.delegates;
 
@@ -62,7 +57,7 @@ public class HopGuiAuditDelegate {
       IHopFileTypeHandler activeFileTypeHandler = null;
       if ( tabItems != null ) {
         // This perspective has the ability to handle multiple files.
-        // Lets's load the files in the previously saved order...
+        // Let's load the files in the previously saved order...
         //
         AuditList auditList;
         try {
@@ -84,6 +79,11 @@ public class HopGuiAuditDelegate {
           try {
             if (StringUtils.isNotEmpty( filename )) {
               IHopFileTypeHandler fileTypeHandler = hopGui.fileDelegate.fileOpen( filename );
+
+              // Test-sleep to see what's going on...
+              //
+              // System.out.println("Loaded file: "+filename);
+              // Thread.sleep(5000);
 
               // Restore zoom, scroll and so on
               AuditState auditState = auditStateMap.get( filename );
@@ -138,7 +138,7 @@ public class HopGuiAuditDelegate {
             // Also save the state : active, zoom, ...
             //
             Map<String, Object> stateProperties = typeHandler.getStateProperties();
-            boolean active = activeFileTypeHandler!=null && activeFileTypeHandler.getFilename().equals( filename );
+            boolean active = activeFileTypeHandler!=null && activeFileTypeHandler.getFilename()!=null && activeFileTypeHandler.getFilename().equals( filename );
             stateProperties.put( STATE_PROPERTY_ACTIVE, active );
 
             auditStateMap.add( new AuditState(filename, stateProperties) );

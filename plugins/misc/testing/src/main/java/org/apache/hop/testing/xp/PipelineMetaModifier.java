@@ -1,6 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.hop.testing.xp;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.hop.core.Const;
 import org.apache.hop.core.database.DatabaseMeta;
 import org.apache.hop.core.exception.HopException;
@@ -9,8 +25,7 @@ import org.apache.hop.core.plugins.PluginRegistry;
 import org.apache.hop.core.plugins.TransformPluginType;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.variables.IVariables;
-import org.apache.hop.metastore.api.IMetaStore;
-import org.apache.hop.metastore.api.exceptions.MetaStoreException;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.pipeline.PipelineHopMeta;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.TransformMeta;
@@ -21,7 +36,6 @@ import org.apache.hop.testing.PipelineUnitTest;
 import org.apache.hop.testing.PipelineUnitTestDatabaseReplacement;
 import org.apache.hop.testing.PipelineUnitTestSetLocation;
 import org.apache.hop.testing.PipelineUnitTestTweak;
-import org.apache.hop.testing.VariableValue;
 import org.apache.hop.testing.util.DataSetConst;
 
 import java.io.ByteArrayInputStream;
@@ -31,18 +45,17 @@ import java.util.List;
 
 public class PipelineMetaModifier {
 
-  private PipelineMeta pipelineMeta;
-  private PipelineUnitTest unitTest;
+  private final IVariables variables;
+  private final PipelineMeta pipelineMeta;
+  private final PipelineUnitTest unitTest;
 
-  public PipelineMetaModifier() {
-  }
-
-  public PipelineMetaModifier( PipelineMeta pipelineMeta, PipelineUnitTest unitTest ) {
+  public PipelineMetaModifier( IVariables variables, PipelineMeta pipelineMeta, PipelineUnitTest unitTest ) {
+    this.variables = variables;
     this.pipelineMeta = pipelineMeta;
     this.unitTest = unitTest;
   }
 
-  public PipelineMeta getTestPipeline( ILogChannel log, IVariables space, IMetaStore metaStore ) throws HopException {
+  public PipelineMeta getTestPipeline( ILogChannel log, IVariables variables, IHopMetadataProvider metadataProvider ) throws HopException {
     // OK, so now replace an input transform with a data set attached with an Injector transform...
     // However, we don't want to have the user see this so we need to copy pipeline.pipelineMeta first...
     //
@@ -54,17 +67,17 @@ public class PipelineMetaModifier {
     } catch ( UnsupportedEncodingException e ) {
       throw new HopException( "Encoding error", e );
     }
-    PipelineMeta copyPipelineMeta = new PipelineMeta( stream, metaStore, true, pipelineMeta );
+    PipelineMeta copyPipelineMeta = new PipelineMeta( stream, metadataProvider, true, variables );
 
     // Pass the metadata references...
     //
-    copyPipelineMeta.setMetaStore( pipelineMeta.getMetaStore() );
+    copyPipelineMeta.setMetadataProvider( pipelineMeta.getMetadataProvider() );
 
     // Replace certain connections with another
     //
     for ( PipelineUnitTestDatabaseReplacement dbReplacement : unitTest.getDatabaseReplacements() ) {
-      String sourceDatabaseName = pipelineMeta.environmentSubstitute( dbReplacement.getOriginalDatabaseName() );
-      String replacementDatabaseName = pipelineMeta.environmentSubstitute( dbReplacement.getReplacementDatabaseName() );
+      String sourceDatabaseName = variables.resolve( dbReplacement.getOriginalDatabaseName() );
+      String replacementDatabaseName = variables.resolve( dbReplacement.getReplacementDatabaseName() );
 
       DatabaseMeta sourceDatabaseMeta = copyPipelineMeta.findDatabase( sourceDatabaseName );
       DatabaseMeta replacementDatabaseMeta = copyPipelineMeta.findDatabase( replacementDatabaseName );
@@ -79,28 +92,6 @@ public class PipelineMetaModifier {
         log.logDetailed( "Replaced database connection '" + sourceDatabaseName + "' with connection '" + replacementDatabaseName + "'" );
       }
       sourceDatabaseMeta.replaceMeta( replacementDatabaseMeta );
-    }
-
-    // Set parameters and variables...
-    //
-    String[] parameters = copyPipelineMeta.listParameters();
-    List<VariableValue> variableValues = unitTest.getVariableValues();
-    for ( VariableValue variableValue : variableValues ) {
-      String key = space.environmentSubstitute( variableValue.getKey() );
-      String value = space.environmentSubstitute( variableValue.getValue() );
-
-      if ( StringUtils.isEmpty( key ) ) {
-        continue;
-      }
-      if ( Const.indexOfString( key, parameters ) < 0 ) {
-        // set the variable in the pipeline metadata...
-        //
-        copyPipelineMeta.setVariable( key, value );
-      } else {
-        // Set the parameter value...
-        //
-        copyPipelineMeta.setParameterValue( key, value );
-      }
     }
 
     // Replace all transforms with an Input Data Set marker with an Injector
@@ -121,13 +112,13 @@ public class PipelineMetaModifier {
       // See if there's a unit test if the transform isn't flagged...
       //
       if ( inputLocation != null ) {
-        handleInputDataSet( log, inputLocation, unitTest, pipelineMeta, transformMeta, metaStore );
+        handleInputDataSet( log, inputLocation, unitTest, pipelineMeta, transformMeta, metadataProvider );
       }
 
       // Capture golden data in a dummy transform instead of the regular one?
       //
       if ( goldenLocation != null ) {
-        handleGoldenDataSet( log, goldenLocation, transformMeta, metaStore );
+        handleGoldenDataSet( log, goldenLocation, transformMeta, metadataProvider );
       }
 
       if ( transformTweak != null && transformTweak.getTweak() != null ) {
@@ -150,7 +141,7 @@ public class PipelineMetaModifier {
   }
 
   private void handleInputDataSet( ILogChannel log, PipelineUnitTestSetLocation inputLocation, PipelineUnitTest unitTest,
-                                   PipelineMeta pipelineMeta, TransformMeta transformMeta, IMetaStore metaStore ) throws HopException {
+                                   PipelineMeta pipelineMeta, TransformMeta transformMeta, IHopMetadataProvider metadataProvider ) throws HopException {
 
     String inputSetName = inputLocation.getDataSetName();
 
@@ -160,9 +151,8 @@ public class PipelineMetaModifier {
 
     DataSet dataSet;
     try {
-      dataSet = DataSet.createFactory( metaStore ).loadElement( inputSetName );
-      dataSet.initializeVariablesFrom( pipelineMeta );
-    } catch ( MetaStoreException e ) {
+      dataSet = metadataProvider.getSerializer( DataSet.class).load( inputSetName );
+    } catch ( HopException e ) {
       throw new HopException( "Unable to load data set '" + inputSetName + "'" );
     }
 
@@ -190,7 +180,7 @@ public class PipelineMetaModifier {
     }
   }
 
-  private void handleGoldenDataSet( ILogChannel log, PipelineUnitTestSetLocation goldenSetName, TransformMeta transformMeta, IMetaStore metaStore ) {
+  private void handleGoldenDataSet( ILogChannel log, PipelineUnitTestSetLocation goldenSetName, TransformMeta transformMeta, IHopMetadataProvider metadataProvider ) {
 
     if ( log.isDetailed() ) {
       log.logDetailed( "Replacing transform '" + transformMeta.getName() + "' with an Dummy for golden dataset '" + goldenSetName + "'" );
@@ -253,12 +243,6 @@ public class PipelineMetaModifier {
     return pipelineMeta;
   }
 
-  /**
-   * @param pipelineMeta The pipelineMeta to set
-   */
-  public void setPipelineMeta( PipelineMeta pipelineMeta ) {
-    this.pipelineMeta = pipelineMeta;
-  }
 
   /**
    * Gets unitTest
@@ -267,12 +251,5 @@ public class PipelineMetaModifier {
    */
   public PipelineUnitTest getUnitTest() {
     return unitTest;
-  }
-
-  /**
-   * @param unitTest The unitTest to set
-   */
-  public void setUnitTest( PipelineUnitTest unitTest ) {
-    this.unitTest = unitTest;
   }
 }

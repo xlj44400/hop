@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.listeners.impl;
 
@@ -32,7 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * Updates directory references referencing {@link Const#INTERNAL_VARIABLE_ENTRY_CURRENT_DIRECTORY}
+ * Updates directory references referencing {@link Const#INTERNAL_VARIABLE_ENTRY_CURRENT_FOLDER}
  */
 public class EntryCurrentDirectoryChangedListener implements ICurrentDirectoryChangedListener {
 
@@ -69,7 +64,7 @@ public class EntryCurrentDirectoryChangedListener implements ICurrentDirectoryCh
   public void directoryChanged( Object origin, String oldCurrentDir, String newCurrentDir ) {
     for ( IPathReference ref : references ) {
       String path = ref.getPath();
-      if ( StringUtils.contains( path, Const.INTERNAL_VARIABLE_ENTRY_CURRENT_DIRECTORY )
+      if ( StringUtils.contains( path, Const.INTERNAL_VARIABLE_ENTRY_CURRENT_FOLDER )
         && !Objects.equal( oldCurrentDir, newCurrentDir ) ) {
         path = reapplyCurrentDir( oldCurrentDir, newCurrentDir, path );
         ref.setPath( path );
@@ -79,14 +74,14 @@ public class EntryCurrentDirectoryChangedListener implements ICurrentDirectoryCh
 
   private String reapplyCurrentDir( String oldCurrentDir, String newCurrentDir, String path ) {
     Variables vars = new Variables();
-    vars.setVariable( Const.INTERNAL_VARIABLE_ENTRY_CURRENT_DIRECTORY, oldCurrentDir );
-    String newPath = vars.environmentSubstitute( path );
+    vars.setVariable( Const.INTERNAL_VARIABLE_ENTRY_CURRENT_FOLDER, oldCurrentDir );
+    String newPath = vars.resolve( path );
     return getPath( newCurrentDir, newPath );
   }
 
   private static String getPath( String parentPath, String path ) {
     if ( !parentPath.equals( "/" ) && path.startsWith( parentPath ) ) {
-      path = path.replace( parentPath, "${" + Const.INTERNAL_VARIABLE_ENTRY_CURRENT_DIRECTORY + "}" );
+      path = path.replace( parentPath, "${" + Const.INTERNAL_VARIABLE_ENTRY_CURRENT_FOLDER + "}" );
     }
     return path;
   }

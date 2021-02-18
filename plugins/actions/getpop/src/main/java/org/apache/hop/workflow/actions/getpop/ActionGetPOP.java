@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.getpop;
 
@@ -44,7 +39,7 @@ import org.apache.hop.workflow.action.validator.AbstractFileValidator;
 import org.apache.hop.workflow.action.validator.ActionValidatorUtils;
 import org.apache.hop.workflow.action.validator.AndValidator;
 import org.apache.hop.workflow.action.validator.ValidatorContext;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.resource.ResourceEntry;
 import org.apache.hop.resource.ResourceEntry.ResourceType;
 import org.apache.hop.resource.ResourceReference;
@@ -67,14 +62,14 @@ import java.util.regex.Pattern;
 
 @Action(
   id = "GET_POP",
-  i18nPackageName = "org.apache.hop.workflow.actions.getpop",
-  name = "ActionGetPOP.Name",
-  description = "ActionGetPOP.Description",
+  name = "i18n::ActionGetPOP.Name",
+  description = "i18n::ActionGetPOP.Description",
   image = "GetPOP.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Mail"
+  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Mail",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/getpop.html"
 )
 public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionGetPOP.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionGetPOP.class; // For Translator
 
   static final int FOLDER_OUTPUT = 0;
   static final int FOLDER_ATTACHMENTS = 1;
@@ -243,7 +238,7 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
   }
 
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
       servername = XmlHandler.getTagValue( entrynode, "servername" );
@@ -333,7 +328,7 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
   }
 
   public String getRealPort() {
-    return environmentSubstitute( getPort() );
+    return resolve( getPort() );
   }
 
   public void setPort( String sslport ) {
@@ -460,8 +455,8 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
     this.receivedDate2 = inputDate;
   }
 
-  public void setMoveToIMAPFolder( String foldername ) {
-    this.moveToIMAPFolder = foldername;
+  public void setMoveToIMAPFolder( String folderName ) {
+    this.moveToIMAPFolder = folderName;
   }
 
   public String getMoveToIMAPFolder() {
@@ -501,7 +496,7 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
   }
 
   public String getRealFirstMails() {
-    return environmentSubstitute( getFirstMails() );
+    return resolve( getFirstMails() );
   }
 
   public void setServerName( String servername ) {
@@ -551,23 +546,23 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
   }
 
   public String getRealOutputDirectory() {
-    return environmentSubstitute( getOutputDirectory() );
+    return resolve( getOutputDirectory() );
   }
 
   public String getRealFilenamePattern() {
-    return environmentSubstitute( getFilenamePattern() );
+    return resolve( getFilenamePattern() );
   }
 
   public String getRealUsername() {
-    return environmentSubstitute( getUserName() );
+    return resolve( getUserName() );
   }
 
   public String getRealServername() {
-    return environmentSubstitute( getServerName() );
+    return resolve( getServerName() );
   }
 
   public String getRealProxyUsername() {
-    return environmentSubstitute( geProxyUsername() );
+    return resolve( geProxyUsername() );
   }
 
   public String geProxyUsername() {
@@ -587,7 +582,7 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
    * in case of param returns null.
    */
   public String getRealPassword( String password ) {
-    return Utils.resolvePassword( variables, password );
+    return Utils.resolvePassword( getVariables(), password );
   }
 
   public String getAttachmentFolder() {
@@ -595,11 +590,11 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
   }
 
   public String getRealAttachmentFolder() {
-    return environmentSubstitute( getAttachmentFolder() );
+    return resolve( getAttachmentFolder() );
   }
 
-  public void setAttachmentFolder( String foldername ) {
-    this.attachmentfolder = foldername;
+  public void setAttachmentFolder( String folderName ) {
+    this.attachmentfolder = folderName;
   }
 
   /**
@@ -727,14 +722,14 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
       String targetAttachmentFolder = createOutputDirectory( ActionGetPOP.FOLDER_ATTACHMENTS );
 
       // Check destination folder
-      String realMoveToIMAPFolder = environmentSubstitute( getMoveToIMAPFolder() );
+      String realMoveToIMAPFolder = resolve( getMoveToIMAPFolder() );
       if ( getProtocol().equals( MailConnectionMeta.PROTOCOL_STRING_IMAP )
         && ( getActionType() == MailConnectionMeta.ACTION_TYPE_MOVE )
         || ( getActionType() == MailConnectionMeta.ACTION_TYPE_GET
         && getAfterGetIMAP() == MailConnectionMeta.AFTER_GET_IMAP_MOVE ) ) {
         if ( Utils.isEmpty( realMoveToIMAPFolder ) ) {
           throw new HopException( BaseMessages
-            .getString( PKG, "JobGetMailsFromPOP.Error.MoveToIMAPFolderEmpty" ) );
+            .getString( PKG, "ActionGetMailsFromPOP.Error.MoveToIMAPFolderEmpty" ) );
         }
         moveafter = true;
       }
@@ -745,24 +740,24 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
         case MailConnectionMeta.CONDITION_DATE_EQUAL:
         case MailConnectionMeta.CONDITION_DATE_GREATER:
         case MailConnectionMeta.CONDITION_DATE_SMALLER:
-          String realBeginDate = environmentSubstitute( getReceivedDate1() );
+          String realBeginDate = resolve( getReceivedDate1() );
           if ( Utils.isEmpty( realBeginDate ) ) {
             throw new HopException( BaseMessages.getString(
-              PKG, "JobGetMailsFromPOP.Error.ReceivedDateSearchTermEmpty" ) );
+              PKG, "ActionGetMailsFromPOP.Error.ReceivedDateSearchTermEmpty" ) );
           }
           beginDate = df.parse( realBeginDate );
           break;
         case MailConnectionMeta.CONDITION_DATE_BETWEEN:
-          realBeginDate = environmentSubstitute( getReceivedDate1() );
+          realBeginDate = resolve( getReceivedDate1() );
           if ( Utils.isEmpty( realBeginDate ) ) {
             throw new HopException( BaseMessages.getString(
-              PKG, "JobGetMailsFromPOP.Error.ReceivedDatesSearchTermEmpty" ) );
+              PKG, "ActionGetMailsFromPOP.Error.ReceivedDatesSearchTermEmpty" ) );
           }
           beginDate = df.parse( realBeginDate );
-          String realEndDate = environmentSubstitute( getReceivedDate2() );
+          String realEndDate = resolve( getReceivedDate2() );
           if ( Utils.isEmpty( realEndDate ) ) {
             throw new HopException( BaseMessages.getString(
-              PKG, "JobGetMailsFromPOP.Error.ReceivedDatesSearchTermEmpty" ) );
+              PKG, "ActionGetMailsFromPOP.Error.ReceivedDatesSearchTermEmpty" ) );
           }
           endDate = df.parse( realEndDate );
           break;
@@ -774,8 +769,8 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
       String realusername = getRealUsername();
       String realpassword = getRealPassword( getPassword() );
       String realFilenamePattern = getRealFilenamePattern();
-      int realport = Const.toInt( environmentSubstitute( sslport ), -1 );
-      String realIMAPFolder = environmentSubstitute( getIMAPFolder() );
+      int realport = Const.toInt( resolve( sslport ), -1 );
+      String realIMAPFolder = resolve( getIMAPFolder() );
       String realProxyUsername = getRealProxyUsername();
 
       initVariables();
@@ -794,22 +789,22 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
       }
 
       // apply search term?
-      String realSearchSender = environmentSubstitute( getSenderSearchTerm() );
+      String realSearchSender = resolve( getSenderSearchTerm() );
       if ( !Utils.isEmpty( realSearchSender ) ) {
         // apply FROM
         mailConn.setSenderTerm( realSearchSender, isNotTermSenderSearch() );
       }
-      String realSearchReceipient = environmentSubstitute( getReceipientSearch() );
+      String realSearchReceipient = resolve( getReceipientSearch() );
       if ( !Utils.isEmpty( realSearchReceipient ) ) {
         // apply TO
         mailConn.setReceipientTerm( realSearchReceipient );
       }
-      String realSearchSubject = environmentSubstitute( getSubjectSearch() );
+      String realSearchSubject = resolve( getSubjectSearch() );
       if ( !Utils.isEmpty( realSearchSubject ) ) {
         // apply Subject
         mailConn.setSubjectTerm( realSearchSubject, isNotTermSubjectSearch() );
       }
-      String realSearchBody = environmentSubstitute( getBodySearch() );
+      String realSearchBody = resolve( getBodySearch() );
       if ( !Utils.isEmpty( realSearchBody ) ) {
         // apply body
         mailConn.setBodyTerm( realSearchBody, isNotTermBodySearch() );
@@ -877,12 +872,12 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
       if ( isIncludeSubFolders() ) {
         // Fetch also sub folders?
         if ( isDebug() ) {
-          logDebug( BaseMessages.getString( PKG, "JobGetPOP.FetchingSubFolders" ) );
+          logDebug( BaseMessages.getString( PKG, "ActionGetPOP.FetchingSubFolders" ) );
         }
         String[] subfolders = mailConn.returnAllFolders();
         if ( subfolders.length == 0 ) {
           if ( isDebug() ) {
-            logDebug( BaseMessages.getString( PKG, "JobGetPOP.NoSubFolders" ) );
+            logDebug( BaseMessages.getString( PKG, "ActionGetPOP.NoSubFolders" ) );
           }
         } else {
           for ( int i = 0; i < subfolders.length; i++ ) {
@@ -901,14 +896,14 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
 
       if ( isDetailed() ) {
         logDetailed( "=======================================" );
-        logDetailed( BaseMessages.getString( PKG, "JobGetPOP.Log.Info.SavedMessages", ""
+        logDetailed( BaseMessages.getString( PKG, "ActionGetPOP.Log.Info.SavedMessages", ""
           + mailConn.getSavedMessagesCounter() ) );
-        logDetailed( BaseMessages.getString( PKG, "JobGetPOP.Log.Info.DeletedMessages", ""
+        logDetailed( BaseMessages.getString( PKG, "ActionGetPOP.Log.Info.DeletedMessages", ""
           + mailConn.getDeletedMessagesCounter() ) );
-        logDetailed( BaseMessages.getString( PKG, "JobGetPOP.Log.Info.MovedMessages", ""
+        logDetailed( BaseMessages.getString( PKG, "ActionGetPOP.Log.Info.MovedMessages", ""
           + mailConn.getMovedMessagesCounter() ) );
         if ( getActionType() == MailConnectionMeta.ACTION_TYPE_GET && isSaveAttachment() ) {
-          logDetailed( BaseMessages.getString( PKG, "JobGetPOP.Log.Info.AttachedMessagesSuccess", ""
+          logDetailed( BaseMessages.getString( PKG, "ActionGetPOP.Log.Info.AttachedMessagesSuccess", ""
             + mailConn.getSavedAttachedFilesCounter() ) );
         }
         logDetailed( "=======================================" );
@@ -946,7 +941,7 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
       int messagesCount = mailConn.getMessagesCount();
 
       if ( isDetailed() ) {
-        logDetailed( BaseMessages.getString( PKG, "JobGetMailsFromPOP.TotalMessagesFolder.Label", ""
+        logDetailed( BaseMessages.getString( PKG, "ActionGetMailsFromPOP.TotalMessagesFolder.Label", ""
           + messagesCount, Const.NVL( mailConn.getFolderName(), MailConnectionMeta.INBOX_FOLDER ) ) );
       }
 
@@ -966,14 +961,14 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
                 // Delete this message
                 mailConn.deleteMessage();
                 if ( isDebug() ) {
-                  logDebug( BaseMessages.getString( PKG, "JobGetMailsFromPOP.MessageDeleted", "" + i ) );
+                  logDebug( BaseMessages.getString( PKG, "ActionGetMailsFromPOP.MessageDeleted", "" + i ) );
                 }
               }
             } else {
               // Delete messages
               mailConn.deleteMessages( true );
               if ( isDebug() ) {
-                logDebug( BaseMessages.getString( PKG, "JobGetMailsFromPOP.MessagesDeleted", "" + messagesCount ) );
+                logDebug( BaseMessages.getString( PKG, "ActionGetMailsFromPOP.MessagesDeleted", "" + messagesCount ) );
               }
             }
             break;
@@ -988,7 +983,7 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
                 mailConn.moveMessage();
                 if ( isDebug() ) {
                   logDebug( BaseMessages.getString(
-                    PKG, "JobGetMailsFromPOP.MessageMoved", "" + i, realMoveToIMAPFolder ) );
+                    PKG, "ActionGetMailsFromPOP.MessageMoved", "" + i, realMoveToIMAPFolder ) );
                 }
               }
             } else {
@@ -996,7 +991,7 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
               mailConn.moveMessages();
               if ( isDebug() ) {
                 logDebug( BaseMessages.getString(
-                  PKG, "JobGetMailsFromPOP.MessagesMoved", "" + messagesCount, realMoveToIMAPFolder ) );
+                  PKG, "ActionGetMailsFromPOP.MessagesMoved", "" + messagesCount, realMoveToIMAPFolder ) );
               }
             }
             break;
@@ -1016,36 +1011,36 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
                 //
                 if ( isDebug() && mailConn.getMessage() != null ) {
                   logDebug( "--------------------------------------------------" );
-                  logDebug( BaseMessages.getString( PKG, "JobGetMailsFromPOP.MessageNumber.Label", ""
+                  logDebug( BaseMessages.getString( PKG, "ActionGetMailsFromPOP.MessageNumber.Label", ""
                     + messagenumber ) );
                   if ( mailConn.getMessage().getReceivedDate() != null ) {
-                    logDebug( BaseMessages.getString( PKG, "JobGetMailsFromPOP.ReceivedDate.Label", df
+                    logDebug( BaseMessages.getString( PKG, "ActionGetMailsFromPOP.ReceivedDate.Label", df
                       .format( mailConn.getMessage().getReceivedDate() ) ) );
                   }
-                  logDebug( BaseMessages.getString( PKG, "JobGetMailsFromPOP.ContentType.Label", mailConn
+                  logDebug( BaseMessages.getString( PKG, "ActionGetMailsFromPOP.ContentType.Label", mailConn
                     .getMessage().getContentType() ) );
-                  logDebug( BaseMessages.getString( PKG, "JobGetMailsFromPOP.EmailFrom.Label", Const.NVL( mailConn
+                  logDebug( BaseMessages.getString( PKG, "ActionGetMailsFromPOP.EmailFrom.Label", Const.NVL( mailConn
                     .getMessage().getFrom()[ 0 ].toString(), "" ) ) );
-                  logDebug( BaseMessages.getString( PKG, "JobGetMailsFromPOP.EmailSubject.Label", Const.NVL(
+                  logDebug( BaseMessages.getString( PKG, "ActionGetMailsFromPOP.EmailSubject.Label", Const.NVL(
                     mailConn.getMessage().getSubject(), "" ) ) );
                 }
                 if ( isSaveMessage() ) {
                   // get local message filename
-                  String localfilename_message = replaceTokens( realFilenamePattern, i );
+                  String localfilenameMessage = replaceTokens( realFilenamePattern, i );
 
                   if ( isDebug() ) {
                     logDebug( BaseMessages.getString(
-                      PKG, "JobGetMailsFromPOP.LocalFilename.Label", localfilename_message ) );
+                      PKG, "ActionGetMailsFromPOP.LocalFilename.Label", localfilenameMessage ) );
                   }
 
                   // save message content in the file
-                  mailConn.saveMessageContentToFile( localfilename_message, realOutputFolder );
+                  mailConn.saveMessageContentToFile( localfilenameMessage, realOutputFolder );
                   // PDI-10942 explicitly set message as read
                   mailConn.getMessage().setFlag( Flag.SEEN, true );
 
                   if ( isDetailed() ) {
-                    logDetailed( BaseMessages.getString( PKG, "JobGetMailsFromPOP.MessageSaved.Label", ""
-                      + messagenumber, localfilename_message, realOutputFolder ) );
+                    logDetailed( BaseMessages.getString( PKG, "ActionGetMailsFromPOP.MessageSaved.Label", ""
+                      + messagenumber, localfilenameMessage, realOutputFolder ) );
                   }
                 }
 
@@ -1059,7 +1054,7 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
                   if ( getDelete() ) {
                     mailConn.deleteMessage();
                     if ( isDebug() ) {
-                      logDebug( BaseMessages.getString( PKG, "JobGetMailsFromPOP.MessageDeleted", ""
+                      logDebug( BaseMessages.getString( PKG, "ActionGetMailsFromPOP.MessageDeleted", ""
                         + messagenumber ) );
                     }
                   }
@@ -1069,7 +1064,7 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
                       // Delete messages
                       mailConn.deleteMessage();
                       if ( isDebug() ) {
-                        logDebug( BaseMessages.getString( PKG, "JobGetMailsFromPOP.MessageDeleted", ""
+                        logDebug( BaseMessages.getString( PKG, "ActionGetMailsFromPOP.MessageDeleted", ""
                           + messagenumber ) );
                       }
                       break;
@@ -1077,7 +1072,7 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
                       // Move messages
                       mailConn.moveMessage();
                       if ( isDebug() ) {
-                        logDebug( BaseMessages.getString( PKG, "JobGetMailsFromPOP.MessageMoved", ""
+                        logDebug( BaseMessages.getString( PKG, "ActionGetMailsFromPOP.MessageMoved", ""
                           + messagenumber, realMoveToIMAPFolder ) );
                       }
                       break;
@@ -1095,16 +1090,16 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
     }
   }
 
-  public boolean evaluates() {
+  @Override public boolean isEvaluation() {
     return true;
   }
 
   private String replaceTokens( String aString, int idfile ) {
-    String localfilename_message = aString;
-    localfilename_message = localfilename_message.replaceAll( FILENAME_ID_PATTERN, "" + ( idfile + 1 ) );
-    localfilename_message =
-      substituteDate( localfilename_message, FILENAME_SYS_DATE_OPEN, FILENAME_SYS_DATE_CLOSE, new Date() );
-    return localfilename_message;
+    String localfilenameMessage = aString;
+    localfilenameMessage = localfilenameMessage.replaceAll( FILENAME_ID_PATTERN, "" + ( idfile + 1 ) );
+    localfilenameMessage =
+      substituteDate( localfilenameMessage, FILENAME_SYS_DATE_OPEN, FILENAME_SYS_DATE_CLOSE, new Date() );
+    return localfilenameMessage;
 
   }
 
@@ -1143,14 +1138,14 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
   private void initVariables() {
     // Attachment wildcard
     attachementPattern = null;
-    String realAttachmentWildcard = environmentSubstitute( getAttachmentWildcard() );
+    String realAttachmentWildcard = resolve( getAttachmentWildcard() );
     if ( !Utils.isEmpty( realAttachmentWildcard ) ) {
       attachementPattern = Pattern.compile( realAttachmentWildcard );
     }
   }
 
   public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     ActionValidatorUtils.andValidator().validate( this, "serverName", remarks,
       AndValidator.putValidators( ActionValidatorUtils.notBlankValidator() ) );
     ActionValidatorUtils.andValidator().validate( this, "userName", remarks,
@@ -1168,10 +1163,10 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
       AndValidator.putValidators( ActionValidatorUtils.integerValidator() ) );
   }
 
-  public List<ResourceReference> getResourceDependencies( WorkflowMeta workflowMeta ) {
-    List<ResourceReference> references = super.getResourceDependencies( workflowMeta );
+  public List<ResourceReference> getResourceDependencies( IVariables variables, WorkflowMeta workflowMeta ) {
+    List<ResourceReference> references = super.getResourceDependencies( variables, workflowMeta );
     if ( !Utils.isEmpty( servername ) ) {
-      String realServername = workflowMeta.environmentSubstitute( servername );
+      String realServername = resolve( servername );
       ResourceReference reference = new ResourceReference( this );
       reference.getEntries().add( new ResourceEntry( realServername, ResourceType.SERVER ) );
       references.add( reference );
@@ -1200,31 +1195,31 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
       switch ( folderType ) {
         case ActionGetPOP.FOLDER_OUTPUT:
           throw new HopException( BaseMessages
-            .getString( PKG, "JobGetMailsFromPOP.Error.OutputFolderEmpty" ) );
+            .getString( PKG, "ActionGetMailsFromPOP.Error.OutputFolderEmpty" ) );
         case ActionGetPOP.FOLDER_ATTACHMENTS:
           throw new HopException( BaseMessages
-            .getString( PKG, "JobGetMailsFromPOP.Error.AttachmentFolderEmpty" ) );
+            .getString( PKG, "ActionGetMailsFromPOP.Error.AttachmentFolderEmpty" ) );
       }
     }
-    FileObject folder = HopVfs.getFileObject( folderName, this );
+    FileObject folder = HopVfs.getFileObject( folderName );
     if ( folder.exists() ) {
       if ( folder.getType() != FileType.FOLDER ) {
         switch ( folderType ) {
           case ActionGetPOP.FOLDER_OUTPUT:
             throw new HopException( BaseMessages.getString(
-              PKG, "JobGetMailsFromPOP.Error.NotAFolderNot", folderName ) );
+              PKG, "ActionGetMailsFromPOP.Error.NotAFolderNot", folderName ) );
           case ActionGetPOP.FOLDER_ATTACHMENTS:
             throw new HopException( BaseMessages.getString(
-              PKG, "JobGetMailsFromPOP.Error.AttachmentFolderNotAFolder", folderName ) );
+              PKG, "ActionGetMailsFromPOP.Error.AttachmentFolderNotAFolder", folderName ) );
         }
       }
       if ( isDebug() ) {
         switch ( folderType ) {
           case ActionGetPOP.FOLDER_OUTPUT:
-            logDebug( BaseMessages.getString( PKG, "JobGetMailsFromPOP.Log.OutputFolderExists", folderName ) );
+            logDebug( BaseMessages.getString( PKG, "ActionGetMailsFromPOP.Log.OutputFolderExists", folderName ) );
             break;
           case ActionGetPOP.FOLDER_ATTACHMENTS:
-            logDebug( BaseMessages.getString( PKG, "JobGetMailsFromPOP.Log.AttachmentFolderExists", folderName ) );
+            logDebug( BaseMessages.getString( PKG, "ActionGetMailsFromPOP.Log.AttachmentFolderExists", folderName ) );
             break;
         }
       }
@@ -1235,10 +1230,10 @@ public class ActionGetPOP extends ActionBase implements Cloneable, IAction {
         switch ( folderType ) {
           case ActionGetPOP.FOLDER_OUTPUT:
             throw new HopException( BaseMessages.getString(
-              PKG, "JobGetMailsFromPOP.Error.OutputFolderNotExist", folderName ) );
+              PKG, "ActionGetMailsFromPOP.Error.OutputFolderNotExist", folderName ) );
           case ActionGetPOP.FOLDER_ATTACHMENTS:
             throw new HopException( BaseMessages.getString(
-              PKG, "JobGetMailsFromPOP.Error.AttachmentFolderNotExist", folderName ) );
+              PKG, "ActionGetMailsFromPOP.Error.AttachmentFolderNotExist", folderName ) );
         }
       }
     }

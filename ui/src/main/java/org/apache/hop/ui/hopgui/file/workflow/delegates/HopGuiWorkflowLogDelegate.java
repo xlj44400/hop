@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.file.workflow.delegates;
 
@@ -33,27 +28,27 @@ import org.apache.hop.ui.core.gui.GuiResource;
 import org.apache.hop.ui.core.gui.GuiToolbarWidgets;
 import org.apache.hop.ui.hopgui.file.IHopFileTypeHandler;
 import org.apache.hop.workflow.WorkflowMeta;
-import org.apache.hop.workflow.action.ActionCopy;
+import org.apache.hop.workflow.action.ActionMeta;
 import org.apache.hop.ui.core.dialog.EnterSelectionDialog;
 import org.apache.hop.ui.hopgui.HopGui;
 import org.apache.hop.ui.hopgui.file.workflow.HopGuiWorkflowGraph;
 import org.apache.hop.ui.hopgui.file.pipeline.HopGuiLogBrowser;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabItem;
-import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 
 import java.util.ArrayList;
 
-@GuiPlugin
+@GuiPlugin(description = "Workflow Graph Log Delegate")
 public class HopGuiWorkflowLogDelegate {
-  private static Class<?> PKG = HopGuiWorkflowGraph.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = HopGuiWorkflowGraph.class; // For Translator
 
   private static final String GUI_PLUGIN_TOOLBAR_PARENT_ID = "HopGuiWorkflowLogDelegate-ToolBar";
   public static final String TOOLBAR_ICON_CLEAR_LOG_VIEW = "ToolbarIcon-10000-ClearLog";
@@ -67,7 +62,7 @@ public class HopGuiWorkflowLogDelegate {
 
   private CTabItem jobLogTab;
 
-  public StyledText jobLogText;
+  public Text jobLogText;
 
   /**
    * The number of lines in the log tab
@@ -119,7 +114,7 @@ public class HopGuiWorkflowLogDelegate {
     fd.right = new FormAttachment( 100, 0 );
     toolbar.setLayoutData( fd );
 
-    jobLogText = new StyledText( jobLogComposite, SWT.READ_ONLY | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL );
+    jobLogText = new Text( jobLogComposite, SWT.READ_ONLY | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL );
     hopGui.getProps().setLook( jobLogText );
     FormData fdText = new FormData();
     fdText.left = new FormAttachment( 0, 0 );
@@ -168,6 +163,7 @@ public class HopGuiWorkflowLogDelegate {
     hopGui.getProps().setLook( toolbar, Props.WIDGET_STYLE_TOOLBAR );
 
     toolBarWidgets = new GuiToolbarWidgets();
+    toolBarWidgets.registerGuiPluginObject( this );
     toolBarWidgets.createToolbarWidgets( toolbar, GUI_PLUGIN_TOOLBAR_PARENT_ID );
     toolbar.pack();
   }
@@ -182,9 +178,8 @@ public class HopGuiWorkflowLogDelegate {
     root = GUI_PLUGIN_TOOLBAR_PARENT_ID,
     id = TOOLBAR_ICON_LOG_SETTINGS,
     // label = "WorkflowLog.Button.LogSettings",
-    toolTip = "WorkflowLog.Button.LogSettings",
-    i18nPackageClass = HopGui.class,
-    image = "ui/images/log-settings.svg"
+    toolTip = "i18n:org.apache.hop.ui.hopgui:WorkflowLog.Button.LogSettings",
+    image = "ui/images/settings.svg"
   )
   public void showLogSettings() {
     // TODO: implement or rethink
@@ -194,9 +189,8 @@ public class HopGuiWorkflowLogDelegate {
     root = GUI_PLUGIN_TOOLBAR_PARENT_ID,
     id = TOOLBAR_ICON_SHOW_ERROR_LINES,
     // label = "WorkflowLog.Button.ShowErrorLines",
-    toolTip = "WorkflowLog.Button.ShowErrorLines",
-    i18nPackageClass = HopGui.class,
-    image = "ui/images/show-error-lines.svg"
+    toolTip = "i18n:org.apache.hop.ui.hopgui:WorkflowLog.Button.ShowErrorLines",
+    image = "ui/images/filter.svg"
   )
   public void showErrors() {
     String all = jobLogText.getText();
@@ -242,9 +236,9 @@ public class HopGuiWorkflowLogDelegate {
       if ( line != null ) {
         WorkflowMeta workflowMeta = workflowGraph.getManagedObject();
         for ( i = 0; i < workflowMeta.nrActions(); i++ ) {
-          ActionCopy entryCopy = workflowMeta.getAction( i );
+          ActionMeta entryCopy = workflowMeta.getAction( i );
           if ( line.indexOf( entryCopy.getName() ) >= 0 ) {
-            workflowGraph.editJobEntry( workflowMeta, entryCopy );
+            workflowGraph.editAction( workflowMeta, entryCopy );
           }
         }
       }
@@ -262,19 +256,18 @@ public class HopGuiWorkflowLogDelegate {
     root = GUI_PLUGIN_TOOLBAR_PARENT_ID,
     id = TOOLBAR_ICON_LOG_PAUSE_RESUME,
     // label = "WorkflowLog.Button.Pause",
-    toolTip = "WorkflowLog.Button.Pause",
-    i18nPackageClass = HopGui.class,
-    image = "ui/images/pause-log.svg",
+    toolTip = "i18n:org.apache.hop.ui.hopgui:WorkflowLog.Button.Pause",
+    image = "ui/images/pause.svg",
     separator = true
   )
   public void pauseLog() {
     ToolItem item = toolBarWidgets.findToolItem( TOOLBAR_ICON_LOG_PAUSE_RESUME );
     if ( logBrowser.isPaused() ) {
       logBrowser.setPaused( false );
-      item.setImage( GuiResource.getInstance().getImageContinueLog() );
+      item.setImage( GuiResource.getInstance().getImageRun() );
     } else {
       logBrowser.setPaused( true );
-      item.setImage( GuiResource.getInstance().getImagePauseLog() );
+      item.setImage( GuiResource.getInstance().getImagePause() );
     }
   }
 

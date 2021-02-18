@@ -1,30 +1,32 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hop.core.config.HopConfig;
+import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.logging.ILogChannel;
 import org.apache.hop.core.logging.LogChannel;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * We use Props to store all kinds of user interactive information such as the selected colors, fonts, positions of
@@ -34,11 +36,9 @@ import org.apache.hop.core.logging.LogChannel;
  * @since 15-12-2003
  */
 public class Props implements Cloneable {
-  private static Class<?> PKG = Const.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = Const.class; // For Translator
 
   private static final String STRING_USER_PREFERENCES = "User preferences";
-
-  protected static Props props;
 
   public static final String STRING_FONT_FIXED_NAME = "FontFixedName";
   public static final String STRING_FONT_FIXED_SIZE = "FontFixedSize";
@@ -51,10 +51,6 @@ public class Props implements Cloneable {
   public static final String STRING_FONT_GRAPH_NAME = "FontGraphName";
   public static final String STRING_FONT_GRAPH_SIZE = "FontGraphSize";
   public static final String STRING_FONT_GRAPH_STYLE = "FontGraphStyle";
-
-  public static final String STRING_FONT_GRID_NAME = "FontGridName";
-  public static final String STRING_FONT_GRID_SIZE = "FontGridSize";
-  public static final String STRING_FONT_GRID_STYLE = "FontGridStyle";
 
   public static final String STRING_FONT_NOTE_NAME = "FontNoteName";
   public static final String STRING_FONT_NOTE_SIZE = "FontNoteSize";
@@ -100,9 +96,6 @@ public class Props implements Cloneable {
 
   public static final String STRING_DEFAULT_PREVIEW_SIZE = "DefaultPreviewSize";
 
-  private static final String STRING_MAX_NR_LINES_IN_LOG = "MaxNrOfLinesInLog";
-  private static final String STRING_MAX_LOG_LINE_TIMEOUT_MINUTES = "MaxLogLineTimeOutMinutes";
-
   protected ILogChannel log;
 
   public static final int WIDGET_STYLE_DEFAULT = 0;
@@ -113,36 +106,7 @@ public class Props implements Cloneable {
   public static final int WIDGET_STYLE_TAB = 5;
   public static final int WIDGET_STYLE_TOOLBAR = 6;
 
-  /**
-   * Initialize the properties: load from disk.
-   */
-  public static final void init() {
-    if ( props == null ) {
-      props = new Props();
-
-    } else {
-      throw new RuntimeException( "The Properties systems settings are already initialised!" );
-    }
-  }
-
-  /**
-   * Check to see whether the Hop properties where loaded.
-   *
-   * @return true if the Hop properties where loaded.
-   */
-  public static boolean isInitialized() {
-    return props != null;
-  }
-
-  public static Props getInstance() {
-    if ( props != null ) {
-      return props;
-    }
-
-    throw new RuntimeException( "Properties, Hop systems settings, not initialised!" );
-  }
-
-  protected Props() {
+  public Props() {
     log = new LogChannel( STRING_USER_PREFERENCES );
   }
 
@@ -161,6 +125,7 @@ public class Props implements Cloneable {
   protected void setProperty(String key, String value) {
     try {
       HopConfig.setGuiProperty( key, value );
+      HopConfig.getInstance().saveToFile();
     } catch(Exception e) {
       throw new RuntimeException("Error saving hop config option key '"+key+"', value '"+value+"'", e);
     }
@@ -171,11 +136,15 @@ public class Props implements Cloneable {
   }
 
   public String getProperty( String propertyName, String defaultValue ) {
-    return HopConfig.readOptionString( propertyName, defaultValue );
+    String value = HopConfig.getGuiProperty( propertyName );
+    if ( StringUtils.isEmpty(value)) {
+      return defaultValue;
+    }
+    return value;
   }
 
   public boolean containsKey(String key) {
-    return HopConfig.getConfigMap().containsKey( key );
+    return HopConfig.getInstance().getConfigMap().containsKey( key );
   }
 
   public void setUseDBCache( boolean use ) {
@@ -208,41 +177,24 @@ public class Props implements Cloneable {
     setProperty( STRING_CUSTOM_PARAMETER + parameterName, value );
   }
 
-  public void clearCustomParameters() {
-
-    for (String key : HopConfig.getConfigMap().keySet() ) {
-      if ( key.startsWith( STRING_CUSTOM_PARAMETER ) ) {
-        // Clear this one
-        HopConfig.getConfigMap().remove( key );
+  public void clearCustomParameters() throws HopException {
+    Map<String, String> configMap = HopConfig.readGuiProperties();
+    Iterator<Map.Entry<String, String>> iterator = configMap.entrySet().iterator();
+    while (iterator.hasNext()) {
+      Map.Entry<String, String> entry = iterator.next();
+      if (entry.getKey().startsWith( STRING_CUSTOM_PARAMETER )) {
+        iterator.remove();
       }
     }
-  }
-
-  public int getMaxNrLinesInLog() {
-    String lines = getProperty( STRING_MAX_NR_LINES_IN_LOG );
-    return Const.toInt( lines, Const.MAX_NR_LOG_LINES );
-  }
-
-  public void setMaxNrLinesInLog( int maxNrLinesInLog ) {
-    setProperty( STRING_MAX_NR_LINES_IN_LOG, Integer.toString( maxNrLinesInLog ) );
-  }
-
-  public int getMaxLogLineTimeoutMinutes() {
-    String minutes = getProperty( STRING_MAX_LOG_LINE_TIMEOUT_MINUTES );
-    return Const.toInt( minutes, Const.MAX_LOG_LINE_TIMEOUT_MINUTES );
-  }
-
-  public void setMaxLogLineTimeoutMinutes( int maxLogLineTimeoutMinutes ) {
-    setProperty( STRING_MAX_LOG_LINE_TIMEOUT_MINUTES, Integer.toString( maxLogLineTimeoutMinutes ) );
+    HopConfig.getInstance().saveToFile();
   }
 
   public void reset() {
-    props = null;
     clear();
   }
 
   private void clear() {
-    HopConfig.getConfigMap().clear();
+    HopConfig.getInstance().getConfigMap().clear();
   }
 
 

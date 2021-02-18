@@ -1,30 +1,25 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.blockuntiltransformsfinish;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
@@ -34,46 +29,25 @@ import org.apache.hop.ui.core.widget.ColumnInfo;
 import org.apache.hop.ui.core.widget.TableView;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Table;
-import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@PluginDialog(
-        id = "BlockUntilTransformsFinish",
-        image = "blockinguntiltransformsfinish.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = "http://www.project-hop.org/manual/latest/plugins/transforms/blockuntiltransformsfinish.html"
-)
 public class BlockUntilTransformsFinishDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = BlockUntilTransformsFinishMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = BlockUntilTransformsFinishMeta.class; // For Translator
 
   private String[] previousTransforms;
-  private BlockUntilTransformsFinishMeta input;
+  private final BlockUntilTransformsFinishMeta input;
 
-  private Label wlFields;
   private TableView wFields;
-  private FormData fdlFields, fdFields;
 
-  public BlockUntilTransformsFinishDialog( Shell parent, Object in, PipelineMeta tr, String sname ) {
-    super( parent, (BaseTransformMeta) in, tr, sname );
+  public BlockUntilTransformsFinishDialog( Shell parent, IVariables variables, Object in, PipelineMeta tr, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, tr, sname );
     input = (BlockUntilTransformsFinishMeta) in;
   }
 
@@ -85,11 +59,7 @@ public class BlockUntilTransformsFinishDialog extends BaseTransformDialog implem
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
     changed = input.hasChanged();
 
     FormLayout formLayout = new FormLayout();
@@ -134,13 +104,13 @@ public class BlockUntilTransformsFinishDialog extends BaseTransformDialog implem
     setButtonPositions( new Button[] { wOk, wGet, wCancel }, margin, null );
 
     // Table with fields
-    wlFields = new Label( shell, SWT.NONE );
+    Label wlFields = new Label(shell, SWT.NONE);
     wlFields.setText( BaseMessages.getString( PKG, "BlockUntilTransformsFinishDialog.Fields.Label" ) );
-    props.setLook( wlFields );
-    fdlFields = new FormData();
+    props.setLook(wlFields);
+    FormData fdlFields = new FormData();
     fdlFields.left = new FormAttachment( 0, 0 );
     fdlFields.top = new FormAttachment( wTransformName, margin );
-    wlFields.setLayoutData( fdlFields );
+    wlFields.setLayoutData(fdlFields);
 
     final int FieldsCols = 2;
     final int FieldsRows = input.getTransformName().length;
@@ -148,7 +118,7 @@ public class BlockUntilTransformsFinishDialog extends BaseTransformDialog implem
     ColumnInfo[] colinf = new ColumnInfo[ FieldsCols ];
     colinf[ 0 ] =
       new ColumnInfo(
-        BaseMessages.getString( PKG, "BlockUntilTransformsFinishDialog.Fieldname.Transform" ),
+        BaseMessages.getString( PKG, "BlockUntilTransformsFinishDialog.Fieldname.transform" ),
         ColumnInfo.COLUMN_TYPE_CCOMBO, previousTransforms, false );
     colinf[ 1 ] =
       new ColumnInfo(
@@ -157,31 +127,19 @@ public class BlockUntilTransformsFinishDialog extends BaseTransformDialog implem
     colinf[ 1 ].setUsingVariables( true );
     wFields =
       new TableView(
-        pipelineMeta, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
+        variables, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
 
-    fdFields = new FormData();
+    FormData fdFields = new FormData();
     fdFields.left = new FormAttachment( 0, 0 );
-    fdFields.top = new FormAttachment( wlFields, margin );
+    fdFields.top = new FormAttachment(wlFields, margin );
     fdFields.right = new FormAttachment( 100, 0 );
     fdFields.bottom = new FormAttachment( wOk, -2 * margin );
-    wFields.setLayoutData( fdFields );
+    wFields.setLayoutData(fdFields);
 
     // Add listeners
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-    lsGet = new Listener() {
-      public void handleEvent( Event e ) {
-        get();
-      }
-    };
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
+    lsCancel = e -> cancel();
+    lsGet = e -> get();
+    lsOk = e -> ok();
 
     wCancel.addListener( SWT.Selection, lsCancel );
     wOk.addListener( SWT.Selection, lsOk );
@@ -222,12 +180,12 @@ public class BlockUntilTransformsFinishDialog extends BaseTransformDialog implem
     String[] nextTransforms = pipelineMeta.getNextTransformNames( transformMeta );
 
     List<String> entries = new ArrayList<>();
-    for ( int i = 0; i < previousTransforms.length; i++ ) {
-      if ( !previousTransforms[ i ].equals( transformName ) ) {
-        if ( nextTransforms != null ) {
-          for ( int j = 0; j < nextTransforms.length; j++ ) {
-            if ( !nextTransforms[ j ].equals( previousTransforms[ i ] ) ) {
-              entries.add( previousTransforms[ i ] );
+    for (String previousTransform : previousTransforms) {
+      if (!previousTransform.equals(transformName)) {
+        if (nextTransforms != null) {
+          for (String nextTransform : nextTransforms) {
+            if (!nextTransform.equals(previousTransform)) {
+              entries.add(previousTransform);
             }
           }
         }

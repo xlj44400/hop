@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.databases.oracle;
 
@@ -27,6 +22,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 
 import java.sql.ResultSet;
 
@@ -49,6 +46,7 @@ import org.apache.hop.core.row.value.ValueMetaPluginType;
 import org.apache.hop.core.row.value.ValueMetaString;
 import org.apache.hop.core.row.value.ValueMetaTimestamp;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.variables.Variables;
 import org.apache.hop.junit.rules.RestoreHopEnvironment;
 import org.junit.Before;
@@ -66,7 +64,7 @@ public class OracleDatabaseMetaTest {
   private final String sequenceName = "sequence_name";
   
   private OracleDatabaseMeta nativeMeta;
-  private OracleDatabaseMeta odbcMeta;
+  private IVariables variables;
 
   
   @BeforeClass
@@ -81,9 +79,8 @@ public class OracleDatabaseMetaTest {
   public void setupOnce() throws Exception {
     nativeMeta = new OracleDatabaseMeta();
     nativeMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_NATIVE );
-    odbcMeta = new OracleDatabaseMeta();
-    odbcMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_ODBC );
     HopClientEnvironment.init();
+    variables = Mockito.spy(new Variables());
   }
 
   @Test
@@ -92,10 +89,8 @@ public class OracleDatabaseMetaTest {
     // according to the features of the DB as we know them
 
     assertEquals( 1521, nativeMeta.getDefaultDatabasePort() );
-    assertEquals( -1, odbcMeta.getDefaultDatabasePort() );
     assertFalse( nativeMeta.supportsAutoInc() );
     assertEquals( "oracle.jdbc.driver.OracleDriver", nativeMeta.getDriverClass() );
-    assertEquals( "jdbc:odbc:FOO", odbcMeta.getURL( null, null, "FOO" ) );
     assertEquals( "jdbc:oracle:thin:@FOO:1024:BAR", nativeMeta.getURL( "FOO", "1024", "BAR" ) );
     assertEquals( "jdbc:oracle:thin:@FOO:11:BAR", nativeMeta.getURL( "FOO", "11", ":BAR" ) );
     assertEquals( "jdbc:oracle:thin:@BAR:65534/FOO", nativeMeta.getURL( "BAR", "65534", "/FOO" ) );
@@ -283,23 +278,20 @@ public class OracleDatabaseMetaTest {
     IRowMeta rm = Mockito.mock( IRowMeta.class );
     ResultSet rs = Mockito.mock( ResultSet.class );
     DatabaseMeta dm = Mockito.mock( DatabaseMeta.class );
-    Mockito.when( dm.getQuotedSchemaTableCombination( "", "FOO" ) ).thenReturn( "FOO" );
+    Mockito.when( dm.getQuotedSchemaTableCombination( any(IVariables.class), eq(""), eq("FOO") ) ).thenReturn( "FOO" );
     Mockito.when( rs.next() ).thenReturn( rowCnt < 2 );
     Mockito.when( db.openQuery( expectedSql ) ).thenReturn( rs );
     Mockito.when( db.getReturnRowMeta() ).thenReturn( rm );
     Mockito.when( rm.getString( row1, "COLUMN_NAME", "" ) ).thenReturn( "ROW1COL2" );
     Mockito.when( rm.getString( row2, "COLUMN_NAME", "" ) ).thenReturn( "ROW2COL2" );
-    Mockito.when( db.getRow( rs ) ).thenAnswer( new Answer<Object[]>() {
-      @Override
-      public Object[] answer( InvocationOnMock invocation ) throws Throwable {
-        rowCnt++;
-        if ( rowCnt == 1 ) {
-          return row1;
-        } else if ( rowCnt == 2 ) {
-          return row2;
-        } else {
-          return null;
-        }
+    Mockito.when( db.getRow( rs ) ).thenAnswer( (Answer<Object[]>) invocation -> {
+      rowCnt++;
+      if ( rowCnt == 1 ) {
+        return row1;
+      } else if ( rowCnt == 2 ) {
+        return row2;
+      } else {
+        return null;
       }
     } );
     Mockito.when( db.getDatabaseMeta() ).thenReturn( dm );

@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.combinationlookup;
 
@@ -28,6 +23,8 @@ import org.apache.hop.core.exception.HopDatabaseException;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.RowMeta;
+import org.apache.hop.core.variables.IVariables;
+import org.apache.hop.core.variables.Variables;
 import org.apache.hop.junit.rules.RestoreHopEngineEnvironment;
 import org.apache.hop.pipeline.transform.ITransformMeta;
 import org.apache.hop.pipeline.transforms.loadsave.LoadSaveTester;
@@ -53,12 +50,14 @@ import static org.junit.Assert.assertEquals;
 public class CombinationLookupMetaTest implements IInitializer<ITransformMeta> {
   LoadSaveTester loadSaveTester;
   Class<CombinationLookupMeta> testMetaClass = CombinationLookupMeta.class;
+  private IVariables variables;
 
   @ClassRule public static RestoreHopEngineEnvironment env = new RestoreHopEngineEnvironment();
 
   @Before
   public void setUpLoadSave() throws Exception {
     HopEnvironment.init();
+    variables = new Variables();
     List<String> attributes =
       Arrays.asList( "schemaName", "tableName", "databaseMeta", "replaceFields", "keyField", "keyLookup",
         "useHash", "hashField", "technicalKeyField", "sequenceFrom", "commitSize", "preloadCache", "cacheSize",
@@ -76,15 +75,15 @@ public class CombinationLookupMetaTest implements IInitializer<ITransformMeta> {
       }
     };
     IFieldLoadSaveValidator<String[]> stringArrayLoadSaveValidator =
-      new ArrayLoadSaveValidator<String>( new StringLoadSaveValidator(), 5 );
+      new ArrayLoadSaveValidator<>( new StringLoadSaveValidator(), 5 );
 
 
-    Map<String, IFieldLoadSaveValidator<?>> attrValidatorMap = new HashMap<String, IFieldLoadSaveValidator<?>>();
+    Map<String, IFieldLoadSaveValidator<?>> attrValidatorMap = new HashMap<>();
     attrValidatorMap.put( "keyField", stringArrayLoadSaveValidator );
     attrValidatorMap.put( "keyLookup", stringArrayLoadSaveValidator );
     attrValidatorMap.put( "databaseMeta", new DatabaseMetaLoadSaveValidator() );
 
-    Map<String, IFieldLoadSaveValidator<?>> typeValidatorMap = new HashMap<String, IFieldLoadSaveValidator<?>>();
+    Map<String, IFieldLoadSaveValidator<?>> typeValidatorMap = new HashMap<>();
 
     loadSaveTester = new LoadSaveTester( testMetaClass, attributes, new ArrayList<>(),
       getterMap, setterMap, attrValidatorMap, typeValidatorMap, this );
@@ -108,7 +107,7 @@ public class CombinationLookupMetaTest implements IInitializer<ITransformMeta> {
 
     final RowMeta rowMeta = Mockito.mock( RowMeta.class );
     final CombinationLookupMeta combinationLookupMeta = new CombinationLookupMeta() {
-      @Override Database createDatabaseObject() {
+      @Override Database createDatabaseObject(IVariables variables) {
         return Mockito.mock( Database.class );
       }
 
@@ -125,7 +124,7 @@ public class CombinationLookupMetaTest implements IInitializer<ITransformMeta> {
     combinationLookupMeta.setTablename( "aDimTable" );
 
     final CombinationLookupData dimensionLookupData = new CombinationLookupData();
-    assertEquals( rowMeta, combinationLookupMeta.getRowMeta( dimensionLookupData ) );
+    assertEquals( rowMeta, combinationLookupMeta.getRowMeta( variables, dimensionLookupData ) );
     assertEquals( 3, combinationLookupMeta.getDatabaseFields().size() );
     assertEquals( "f1", combinationLookupMeta.getDatabaseFields().get( 0 ) );
     assertEquals( "f2", combinationLookupMeta.getDatabaseFields().get( 1 ) );

@@ -1,30 +1,25 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core;
 
+import org.apache.hop.core.config.DescribedVariable;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.exception.HopPluginException;
-import org.apache.hop.core.logging.ILogChannel;
 import org.apache.hop.core.logging.LogChannel;
 import org.apache.hop.core.xml.XmlHandler;
 import org.w3c.dom.Document;
@@ -32,32 +27,30 @@ import org.w3c.dom.Node;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class HopVariablesList {
 
-  //helper to make the HopVariablesList thread safe lazy initialized singleton
-  private static class HopVariablesListHelper {
-    private static final HopVariablesList INSTANCE = new HopVariablesList();
-  }
+  private static HopVariablesList instance;
 
-  private static ILogChannel logger;
+  private List<DescribedVariable> defaultVariables;
 
   private HopVariablesList() {
-    logger = new LogChannel( this );
-    descriptionMap = new HashMap<>();
-    defaultValueMap = new HashMap<>();
+    defaultVariables = new ArrayList<>();
   }
 
   public static HopVariablesList getInstance() {
-    return HopVariablesListHelper.INSTANCE;
+    return instance;
   }
 
-  private Map<String, String> descriptionMap;
-  private Map<String, String> defaultValueMap;
-
   public static void init() throws HopException {
+
+    instance = new HopVariablesList();
 
     InputStream inputStream = null;
     try {
@@ -69,7 +62,7 @@ public class HopVariablesList {
         inputStream = variablesList.getClass().getResourceAsStream( "/" + Const.HOP_VARIABLES_FILE );
       }
       if ( inputStream == null ) {
-        throw new HopPluginException( "Unable to find standard kettle variables definition file: " + Const.HOP_VARIABLES_FILE );
+        throw new HopPluginException( "Unable to find standard hop variables definition file: " + Const.HOP_VARIABLES_FILE );
       }
       Document doc = XmlHandler.loadXmlFile( inputStream, null, false, false );
       Node varsNode = XmlHandler.getSubNode( doc, "hop-variables" );
@@ -80,8 +73,7 @@ public class HopVariablesList {
         String variable = XmlHandler.getTagValue( varNode, "variable" );
         String defaultValue = XmlHandler.getTagValue( varNode, "default-value" );
 
-        variablesList.getDescriptionMap().put( variable, description );
-        variablesList.getDefaultValueMap().put( variable, defaultValue );
+        instance.defaultVariables.add(new DescribedVariable(variable, defaultValue, description));
       }
     } catch ( Exception e ) {
       throw new HopException( "Unable to read file '" + Const.HOP_VARIABLES_FILE + "'", e );
@@ -91,24 +83,43 @@ public class HopVariablesList {
           inputStream.close();
         } catch ( IOException e ) {
           // we do not able to close property file will log it
-          logger.logDetailed( "Unable to close file kettle variables definition file", e );
+          LogChannel.GENERAL.logDetailed( "Unable to close file hop variables definition file", e );
         }
       }
     }
   }
 
-  /**
-   * @return A mapping between the name of a standard hop variable and its description.
-   */
-  public Map<String, String> getDescriptionMap() {
-    return descriptionMap;
+  public DescribedVariable findEnvironmentVariable( String name) {
+    for ( DescribedVariable describedVariable : defaultVariables) {
+      if ( describedVariable.getName().equals( name )) {
+        return describedVariable;
+      }
+    }
+    return null;
+  }
+
+  public Set<String> getVariablesSet() {
+    Set<String> variablesSet = new HashSet<>();
+    for (DescribedVariable describedVariable : defaultVariables) {
+      variablesSet.add(describedVariable.getName());
+    }
+    return variablesSet;
   }
 
   /**
-   * @return A mapping between the name of a standard hop variable and its default value.
+   * Gets defaultVariables
+   *
+   * @return value of defaultVariables
    */
-  public Map<String, String> getDefaultValueMap() {
-    return defaultValueMap;
+  public List<DescribedVariable> getEnvironmentVariables() {
+    return defaultVariables;
+  }
+
+  /**
+   * @param defaultVariables The defaultVariables to set
+   */
+  public void setDefaultVariables( List<DescribedVariable> defaultVariables ) {
+    this.defaultVariables = defaultVariables;
   }
 
 }

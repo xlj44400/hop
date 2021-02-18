@@ -1,24 +1,20 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
+
 package org.apache.hop.databases.firebird;
 
 import org.apache.hop.core.database.DatabaseMeta;
@@ -30,23 +26,20 @@ import static org.junit.Assert.*;
 
 public class FirebirdDatabaseMetaTest {
 
-  private FirebirdDatabaseMeta nativeMeta, odbcMeta;
+  private FirebirdDatabaseMeta nativeMeta;
 
   @Before
   public void setupBefore() {
     nativeMeta = new FirebirdDatabaseMeta();
     nativeMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_NATIVE );
-    odbcMeta = new FirebirdDatabaseMeta();
-    odbcMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_ODBC );
+
   }
 
   @Test
   public void testSettings() throws Exception {
-    assertArrayEquals( new int[] { DatabaseMeta.TYPE_ACCESS_NATIVE, DatabaseMeta.TYPE_ACCESS_ODBC },
+    assertArrayEquals( new int[] { DatabaseMeta.TYPE_ACCESS_NATIVE },
       nativeMeta.getAccessTypeList() );
     assertEquals( 3050, nativeMeta.getDefaultDatabasePort() );
-    assertEquals( -1, odbcMeta.getDefaultDatabasePort() );
-    assertEquals( "jdbc:odbc:FOO", odbcMeta.getURL( "IGNORED", "IGNORED", "FOO" ) );
 
     assertEquals( "&", nativeMeta.getExtraOptionSeparator() );
     assertEquals( "?", nativeMeta.getExtraOptionIndicator() );
@@ -143,9 +136,6 @@ public class FirebirdDatabaseMetaTest {
 
     assertEquals( "DELETE FROM FOO", nativeMeta.getTruncateTableStatement( "FOO" ) );
 
-    odbcMeta.setUsername( "FOO" );
-    assertEquals( "SELECT RDB$PROCEDURE_NAME FROM RDB$PROCEDURES "
-      + "WHERE RDB$OWNER_NAME = 'FOO' ", odbcMeta.getSqlListOfProcedures() );
   }
 
   @Test
@@ -154,17 +144,12 @@ public class FirebirdDatabaseMetaTest {
       nativeMeta.getFieldDefinition( new ValueMetaString( "FOO", 15, 0 ), "", "", false, true, false ) );
 
     assertEquals( "\"SELECT\"VARCHAR(15)",
-      nativeMeta.getFieldDefinition( new ValueMetaString( "SELECT", 15, 0 ), "", "", false, true, false ) ); // Missing space between quote is a bug
+      nativeMeta.getFieldDefinition( new ValueMetaString( "SELECT", 15, 0 ), "", "", false, true, false ) ); // Missing variables between quote is a bug
 
     assertEquals( "TIMESTAMP",
       nativeMeta.getFieldDefinition( new ValueMetaDate( "FOO" ), "", "", false, false, false ) );
     assertEquals( "CHAR(1)",
       nativeMeta.getFieldDefinition( new ValueMetaBoolean( "FOO" ), "", "", false, false, false ) );
-
-    odbcMeta.setSupportsBooleanDataType( true );
-    assertEquals( "BIT",
-      odbcMeta.getFieldDefinition( new ValueMetaBoolean( "FOO" ), "", "", false, false, false ) );
-    odbcMeta.setSupportsBooleanDataType( false );
 
     assertEquals( "BIGINT NOT NULL PRIMARY KEY",
       nativeMeta.getFieldDefinition( new ValueMetaNumber( "FOO" ), "FOO", "", false, false, false ) );

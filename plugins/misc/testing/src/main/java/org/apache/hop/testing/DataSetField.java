@@ -1,48 +1,43 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Pentaho Data Integration
- *
- * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.testing;
 
-import org.apache.hop.metastore.persist.MetaStoreAttribute;
+import org.apache.hop.metadata.api.HopMetadataProperty;
 
 import java.util.Objects;
 
 public class DataSetField {
-  @MetaStoreAttribute( key = "field_name" )
+  @HopMetadataProperty( key = "field_name" )
   private String fieldName;
 
-  @MetaStoreAttribute( key = "field_type" )
+  @HopMetadataProperty( key = "field_type" )
   private int type;
 
-  @MetaStoreAttribute( key = "field_length" )
+  @HopMetadataProperty( key = "field_length" )
   private int length;
 
-  @MetaStoreAttribute( key = "field_precision" )
+  @HopMetadataProperty( key = "field_precision" )
   private int precision;
 
-  @MetaStoreAttribute( key = "field_comment" )
+  @HopMetadataProperty( key = "field_comment" )
   private String comment;
 
-  @MetaStoreAttribute( key = "field_format" )
+  @HopMetadataProperty( key = "field_format" )
   private String format;
 
   public DataSetField() {

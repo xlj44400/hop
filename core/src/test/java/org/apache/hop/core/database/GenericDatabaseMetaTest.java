@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 package org.apache.hop.core.database;
 
 import org.apache.hop.core.row.value.ValueMetaBigNumber;
@@ -40,17 +35,17 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 
-import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 @RunWith( PowerMockRunner.class )
 public class GenericDatabaseMetaTest {
-  GenericDatabaseMeta nativeMeta, odbcMeta;
+  GenericDatabaseMeta nativeMeta;
 
   @Mock
   GenericDatabaseMeta mockedMeta;
@@ -59,23 +54,20 @@ public class GenericDatabaseMetaTest {
   public void setupBefore() {
     nativeMeta = new GenericDatabaseMeta();
     nativeMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_NATIVE );
-    odbcMeta = new GenericDatabaseMeta();
-    odbcMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_ODBC );
   }
 
   @Test
   public void testSettings() throws Exception {
-    assertArrayEquals( new int[] { DatabaseMeta.TYPE_ACCESS_NATIVE, DatabaseMeta.TYPE_ACCESS_ODBC },
+    assertArrayEquals( new int[] { DatabaseMeta.TYPE_ACCESS_NATIVE },
       nativeMeta.getAccessTypeList() );
     assertEquals( 1, nativeMeta.getNotFoundTK( true ) );
     assertEquals( 0, nativeMeta.getNotFoundTK( false ) );
-    Properties attrs = new Properties();
+    Map<String,String> attrs = new HashMap<>();
     attrs.put( GenericDatabaseMeta.ATRRIBUTE_CUSTOM_DRIVER_CLASS, "foo.bar.wibble" );
     nativeMeta.setManualUrl( "jdbc:foo:bar://foodb" );
     nativeMeta.setAttributes( attrs );
     assertEquals( "foo.bar.wibble", nativeMeta.getDriverClass() );
     assertEquals( "jdbc:foo:bar://foodb", nativeMeta.getURL( "NOT", "GOINGTO", "BEUSED" ) );
-    assertEquals( "jdbc:odbc:FOO", odbcMeta.getURL( "NOT", "USED", "FOO" ) );
     assertFalse( nativeMeta.isFetchSizeSupported() );
     assertFalse( nativeMeta.supportsBitmapIndex() );
     assertFalse( nativeMeta.supportsPreparedStatementMetadataRetrieval() );
@@ -157,11 +149,6 @@ public class GenericDatabaseMetaTest {
     assertEquals( "ALTER TABLE FOO ADD BAR SMALLINT",
       nativeMeta.getAddColumnStatement( "FOO", new ValueMetaInteger( "BAR", 4, 0 ), "", true, "", false ) );
 
-    // do a boolean check
-    odbcMeta.setSupportsBooleanDataType( true );
-    assertEquals( "ALTER TABLE FOO ADD BAR BOOLEAN",
-      odbcMeta.getAddColumnStatement( "FOO", new ValueMetaBoolean( "BAR" ), "", false, "", false ) );
-    odbcMeta.setSupportsBooleanDataType( false );
 
     assertEquals( "ALTER TABLE FOO ADD BAR BIGSERIAL",
       nativeMeta.getAddColumnStatement( "FOO", new ValueMetaInteger( "BAR" ), "BAR", false, "", false ) );

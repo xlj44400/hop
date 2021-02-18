@@ -1,50 +1,46 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.shared;
 
 import org.apache.hop.core.SwtUniversalImage;
+import org.apache.hop.core.SwtUniversalImageSvg;
+import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.gui.IGc;
 import org.apache.hop.core.gui.Point;
-import org.apache.hop.ui.core.gui.GuiResource;
-import org.apache.hop.workflow.action.ActionCopy;
+import org.apache.hop.core.svg.SvgCache;
+import org.apache.hop.core.svg.SvgCacheEntry;
+import org.apache.hop.core.svg.SvgFile;
+import org.apache.hop.core.svg.SvgImage;
 import org.apache.hop.pipeline.transform.TransformMeta;
-import org.apache.hop.ui.core.ConstUi;
 import org.apache.hop.ui.core.PropsUi;
-import org.apache.hop.ui.util.ImageUtil;
-import org.apache.hop.ui.util.SwtSvgImageUtil;
+import org.apache.hop.ui.core.gui.GuiResource;
+import org.apache.hop.ui.util.EnvironmentUtils;
+import org.apache.hop.workflow.action.ActionMeta;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.graphics.Device;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.LineAttributes;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Transform;
 
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -57,25 +53,26 @@ public class SwtGc implements IGc {
   protected Color white;
   protected Color red;
   protected Color yellow;
-  protected Color orange;
+  protected Color hopFalse;
   protected Color green;
   protected Color blue;
   protected Color magenta;
+  protected Color purpule;
+  protected Color indigo;
   protected Color gray;
   protected Color lightGray;
   protected Color darkGray;
   protected Color lightBlue;
   protected Color crystal;
   protected Color hopDefault;
-  protected Color hopOK;
+  protected Color hopTrue;
   protected Color deprecated;
 
   private GC gc;
 
-  private int iconsize;
+  private int iconSize;
 
-  //TODO should be changed to PropsUi usage
-  private int small_icon_size = ConstUi.SMALL_ICON_SIZE;
+  private int miniIconSize;
 
   private Map<String, SwtUniversalImage> images;
 
@@ -84,42 +81,44 @@ public class SwtGc implements IGc {
   private List<Color> colors;
   private List<Font> fonts;
 
-  private Image image;
-
   private Point area;
   private Transform transform;
 
-  public SwtGc( Device device, Point area, int iconsize ) {
-    this.image = new Image( device, area.x, area.y );
-    this.gc = new GC( image );
+  public SwtGc( GC gc, int width, int height, int iconSize ) {
+    this.gc = gc;
     this.images = GuiResource.getInstance().getImagesTransforms();
-    this.iconsize = iconsize;
-    this.area = area;
+    this.iconSize = iconSize;
+    this.miniIconSize = iconSize / 2;
+    this.area = new Point(width, height);
 
-    this.colors = new ArrayList<Color>();
-    this.fonts = new ArrayList<Font>();
+    this.colors = new ArrayList<>();
+    this.fonts = new ArrayList<>();
 
     this.background = GuiResource.getInstance().getColorGraph();
     this.black = GuiResource.getInstance().getColorBlack();
     this.white = GuiResource.getInstance().getColorWhite();
     this.red = GuiResource.getInstance().getColorRed();
     this.yellow = GuiResource.getInstance().getColorYellow();
-    this.orange = GuiResource.getInstance().getColorOrange();
+    this.hopFalse = GuiResource.getInstance().getColorOrange();
     this.green = GuiResource.getInstance().getColorGreen();
     this.blue = GuiResource.getInstance().getColorBlue();
     this.magenta = GuiResource.getInstance().getColorMagenta();
+    this.purpule = GuiResource.getInstance().getColorPurpule();
+    this.indigo = GuiResource.getInstance().getColorIndigo();
     this.gray = GuiResource.getInstance().getColorGray();
     this.lightGray = GuiResource.getInstance().getColorLightGray();
     this.darkGray = GuiResource.getInstance().getColorDarkGray();
     this.lightBlue = GuiResource.getInstance().getColorLightBlue();
     this.crystal = GuiResource.getInstance().getColorCrystalText();
     this.hopDefault = GuiResource.getInstance().getColorHopDefault();
-    this.hopOK = GuiResource.getInstance().getColorHopOK();
+    this.hopTrue = GuiResource.getInstance().getColorHopTrue();
     this.deprecated = GuiResource.getInstance().getColorDeprecated();
   }
 
   public void dispose() {
-    gc.dispose();
+    // Do not dispose the GC.  It's handed to us so we don't dispose it
+    // However, the resources below are possibly used and allocated here so they need to be cleaned up
+    //
     if ( transform != null && transform.isDisposed() == false ) {
       transform.dispose();
     }
@@ -135,27 +134,12 @@ public class SwtGc implements IGc {
     gc.drawLine( x, y, x2, y2 );
   }
 
-  public void drawImage( String location, ClassLoader classLoader, int x, int y ) {
-    Image img = SwtSvgImageUtil.getImage( PropsUi.getDisplay(), classLoader, location,
-      Math.round( small_icon_size * currentMagnification ),
-      Math.round( small_icon_size * currentMagnification ) );
-    if ( img != null ) {
-      Rectangle bounds = img.getBounds();
-      gc.drawImage( img, 0, 0, bounds.width, bounds.height, x, y, small_icon_size, small_icon_size );
-    }
-  }
-
-  @Override
-  public void drawImage( EImage image, int x, int y ) {
-    drawImage( image, x, y, currentMagnification );
-  }
-
   public void drawImage( EImage image, int x, int y, float magnification ) {
-    Image img = getNativeImage( image ).getAsBitmapForSize( gc.getDevice(), Math.round( small_icon_size * magnification ),
-      Math.round( small_icon_size * magnification ) );
+    Image img = getNativeImage( image ).getAsBitmapForSize( gc.getDevice(), Math.round( miniIconSize * magnification ),
+      Math.round( miniIconSize * magnification ) );
     if ( img != null ) {
       Rectangle bounds = img.getBounds();
-      gc.drawImage( img, 0, 0, bounds.width, bounds.height, x, y, small_icon_size, small_icon_size );
+      gc.drawImage( img, 0, 0, bounds.width, bounds.height, x, y, miniIconSize, miniIconSize );
     }
   }
 
@@ -170,8 +154,8 @@ public class SwtGc implements IGc {
 
   public void drawImage( EImage image, int x, int y, float magnification, double angle ) {
     Image img =
-      getNativeImage( image ).getAsBitmapForSize( gc.getDevice(), Math.round( small_icon_size * magnification ),
-        Math.round( small_icon_size * magnification ), angle );
+      getNativeImage( image ).getAsBitmapForSize( gc.getDevice(), Math.round( miniIconSize * magnification ),
+        Math.round( miniIconSize * magnification ), angle );
     if ( img != null ) {
       Rectangle bounds = img.getBounds();
       int hx = Math.round( bounds.width / magnification );
@@ -180,18 +164,12 @@ public class SwtGc implements IGc {
     }
   }
 
-  public Point getImageBounds( EImage image ) {
-    return new Point( small_icon_size, small_icon_size );
-  }
-
   public static final SwtUniversalImage getNativeImage( EImage image ) {
     switch ( image ) {
       case LOCK:
         return GuiResource.getInstance().getSwtImageLocked();
-      case TRANSFORM_ERROR:
-        return GuiResource.getInstance().getSwtImageTransformError();
-      case TRANSFORM_ERROR_RED:
-        return GuiResource.getInstance().getSwtImageRedTransformError();
+      case FAILURE:
+        return GuiResource.getInstance().getSwtImageFailure();
       case EDIT:
         return GuiResource.getInstance().getSwtImageEdit();
       case CONTEXT_MENU:
@@ -201,19 +179,21 @@ public class SwtGc implements IGc {
       case FALSE:
         return GuiResource.getInstance().getSwtImageFalse();
       case ERROR:
-        return GuiResource.getInstance().getSwtImageErrorHop();
+        return GuiResource.getInstance().getSwtImageError();
+      case SUCCESS:
+        return GuiResource.getInstance().getSwtImageSuccess();
       case INFO:
-        return GuiResource.getInstance().getSwtImageInfoHop();
+        return GuiResource.getInstance().getSwtImageInfo();
       case TARGET:
-        return GuiResource.getInstance().getSwtImageHopTarget();
+        return GuiResource.getInstance().getSwtImageTarget();
       case INPUT:
-        return GuiResource.getInstance().getSwtImageHopInput();
+        return GuiResource.getInstance().getSwtImageInput();
       case OUTPUT:
-        return GuiResource.getInstance().getSwtImageHopOutput();
+        return GuiResource.getInstance().getSwtImageOutput();
       case ARROW:
         return GuiResource.getInstance().getSwtImageArrow();
       case COPY_ROWS:
-        return GuiResource.getInstance().getSwtImageCopyHop();
+        return GuiResource.getInstance().getSwtImageCopyRows();
       case LOAD_BALANCE:
         return GuiResource.getInstance().getSwtImageBalance();
       case CHECKPOINT:
@@ -229,15 +209,19 @@ public class SwtGc implements IGc {
       case INJECT:
         return GuiResource.getInstance().getSwtImageInject();
       case ARROW_DEFAULT:
-        return GuiResource.getInstance().getDefaultArrow();
-      case ARROW_OK:
-        return GuiResource.getInstance().getOkArrow();
+        return GuiResource.getInstance().getSwtImageArrowDefault();
+      case ARROW_TRUE:
+        return GuiResource.getInstance().getSwtImageArrowTrue();
+      case ARROW_FALSE:
+        return GuiResource.getInstance().getSwtImageArrowFalse();
       case ARROW_ERROR:
-        return GuiResource.getInstance().getErrorArrow();
+        return GuiResource.getInstance().getSwtImageArrowError();
       case ARROW_DISABLED:
-        return GuiResource.getInstance().getDisabledArrow();
+        return GuiResource.getInstance().getSwtImageArrowDisabled();
       case ARROW_CANDIDATE:
-        return GuiResource.getInstance().getCandidateArrow();
+        return GuiResource.getInstance().getSwtImageArrowCandidate();
+      case DATA:
+        return GuiResource.getInstance().getSwtImageData();
       default:
         break;
     }
@@ -317,14 +301,16 @@ public class SwtGc implements IGc {
         return red;
       case YELLOW:
         return yellow;
-      case ORANGE:
-        return orange;
       case GREEN:
         return green;
       case BLUE:
         return blue;
       case MAGENTA:
         return magenta;
+      case PURPULE:
+        return purpule;
+      case INDIGO:
+        return indigo;        
       case GRAY:
         return gray;
       case LIGHTGRAY:
@@ -337,8 +323,10 @@ public class SwtGc implements IGc {
         return crystal;
       case HOP_DEFAULT:
         return hopDefault;
-      case HOP_OK:
-        return hopOK;
+      case HOP_TRUE:
+        return hopTrue;
+      case HOP_FALSE:
+        return hopFalse;        
       case DEPRECATED:
         return deprecated;
       default:
@@ -368,25 +356,37 @@ public class SwtGc implements IGc {
   }
 
   public void setLineStyle( ELineStyle lineStyle ) {
-    switch ( lineStyle ) {
-      case DASHDOT:
-        gc.setLineStyle( SWT.LINE_DASHDOT );
-        break;
-      case SOLID:
-        gc.setLineStyle( SWT.LINE_SOLID );
-        break;
-      case DOT:
-        gc.setLineStyle( SWT.LINE_DOT );
-        break;
-      case DASH:
-        gc.setLineStyle( SWT.LINE_DASH );
-        break;
-      case PARALLEL:
-        gc.setLineAttributes( new LineAttributes(
-          gc.getLineWidth(), SWT.CAP_FLAT, SWT.JOIN_MITER, SWT.LINE_CUSTOM, new float[] { 5, 3, }, 0, 10 ) );
-        break;
-      default:
-        break;
+    // RAP does not implement LineStyle and LineAttributes
+    if (!EnvironmentUtils.getInstance().isWeb()) {
+      switch (lineStyle) {
+        case DASHDOT:
+          gc.setLineStyle(SWT.LINE_DASHDOT);
+          break;
+        case SOLID:
+          gc.setLineStyle(SWT.LINE_SOLID);
+          break;
+        case DOT:
+          gc.setLineStyle(SWT.LINE_DOT);
+          break;
+        case DASH:
+          gc.setLineStyle(SWT.LINE_DASH);
+          break;
+        case PARALLEL:
+          gc.setLineAttributes(
+              new LineAttributes(
+                  gc.getLineWidth(),
+                  SWT.CAP_FLAT,
+                  SWT.JOIN_MITER,
+                  SWT.LINE_CUSTOM,
+                  new float[] {
+                    5, 3,
+                  },
+                  0,
+                  10));
+          break;
+        default:
+          break;
+      }
     }
   }
 
@@ -399,7 +399,7 @@ public class SwtGc implements IGc {
       transform.dispose();
     }
     transform = new Transform( gc.getDevice() );
-    transform.translate( translationX , translationY );
+    transform.translate( translationX, translationY );
     transform.scale( magnification, magnification );
     gc.setTransform( transform );
     currentMagnification = magnification;
@@ -415,49 +415,54 @@ public class SwtGc implements IGc {
   }
 
   public void drawTransformIcon( int x, int y, TransformMeta transformMeta, float magnification ) {
-    String transformtype = transformMeta.getTransformPluginId();
-    Image im = null;
+    SwtUniversalImage swtImage = null;
+    
     if ( transformMeta.isMissing() ) {
-      im = GuiResource.getInstance().getImageMissing();
+      swtImage = GuiResource.getInstance().getSwtImageMissing();
     } else if ( transformMeta.isDeprecated() ) {
-      im = GuiResource.getInstance().getImageDeprecated();
+      swtImage = GuiResource.getInstance().getSwtImageDeprecated();
     } else {
-      im =
-        images.get( transformtype ).getAsBitmapForSize( gc.getDevice(), Math.round( iconsize * magnification ),
-          Math.round( iconsize * magnification ) );
+      String pluginId = transformMeta.getPluginId();
+      if ( pluginId != null ) {
+        swtImage = GuiResource.getInstance().getImagesTransforms().get( pluginId );
+      }
     }
-    if ( im != null ) { // Draw the icon!
-      org.eclipse.swt.graphics.Rectangle bounds = im.getBounds();
-      gc.drawImage( im, 0, 0, bounds.width, bounds.height, x, y, iconsize, iconsize );
+
+    if ( swtImage == null ) {
+      return;
     }
+
+    int w = Math.round( iconSize * magnification );
+    int h = Math.round( iconSize * magnification );
+    Image image = swtImage.getAsBitmapForSize( gc.getDevice(), w, h );
+
+    org.eclipse.swt.graphics.Rectangle bounds = image.getBounds();
+    gc.drawImage( image, 0, 0, bounds.width, bounds.height, x, y, iconSize, iconSize );
   }
 
-  public void drawJobEntryIcon( int x, int y, ActionCopy actionCopy, float magnification ) {
-    if ( actionCopy == null ) {
+  public void drawActionIcon( int x, int y, ActionMeta actionMeta, float magnification ) {
+    if ( actionMeta == null ) {
       return; // Don't draw anything
     }
 
     SwtUniversalImage swtImage = null;
 
-    int w = Math.round( iconsize * magnification );
-    int h = Math.round( iconsize * magnification );
+    int w = Math.round( iconSize * magnification );
+    int h = Math.round( iconSize * magnification );
 
-    if ( actionCopy.isSpecial() ) {
-      if ( actionCopy.isStart() ) {
-        swtImage = GuiResource.getInstance().getSwtImageStart();
-      }
-      if ( actionCopy.isDummy() ) {
-        swtImage = GuiResource.getInstance().getSwtImageDummy();
-      }
-    } else {
-      String configId = actionCopy.getAction().getPluginId();
-      if ( configId != null ) {
-        swtImage = GuiResource.getInstance().getImagesActions().get( configId );
+    if ( actionMeta.isMissing() ) {
+	  swtImage = GuiResource.getInstance().getSwtImageMissing();
+    }
+    else if ( actionMeta.isDeprecated() ) {
+      swtImage = GuiResource.getInstance().getSwtImageDeprecated();
+    }
+    else {
+      String pluginId = actionMeta.getAction().getPluginId();
+      if ( pluginId != null ) {
+        swtImage = GuiResource.getInstance().getImagesActions().get( pluginId );
       }
     }
-    if ( actionCopy.isMissing() ) {
-      swtImage = GuiResource.getInstance().getSwtImageMissing();
-    }
+
     if ( swtImage == null ) {
       return;
     }
@@ -465,17 +470,31 @@ public class SwtGc implements IGc {
     Image image = swtImage.getAsBitmapForSize( gc.getDevice(), w, h );
 
     org.eclipse.swt.graphics.Rectangle bounds = image.getBounds();
-    gc.drawImage( image, 0, 0, bounds.width, bounds.height, x, y, iconsize, iconsize );
+    gc.drawImage( image, 0, 0, bounds.width, bounds.height, x, y, iconSize, iconSize );
   }
 
-  @Override
-  public void drawJobEntryIcon( int x, int y, ActionCopy actionCopy ) {
-    drawJobEntryIcon( x, y, actionCopy, currentMagnification );
-  }
+  @Override public void drawImage( SvgFile svgFile, int x, int y, int desiredWidth, int desiredHeight, float magnification, double angle ) throws HopException {
+    //
+    SvgCacheEntry cacheEntry = SvgCache.loadSvg( svgFile );
+    SwtUniversalImageSvg imageSvg = new SwtUniversalImageSvg( new SvgImage(cacheEntry.getSvgDocument()) );
 
-  @Override
-  public void drawTransformIcon( int x, int y, TransformMeta transformMeta ) {
-    drawTransformIcon( x, y, transformMeta, currentMagnification );
+    int magnifiedWidth = Math.round( desiredWidth * magnification );
+    int magnifiedHeight = Math.round( desiredHeight * magnification );
+    if (angle!=0) {
+      // A rotated image is blown up to twice its size to allow it to be rendered completely in the center
+      //
+      Image img = imageSvg.getAsBitmapForSize( gc.getDevice(), magnifiedWidth, magnifiedHeight, angle );
+      Rectangle bounds = img.getBounds();
+      int hx = Math.round( bounds.width / magnification );
+      int hy = Math.round( bounds.height / magnification );
+      gc.drawImage( img, 0, 0, bounds.width, bounds.height, x - hx / 2, y - hy / 2, hx, hy );
+    } else {
+      // Without rotation we simply draw the image with the desired width
+      //
+      Image img = imageSvg.getAsBitmapForSize( gc.getDevice(), magnifiedWidth, magnifiedHeight );
+      Rectangle bounds = img.getBounds();
+      gc.drawImage( img, 0, 0, bounds.width, bounds.height, x, y, desiredWidth, desiredHeight );
+    }
   }
 
   public void setAntialias( boolean antiAlias ) {
@@ -528,10 +547,6 @@ public class SwtGc implements IGc {
     gc.setFont( font );
   }
 
-  public Object getImage() {
-    return image;
-  }
-
   public void switchForegroundBackgroundColors() {
     Color fg = gc.getForeground();
     Color bg = gc.getBackground();
@@ -544,11 +559,4 @@ public class SwtGc implements IGc {
     return area;
   }
 
-  @Override
-  public void drawImage( BufferedImage image, int x, int y ) {
-    ImageData imageData = ImageUtil.convertToSWT( image );
-    Image swtImage = new Image( gc.getDevice(), imageData );
-    gc.drawImage( swtImage, x, y );
-    swtImage.dispose();
-  }
 }

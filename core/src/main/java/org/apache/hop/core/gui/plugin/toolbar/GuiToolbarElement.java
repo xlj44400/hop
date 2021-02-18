@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.gui.plugin.toolbar;
 
@@ -53,7 +48,7 @@ public @interface GuiToolbarElement {
    *
    * @return
    */
-  GuiToolbarElementType type() default GuiToolbarElementType.TOOLBAR_BUTTON;
+  GuiToolbarElementType type() default GuiToolbarElementType.BUTTON;
 
   /**
    * The label of the GUI element: the menu item text and so on.
@@ -68,17 +63,6 @@ public @interface GuiToolbarElement {
    * @return The GUI Element tooltip for the widget and the label
    */
   String toolTip() default "";
-
-  /**
-   * The class name of the i18n package class for the label and tooltip
-   */
-  Class<?> i18nPackageClass() default Void.class;
-
-  /**
-   * The name of the i18n package class for the label and tooltip
-   */
-  String i18nPackage() default "";
-
 
   /**
    * The image filename of the GUI Element, usually an SVG icon.
@@ -128,7 +112,7 @@ public @interface GuiToolbarElement {
   boolean ignored() default false;
 
   /**
-   * Set to true if you want the menu-item of toolbar icon to be preceded by a separator or space.
+   * Set to true if you want the menu-item of toolbar icon to be preceded by a separator or variables.
    *
    * @return True if you want a separator before this element
    */

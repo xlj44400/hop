@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.mergejoin;
 
@@ -58,9 +53,9 @@ public class MergeJoinMetaTest {
     //SwitchCaseMeta bean-like attributes
     List<String> attributes = Arrays.asList( "joinType", "keyFields1", "keyFields2" );
 
-    Map<String, IFieldLoadSaveValidator<?>> attrValidatorMap = new HashMap<String, IFieldLoadSaveValidator<?>>();
+    Map<String, IFieldLoadSaveValidator<?>> attrValidatorMap = new HashMap<>();
 
-    Map<String, IFieldLoadSaveValidator<?>> typeValidatorMap = new HashMap<String, IFieldLoadSaveValidator<?>>();
+    Map<String, IFieldLoadSaveValidator<?>> typeValidatorMap = new HashMap<>();
 
     Map<String, String> getterMap = new HashMap<>();
     getterMap.put( "joinType", "getJoinType" );
@@ -85,7 +80,7 @@ public class MergeJoinMetaTest {
       public MergeJoinMeta getTestObject() {
         return new MergeJoinMeta() {
           {
-            setJoinType( join_types[ 0 ] );
+            setJoinType( joinTypes[ 0 ] );
             setKeyFields1( new String[] { "field1", "field2" } );
             setKeyFields2( new String[] { "field1", "field3" } );
           }
@@ -114,20 +109,20 @@ public class MergeJoinMetaTest {
     MergeJoinMeta meta = new MergeJoinMeta();
 
     RowMeta inputRow1 = new RowMeta();
-    ValueMetaInteger field1_row1 = new ValueMetaInteger( "field1" );
-    field1_row1.setOrigin( "inputTransform1" );
-    inputRow1.addValueMeta( field1_row1 );
-    ValueMetaString field2_row1 = new ValueMetaString( "field2" );
-    field2_row1.setOrigin( "inputTransform1" );
-    inputRow1.addValueMeta( field2_row1 );
+    ValueMetaInteger field1Row1 = new ValueMetaInteger( "field1" );
+    field1Row1.setOrigin( "inputTransform1" );
+    inputRow1.addValueMeta( field1Row1 );
+    ValueMetaString field2Row1 = new ValueMetaString( "field2" );
+    field2Row1.setOrigin( "inputTransform1" );
+    inputRow1.addValueMeta( field2Row1 );
 
     RowMeta inputRow2 = new RowMeta();
-    ValueMetaString field1_row2 = new ValueMetaString( "field1" );
-    field1_row2.setOrigin( "inputTransform2" );
-    inputRow2.addValueMeta( field1_row2 );
-    ValueMetaString field3_row2 = new ValueMetaString( "field3" );
-    field3_row2.setOrigin( "inputTransform2" );
-    inputRow2.addValueMeta( field3_row2 );
+    ValueMetaString field1Row2 = new ValueMetaString( "field1" );
+    field1Row2.setOrigin( "inputTransform2" );
+    inputRow2.addValueMeta( field1Row2 );
+    ValueMetaString field3Row2 = new ValueMetaString( "field3" );
+    field3Row2.setOrigin( "inputTransform2" );
+    inputRow2.addValueMeta( field3Row2 );
 
     TransformMeta transformMeta = new TransformMeta( "Merge", meta );
 

@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.excelinput.staxpoi;
 
@@ -30,7 +25,6 @@ import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.model.SharedStringsTable;
 import org.apache.poi.xssf.model.StylesTable;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTRst;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTXf;
@@ -284,35 +278,25 @@ public class StaxPoiSheetTest {
     XSSFReader reader = mock( XSSFReader.class );
     when( reader.getSharedStringsTable() ).thenReturn( sst );
     when( reader.getStylesTable() ).thenReturn( styles );
-    when( reader.getSheet( sheetId ) ).thenAnswer( new Answer<InputStream>() {
-      public InputStream answer( InvocationOnMock invocation ) throws Throwable {
-        return IOUtils.toInputStream( sheetContent, "UTF-8" );
-      }
-    } );
+    when( reader.getSheet( sheetId ) ).thenAnswer( (Answer<InputStream>) invocation -> IOUtils.toInputStream( sheetContent, "UTF-8" ) );
     return reader;
   }
 
   private StylesTable mockStylesTable( final Map<Integer, Integer> styleToNumFmtId,
                                        final Map<Integer, String> numFmts ) {
     StylesTable styles = mock( StylesTable.class );
-    when( styles.getCellXfAt( any( Integer.class ) ) ).then( new Answer<CTXf>() {
-      public CTXf answer( InvocationOnMock invocation ) throws Throwable {
-        int style = (int) invocation.getArguments()[ 0 ];
-        Integer numFmtId = styleToNumFmtId.get( style );
-        if ( numFmtId != null ) {
-          CTXf ctxf = CTXf.Factory.newInstance();
-          ctxf.setNumFmtId( numFmtId );
-          return ctxf;
-        } else {
-          return null;
-        }
+    when( styles.getCellXfAt( any( Integer.class ) ) ).then( (Answer<CTXf>) invocation -> {
+      int style = (int) invocation.getArguments()[ 0 ];
+      Integer numFmtId = styleToNumFmtId.get( style );
+      if ( numFmtId != null ) {
+        CTXf ctxf = CTXf.Factory.newInstance();
+        ctxf.setNumFmtId( numFmtId );
+        return ctxf;
+      } else {
+        return null;
       }
     } );
-    when( styles.getNumberFormatAt( any( Short.class ) ) ).then( new Answer<String>() {
-      public String answer( InvocationOnMock invocation ) throws Throwable {
-        return numFmts.get( invocation.getArguments()[ 0 ] );
-      }
-    } );
+    when( styles.getNumberFormatAt( any( Short.class ) ) ).then( (Answer<String>) invocation -> numFmts.get( invocation.getArguments()[ 0 ] ) );
     return styles;
   }
 

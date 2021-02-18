@@ -1,28 +1,24 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.dialog;
 
 import org.apache.hop.core.ProgressMonitorAdapter;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.DatabaseImpact;
 import org.apache.hop.pipeline.PipelineMeta;
@@ -43,9 +39,10 @@ import java.util.List;
  * @since 04-apr-2005
  */
 public class AnalyseImpactProgressDialog {
-  private static Class<?> PKG = AnalyseImpactProgressDialog.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = AnalyseImpactProgressDialog.class; // For Translator
 
   private Shell shell;
+  private final IVariables variables;
   private PipelineMeta pipelineMeta;
   private List<DatabaseImpact> impact;
   private boolean impactHasRun;
@@ -54,26 +51,25 @@ public class AnalyseImpactProgressDialog {
    * Creates a new dialog that will handle the wait while determining the impact of the pipeline on the databases
    * used...
    */
-  public AnalyseImpactProgressDialog( Shell shell, PipelineMeta pipelineMeta, List<DatabaseImpact> impact ) {
+  public AnalyseImpactProgressDialog( Shell shell, IVariables variables, PipelineMeta pipelineMeta, List<DatabaseImpact> impact ) {
     this.shell = shell;
+    this.variables = variables;
     this.pipelineMeta = pipelineMeta;
     this.impact = impact;
   }
 
   public boolean open() {
-    IRunnableWithProgress op = new IRunnableWithProgress() {
-      public void run( IProgressMonitor monitor ) throws InvocationTargetException, InterruptedException {
-        try {
-          impact.clear(); // Start with a clean slate!!
-          pipelineMeta.analyseImpact( impact, new ProgressMonitorAdapter( monitor ) );
-          impactHasRun = true;
-        } catch ( Exception e ) {
-          impact.clear();
-          impactHasRun = false;
-          // Problem encountered generating impact list: {0}
-          throw new InvocationTargetException( e, BaseMessages.getString(
-            PKG, "AnalyseImpactProgressDialog.RuntimeError.UnableToAnalyzeImpact.Exception", e.toString() ) );
-        }
+    IRunnableWithProgress op = monitor -> {
+      try {
+        impact.clear(); // Start with a clean slate!!
+        pipelineMeta.analyseImpact( variables, impact, new ProgressMonitorAdapter( monitor ) );
+        impactHasRun = true;
+      } catch ( Exception e ) {
+        impact.clear();
+        impactHasRun = false;
+        // Problem encountered generating impact list: {0}
+        throw new InvocationTargetException( e, BaseMessages.getString(
+          PKG, "AnalyseImpactProgressDialog.RuntimeError.UnableToAnalyzeImpact.Exception", e.toString() ) );
       }
     };
 

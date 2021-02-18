@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.tablecompare;
 
@@ -34,10 +29,8 @@ import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransform;
-import org.apache.hop.pipeline.transform.ITransformData;
 import org.apache.hop.pipeline.transform.ITransform;
 import org.apache.hop.pipeline.transform.TransformMeta;
-import org.apache.hop.pipeline.transform.ITransform;
 
 import java.sql.ResultSet;
 
@@ -47,7 +40,7 @@ import java.sql.ResultSet;
  */
 
 public class TableCompare extends BaseTransform<TableCompareMeta, TableCompareData> implements ITransform<TableCompareMeta, TableCompareData> {
-  private static Class<?> PKG = TableCompare.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = TableCompare.class; // For Translator
 
   public TableCompare( TransformMeta transformMeta, TableCompareMeta meta, TableCompareData data, int copyNr, PipelineMeta pipelineMeta,
                        Pipeline pipeline ) {
@@ -68,7 +61,7 @@ public class TableCompare extends BaseTransform<TableCompareMeta, TableCompareDa
       // What's the format of the output row?
       //
       data.outputRowMeta = getInputRowMeta().clone();
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
       // Reference schema
       //
@@ -227,9 +220,9 @@ public class TableCompare extends BaseTransform<TableCompareMeta, TableCompareDa
     }
 
     String refSchemaTable =
-      meta.getReferenceConnection().getQuotedSchemaTableCombination( referenceSchema, referenceTable );
+      meta.getReferenceConnection().getQuotedSchemaTableCombination( this, referenceSchema, referenceTable );
     String cmpSchemaTable =
-      meta.getCompareConnection().getQuotedSchemaTableCombination( compareSchema, compareTable );
+      meta.getCompareConnection().getQuotedSchemaTableCombination( this, compareSchema, compareTable );
 
     if ( Utils.isEmpty( keyFields ) ) {
       Object[] errorRowData = constructErrorRow( rowMeta, r, null, null, null );
@@ -581,7 +574,7 @@ public class TableCompare extends BaseTransform<TableCompareMeta, TableCompareDa
     if ( super.init() ) {
 
       try {
-        data.referenceDb = new Database( this, meta.getReferenceConnection() );
+        data.referenceDb = new Database( this, this, meta.getReferenceConnection() );
         data.referenceDb.connect();
 
       } catch ( Exception e ) {
@@ -592,7 +585,7 @@ public class TableCompare extends BaseTransform<TableCompareMeta, TableCompareDa
       }
 
       try {
-        data.compareDb = new Database( this, meta.getCompareConnection() );
+        data.compareDb = new Database( this, this, meta.getCompareConnection() );
         data.compareDb.connect();
 
       } catch ( Exception e ) {

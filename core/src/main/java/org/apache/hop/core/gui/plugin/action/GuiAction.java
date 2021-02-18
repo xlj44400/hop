@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.gui.plugin.action;
 
@@ -40,6 +35,8 @@ public class GuiAction {
   private String guiPluginMethodName;
   private ClassLoader classLoader;
   private List<String> keywords;
+  private String category;
+  private String categoryOrder;
 
   public GuiAction() {
     this.keywords = new ArrayList<>();
@@ -101,6 +98,8 @@ public class GuiAction {
     for ( String keyword : guiAction.getKeywords() ) {
       keywords.add( keyword );
     }
+    this.category = guiAction.category;
+    this.categoryOrder = guiAction.categoryOrder;
     this.classLoader = guiAction.getClassLoader();
   }
 
@@ -130,6 +129,9 @@ public class GuiAction {
       if ( matchesString( keyword, filter ) ) {
         return true;
       }
+    }
+    if (matchesString( category, filter )) {
+      return true;
     }
     return false;
   }
@@ -341,5 +343,37 @@ public class GuiAction {
    */
   public void setKeywords( List<String> keywords ) {
     this.keywords = keywords;
+  }
+
+  /**
+   * Gets category
+   *
+   * @return value of category
+   */
+  public String getCategory() {
+    return category;
+  }
+
+  /**
+   * @param category The category to set
+   */
+  public void setCategory( String category ) {
+    this.category = category;
+  }
+
+  /**
+   * Gets categoryOrder
+   *
+   * @return value of categoryOrder
+   */
+  public String getCategoryOrder() {
+    return categoryOrder;
+  }
+
+  /**
+   * @param categoryOrder The categoryOrder to set
+   */
+  public void setCategoryOrder( String categoryOrder ) {
+    this.categoryOrder = categoryOrder;
   }
 }

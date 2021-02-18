@@ -1,30 +1,31 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.sftp;
 
+import java.net.InetAddress;
+import java.util.HashSet;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.commons.vfs2.FileObject;
-import org.apache.hop.core.ICheckResult;
 import org.apache.hop.core.Const;
+import org.apache.hop.core.ICheckResult;
 import org.apache.hop.core.Result;
 import org.apache.hop.core.ResultFile;
 import org.apache.hop.core.RowMetaAndData;
@@ -36,6 +37,10 @@ import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.vfs.HopVfs;
 import org.apache.hop.core.xml.XmlHandler;
 import org.apache.hop.i18n.BaseMessages;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
+import org.apache.hop.resource.ResourceEntry;
+import org.apache.hop.resource.ResourceEntry.ResourceType;
+import org.apache.hop.resource.ResourceReference;
 import org.apache.hop.workflow.WorkflowMeta;
 import org.apache.hop.workflow.action.ActionBase;
 import org.apache.hop.workflow.action.IAction;
@@ -43,17 +48,7 @@ import org.apache.hop.workflow.action.validator.AbstractFileValidator;
 import org.apache.hop.workflow.action.validator.ActionValidatorUtils;
 import org.apache.hop.workflow.action.validator.AndValidator;
 import org.apache.hop.workflow.action.validator.ValidatorContext;
-import org.apache.hop.metastore.api.IMetaStore;
-import org.apache.hop.resource.ResourceEntry;
-import org.apache.hop.resource.ResourceEntry.ResourceType;
-import org.apache.hop.resource.ResourceReference;
 import org.w3c.dom.Node;
-
-import java.net.InetAddress;
-import java.util.HashSet;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * This defines a SFTP action.
@@ -64,14 +59,14 @@ import java.util.regex.Pattern;
 
 @Action(
   id = "SFTP",
-  i18nPackageName = "org.apache.hop.workflow.actions.sftp",
-  name = "ActionSFTP.Name",
-  description = "ActionSFTP.Description",
+  name = "i18n::ActionSFTP.Name",
+  description = "i18n::ActionSFTP.Description",
   image = "SFTP.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.FileTransfer"
+  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.FileTransfer",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/sftp.html"
 )
 public class ActionSftp extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionSftp.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionSftp.class; // For Translator
 
   private static final int DEFAULT_PORT = 22;
   private String serverName;
@@ -157,8 +152,7 @@ public class ActionSftp extends ActionBase implements Cloneable, IAction {
     return retval.toString();
   }
 
-  public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+  @Override public void loadXml( Node entrynode, IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
       serverName = XmlHandler.getTagValue( entrynode, "servername" );
@@ -431,14 +425,14 @@ public class ActionSftp extends ActionBase implements Cloneable, IAction {
     long filesRetrieved = 0;
 
     if ( log.isDetailed() ) {
-      logDetailed( BaseMessages.getString( PKG, "JobSFTP.Log.StartAction" ) );
+      logDetailed( BaseMessages.getString( PKG, "ActionSftp.Log.StartAction" ) );
     }
-    HashSet<String> list_previous_filenames = new HashSet<String>();
+    HashSet<String> listPreviousFilenames = new HashSet<String>();
 
     if ( copyprevious ) {
       if ( rows.size() == 0 ) {
         if ( log.isDetailed() ) {
-          logDetailed( BaseMessages.getString( PKG, "JobSFTP.ArgsFromPreviousNothing" ) );
+          logDetailed( BaseMessages.getString( PKG, "ActionSftp.ArgsFromPreviousNothing" ) );
         }
         result.setResult( true );
         return result;
@@ -450,16 +444,16 @@ public class ActionSftp extends ActionBase implements Cloneable, IAction {
           resultRow = rows.get( iteration );
 
           // Get file names
-          String file_previous = resultRow.getString( 0, null );
-          if ( !Utils.isEmpty( file_previous ) ) {
-            list_previous_filenames.add( file_previous );
+          String filePrevious = resultRow.getString( 0, null );
+          if ( !Utils.isEmpty( filePrevious ) ) {
+            listPreviousFilenames.add( filePrevious );
             if ( log.isDebug() ) {
-              logDebug( BaseMessages.getString( PKG, "JobSFTP.Log.FilenameFromResult", file_previous ) );
+              logDebug( BaseMessages.getString( PKG, "ActionSftp.Log.FilenameFromResult", filePrevious ) );
             }
           }
         }
       } catch ( Exception e ) {
-        logError( BaseMessages.getString( PKG, "JobSFTP.Error.ArgFromPrevious" ) );
+        logError( BaseMessages.getString( PKG, "ActionSftp.Error.ArgFromPrevious" ) );
         result.setNrErrors( 1 );
         return result;
       }
@@ -468,13 +462,13 @@ public class ActionSftp extends ActionBase implements Cloneable, IAction {
     SftpClient sftpclient = null;
 
     // String substitution..
-    String realServerName = environmentSubstitute( serverName );
-    String realServerPort = environmentSubstitute( serverPort );
-    String realUsername = environmentSubstitute( userName );
-    String realPassword = Encr.decryptPasswordOptionallyEncrypted( environmentSubstitute( password ) );
-    String realSftpDirString = environmentSubstitute( sftpDirectory );
-    String realWildcard = environmentSubstitute( wildcard );
-    String realTargetDirectory = environmentSubstitute( targetDirectory );
+    String realServerName = resolve( serverName );
+    String realServerPort = resolve( serverPort );
+    String realUsername = resolve( userName );
+    String realPassword = Encr.decryptPasswordOptionallyEncrypted( resolve( password ) );
+    String realSftpDirString = resolve( sftpDirectory );
+    String realWildcard = resolve( wildcard );
+    String realTargetDirectory = resolve( targetDirectory );
     String realKeyFilename = null;
     String realPassPhrase = null;
     FileObject TargetFolder = null;
@@ -483,40 +477,40 @@ public class ActionSftp extends ActionBase implements Cloneable, IAction {
       // Let's perform some checks before starting
       if ( isUseKeyFile() ) {
         // We must have here a private keyfilename
-        realKeyFilename = environmentSubstitute( getKeyFilename() );
+        realKeyFilename = resolve( getKeyFilename() );
         if ( Utils.isEmpty( realKeyFilename ) ) {
           // Error..Missing keyfile
-          logError( BaseMessages.getString( PKG, "JobSFTP.Error.KeyFileMissing" ) );
+          logError( BaseMessages.getString( PKG, "ActionSftp.Error.KeyFileMissing" ) );
           result.setNrErrors( 1 );
           return result;
         }
         if ( !HopVfs.fileExists( realKeyFilename ) ) {
           // Error.. can not reach keyfile
-          logError( BaseMessages.getString( PKG, "JobSFTP.Error.KeyFileNotFound", realKeyFilename ) );
+          logError( BaseMessages.getString( PKG, "ActionSftp.Error.KeyFileNotFound", realKeyFilename ) );
           result.setNrErrors( 1 );
           return result;
         }
-        realPassPhrase = environmentSubstitute( getKeyPassPhrase() );
+        realPassPhrase = resolve( getKeyPassPhrase() );
       }
 
       if ( !Utils.isEmpty( realTargetDirectory ) ) {
-        TargetFolder = HopVfs.getFileObject( realTargetDirectory, this );
+        TargetFolder = HopVfs.getFileObject( realTargetDirectory );
         boolean TargetFolderExists = TargetFolder.exists();
         if ( TargetFolderExists ) {
           if ( log.isDetailed() ) {
-            logDetailed( BaseMessages.getString( PKG, "JobSFTP.Log.TargetFolderExists", realTargetDirectory ) );
+            logDetailed( BaseMessages.getString( PKG, "ActionSftp.Log.TargetFolderExists", realTargetDirectory ) );
           }
         } else {
           if ( !createtargetfolder ) {
             // Error..Target folder can not be found !
-            logError( BaseMessages.getString( PKG, "JobSFTP.Error.TargetFolderNotExists", realTargetDirectory ) );
+            logError( BaseMessages.getString( PKG, "ActionSftp.Error.TargetFolderNotExists", realTargetDirectory ) );
             result.setNrErrors( 1 );
             return result;
           } else {
             // create target folder
             TargetFolder.createFolder();
             if ( log.isDetailed() ) {
-              logDetailed( BaseMessages.getString( PKG, "JobSFTP.Log.TargetFolderCreated", realTargetDirectory ) );
+              logDetailed( BaseMessages.getString( PKG, "ActionSftp.Log.TargetFolderCreated", realTargetDirectory ) );
             }
           }
         }
@@ -534,19 +528,19 @@ public class ActionSftp extends ActionBase implements Cloneable, IAction {
           realKeyFilename, realPassPhrase );
       if ( log.isDetailed() ) {
         logDetailed( BaseMessages.getString(
-          PKG, "JobSFTP.Log.OpenedConnection", realServerName, realServerPort, realUsername ) );
+          PKG, "ActionSftp.Log.OpenedConnection", realServerName, realServerPort, realUsername ) );
       }
 
       // Set compression
       sftpclient.setCompression( getCompression() );
 
       // Set proxy?
-      String realProxyHost = environmentSubstitute( getProxyHost() );
+      String realProxyHost = resolve( getProxyHost() );
       if ( !Utils.isEmpty( realProxyHost ) ) {
         // Set proxy
         String password = getRealPassword( getProxyPassword() );
         sftpclient.setProxy(
-          realProxyHost, environmentSubstitute( getProxyPort() ), environmentSubstitute( getProxyUsername() ),
+          realProxyHost, resolve( getProxyPort() ), resolve( getProxyUsername() ),
           password, getProxyType() );
       }
 
@@ -560,11 +554,11 @@ public class ActionSftp extends ActionBase implements Cloneable, IAction {
         try {
           sftpclient.chdir( realSftpDirString );
         } catch ( Exception e ) {
-          logError( BaseMessages.getString( PKG, "JobSFTP.Error.CanNotFindRemoteFolder", realSftpDirString ) );
+          logError( BaseMessages.getString( PKG, "ActionSftp.Error.CanNotFindRemoteFolder", realSftpDirString ) );
           throw new Exception( e );
         }
         if ( log.isDetailed() ) {
-          logDetailed( BaseMessages.getString( PKG, "JobSFTP.Log.ChangedDirectory", realSftpDirString ) );
+          logDetailed( BaseMessages.getString( PKG, "ActionSftp.Log.ChangedDirectory", realSftpDirString ) );
         }
       }
       Pattern pattern = null;
@@ -574,12 +568,12 @@ public class ActionSftp extends ActionBase implements Cloneable, IAction {
         // Nothing was found !!! exit
         result.setResult( true );
         if ( log.isDetailed() ) {
-          logDetailed( BaseMessages.getString( PKG, "JobSFTP.Log.Found", "" + 0 ) );
+          logDetailed( BaseMessages.getString( PKG, "ActionSftp.Log.Found", "" + 0 ) );
         }
         return result;
       }
       if ( log.isDetailed() ) {
-        logDetailed( BaseMessages.getString( PKG, "JobSFTP.Log.Found", "" + filelist.length ) );
+        logDetailed( BaseMessages.getString( PKG, "ActionSftp.Log.Found", "" + filelist.length ) );
       }
 
       if ( !copyprevious ) {
@@ -595,7 +589,7 @@ public class ActionSftp extends ActionBase implements Cloneable, IAction {
         if ( copyprevious ) {
           // filenames list is send by previous action
           // download if the current file is in this list
-          getIt = list_previous_filenames.contains( filelist[ i ] );
+          getIt = listPreviousFilenames.contains( filelist[ i ] );
         } else {
           // download files
           // but before see if the file matches the regular expression!
@@ -607,11 +601,10 @@ public class ActionSftp extends ActionBase implements Cloneable, IAction {
 
         if ( getIt ) {
           if ( log.isDebug() ) {
-            logDebug( BaseMessages.getString( PKG, "JobSFTP.Log.GettingFiles", filelist[ i ], realTargetDirectory ) );
+            logDebug( BaseMessages.getString( PKG, "ActionSftp.Log.GettingFiles", filelist[ i ], realTargetDirectory ) );
           }
 
-          FileObject targetFile = HopVfs.getFileObject(
-            realTargetDirectory + Const.FILE_SEPARATOR + filelist[ i ], this );
+          FileObject targetFile = HopVfs.getFileObject( realTargetDirectory + Const.FILE_SEPARATOR + filelist[ i ] );
           sftpclient.get( targetFile, filelist[ i ] );
           filesRetrieved++;
 
@@ -623,18 +616,18 @@ public class ActionSftp extends ActionBase implements Cloneable, IAction {
                 .getWorkflowName(), toString() );
             result.getResultFiles().put( resultFile.getFile().toString(), resultFile );
             if ( log.isDetailed() ) {
-              logDetailed( BaseMessages.getString( PKG, "JobSFTP.Log.FilenameAddedToResultFilenames", filelist[ i ] ) );
+              logDetailed( BaseMessages.getString( PKG, "ActionSftp.Log.FilenameAddedToResultFilenames", filelist[ i ] ) );
             }
           }
           if ( log.isDetailed() ) {
-            logDetailed( BaseMessages.getString( PKG, "JobSFTP.Log.TransferedFile", filelist[ i ] ) );
+            logDetailed( BaseMessages.getString( PKG, "ActionSftp.Log.TransferedFile", filelist[ i ] ) );
           }
 
           // Delete the file if this is needed!
           if ( remove ) {
             sftpclient.delete( filelist[ i ] );
             if ( log.isDetailed() ) {
-              logDetailed( BaseMessages.getString( PKG, "JobSFTP.Log.DeletedFile", filelist[ i ] ) );
+              logDetailed( BaseMessages.getString( PKG, "ActionSftp.Log.DeletedFile", filelist[ i ] ) );
             }
           }
         }
@@ -644,7 +637,7 @@ public class ActionSftp extends ActionBase implements Cloneable, IAction {
       result.setNrFilesRetrieved( filesRetrieved );
     } catch ( Exception e ) {
       result.setNrErrors( 1 );
-      logError( BaseMessages.getString( PKG, "JobSFTP.Error.GettingFiles", e.getMessage() ) );
+      logError( BaseMessages.getString( PKG, "ActionSftp.Error.GettingFiles", e.getMessage() ) );
       logError( Const.getStackTracker( e ) );
     } finally {
       // close connection, if possible
@@ -661,8 +654,8 @@ public class ActionSftp extends ActionBase implements Cloneable, IAction {
           TargetFolder.close();
           TargetFolder = null;
         }
-        if ( list_previous_filenames != null ) {
-          list_previous_filenames = null;
+        if ( listPreviousFilenames != null ) {
+          listPreviousFilenames = null;
         }
       } catch ( Exception e ) {
         // Ignore errors
@@ -674,17 +667,17 @@ public class ActionSftp extends ActionBase implements Cloneable, IAction {
   }
 
   public String getRealPassword( String password ) {
-    return Utils.resolvePassword( variables, password );
+    return Utils.resolvePassword( this, password );
   }
 
-  public boolean evaluates() {
+  @Override public boolean isEvaluation() {
     return true;
   }
 
-  public List<ResourceReference> getResourceDependencies( WorkflowMeta workflowMeta ) {
-    List<ResourceReference> references = super.getResourceDependencies( workflowMeta );
+  @Override public List<ResourceReference> getResourceDependencies( IVariables variables, WorkflowMeta workflowMeta ) {
+    List<ResourceReference> references = super.getResourceDependencies( variables, workflowMeta );
     if ( !Utils.isEmpty( serverName ) ) {
-      String realServerName = workflowMeta.environmentSubstitute( serverName );
+      String realServerName = resolve( serverName );
       ResourceReference reference = new ResourceReference( this );
       reference.getEntries().add( new ResourceEntry( realServerName, ResourceType.SERVER ) );
       references.add( reference );
@@ -694,7 +687,7 @@ public class ActionSftp extends ActionBase implements Cloneable, IAction {
 
   @Override
   public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     ActionValidatorUtils.andValidator().validate( this, "serverName", remarks, AndValidator.putValidators( ActionValidatorUtils.notBlankValidator() ) );
 
     ValidatorContext ctx = new ValidatorContext();

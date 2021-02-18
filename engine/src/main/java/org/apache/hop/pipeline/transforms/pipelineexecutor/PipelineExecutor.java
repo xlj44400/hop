@@ -1,29 +1,23 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.pipelineexecutor;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.lang.StringUtils;
 import org.apache.hop.core.Const;
 import org.apache.hop.core.IRowSet;
 import org.apache.hop.core.Result;
@@ -36,20 +30,16 @@ import org.apache.hop.core.row.RowDataUtil;
 import org.apache.hop.core.row.RowMeta;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.i18n.BaseMessages;
-import org.apache.hop.metastore.api.exceptions.MetaStoreException;
-import org.apache.hop.pipeline.config.PipelineRunConfiguration;
-import org.apache.hop.pipeline.engine.IPipelineEngine;
-import org.apache.hop.pipeline.engine.PipelineEngineFactory;
-import org.apache.hop.pipeline.transforms.workflowexecutor.WorkflowExecutor;
-import org.apache.hop.workflow.IDelegationListener;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.TransformWithMappingMeta;
-import org.apache.hop.pipeline.PipelineExecutionConfiguration;
+import org.apache.hop.pipeline.engine.IPipelineEngine;
+import org.apache.hop.pipeline.engine.PipelineEngineFactory;
 import org.apache.hop.pipeline.transform.BaseTransform;
 import org.apache.hop.pipeline.transform.ITransform;
 import org.apache.hop.pipeline.transform.TransformMeta;
 import org.apache.hop.pipeline.transforms.PipelineTransformUtil;
+import org.apache.hop.pipeline.transforms.workflowexecutor.WorkflowExecutor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,7 +62,7 @@ import java.util.Map;
  */
 public class PipelineExecutor extends BaseTransform<PipelineExecutorMeta, PipelineExecutorData> implements ITransform<PipelineExecutorMeta, PipelineExecutorData> {
 
-  private static final Class<?> PKG = PipelineExecutorMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = PipelineExecutorMeta.class; // For Translator
 
   public PipelineExecutor( TransformMeta transformMeta, PipelineExecutorMeta meta, PipelineExecutorData data, int copyNr, PipelineMeta pipelineMeta,
                            Pipeline pipeline ) {
@@ -219,7 +209,6 @@ public class PipelineExecutor extends BaseTransform<PipelineExecutorMeta, Pipeli
       passParametersToPipeline( lastIncomingFieldValues != null && !lastIncomingFieldValues.isEmpty() ? lastIncomingFieldValues : incomingFieldValues );
     }
 
-
     // keep track for drill down in HopGui...
     getPipeline().addActiveSubPipeline( getTransformName(), executorPipeline );
 
@@ -264,8 +253,8 @@ public class PipelineExecutor extends BaseTransform<PipelineExecutorMeta, Pipeli
   @VisibleForTesting
   IPipelineEngine<PipelineMeta> createInternalPipeline() throws HopException {
 
-    String runConfigurationName = environmentSubstitute( meta.getRunConfigurationName() );
-    IPipelineEngine<PipelineMeta> executorPipeline = PipelineEngineFactory.createPipelineEngine( runConfigurationName, metaStore, getData().getExecutorPipelineMeta() );
+    String runConfigurationName = resolve( meta.getRunConfigurationName() );
+    IPipelineEngine<PipelineMeta> executorPipeline = PipelineEngineFactory.createPipelineEngine( this, runConfigurationName, metadataProvider, getData().getExecutorPipelineMeta() );
     executorPipeline.setParentPipeline( getPipeline() );
     executorPipeline.setParent(this);
     executorPipeline.setLogLevel( getLogLevel() );
@@ -288,7 +277,7 @@ public class PipelineExecutor extends BaseTransform<PipelineExecutorMeta, Pipeli
     PipelineExecutorParameters parameters = meta.getParameters();
 
     // A map where the final parameters and values are stored.
-    Map<String, String> resolvingValuesMap = new LinkedHashMap<String, String>();
+    Map<String, String> resolvingValuesMap = new LinkedHashMap<>();
     for ( int i = 0; i < parameters.getVariable().length; i++ ) {
       resolvingValuesMap.put( parameters.getVariable()[ i ], null );
     }
@@ -461,17 +450,17 @@ public class PipelineExecutor extends BaseTransform<PipelineExecutorMeta, Pipeli
 
         // Do we have a pipeline at all?
         if ( pipelineExecutorData.getExecutorPipelineMeta() != null ) {
-          pipelineExecutorData.groupBuffer = new ArrayList<RowMetaAndData>();
+          pipelineExecutorData.groupBuffer = new ArrayList<>();
 
           // How many rows do we group together for the pipeline?
           if ( !Utils.isEmpty( meta.getGroupSize() ) ) {
-            pipelineExecutorData.groupSize = Const.toInt( environmentSubstitute( meta.getGroupSize() ), -1 );
+            pipelineExecutorData.groupSize = Const.toInt( resolve( meta.getGroupSize() ), -1 );
           } else {
             pipelineExecutorData.groupSize = -1;
           }
           // Is there a grouping time set?
           if ( !Utils.isEmpty( meta.getGroupTime() ) ) {
-            pipelineExecutorData.groupTime = Const.toInt( environmentSubstitute( meta.getGroupTime() ), -1 );
+            pipelineExecutorData.groupTime = Const.toInt( resolve( meta.getGroupTime() ), -1 );
           } else {
             pipelineExecutorData.groupTime = -1;
           }
@@ -479,7 +468,7 @@ public class PipelineExecutor extends BaseTransform<PipelineExecutorMeta, Pipeli
 
           // Is there a grouping field set?
           if ( !Utils.isEmpty( meta.getGroupField() ) ) {
-            pipelineExecutorData.groupField = environmentSubstitute( meta.getGroupField() );
+            pipelineExecutorData.groupField = resolve( meta.getGroupField() );
           }
           // That's all for now...
           return true;
@@ -497,7 +486,7 @@ public class PipelineExecutor extends BaseTransform<PipelineExecutorMeta, Pipeli
 
   @VisibleForTesting
   PipelineMeta loadExecutorPipelineMeta() throws HopException {
-    return PipelineExecutorMeta.loadMappingMeta( meta, meta.getMetaStore(), this, meta.getParameters().isInheritingAllVariables() );
+    return PipelineExecutorMeta.loadMappingMeta( meta, metadataProvider, this );
   }
 
   public void dispose(){

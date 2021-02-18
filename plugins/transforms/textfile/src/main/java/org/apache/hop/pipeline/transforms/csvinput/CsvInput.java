@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.csvinput;
 
@@ -62,7 +57,7 @@ public class CsvInput
   extends BaseTransform<CsvInputMeta, CsvInputData>
   implements ITransform<CsvInputMeta, CsvInputData> {
 
-  private static Class<?> PKG = CsvInput.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = CsvInput.class; // For Translator
 
   public CsvInput( TransformMeta transformMeta, CsvInputMeta meta, CsvInputData data, int copyNr, PipelineMeta pipelineMeta,
                    Pipeline pipeline ) {
@@ -76,7 +71,7 @@ public class CsvInput
       first = false;
 
       data.outputRowMeta = new RowMeta();
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
       if ( data.filenames == null ) {
         // We're expecting the list of filenames from the previous transform(s)...
@@ -187,7 +182,7 @@ public class CsvInput
       // We'll use the same algorithm...
       //
       for ( String filename : data.filenames ) {
-        long size = HopVfs.getFileObject( filename, getPipelineMeta() ).getContent().getSize();
+        long size = HopVfs.getFileObject( filename ).getContent().getSize();
         data.fileSizes.add( size );
         data.totalFileSize += size;
       }
@@ -263,7 +258,7 @@ public class CsvInput
 
         // Get the filename field index...
         //
-        String filenameField = environmentSubstitute( meta.getFilenameField() );
+        String filenameField = resolve( meta.getFilenameField() );
         index = getInputRowMeta().indexOfValue( filenameField );
         if ( index < 0 ) {
           throw new HopException( BaseMessages.getString(
@@ -320,7 +315,7 @@ public class CsvInput
       // Open the next one...
       //
       data.fieldsMapping = createFieldMapping( data.filenames[ data.filenr ], meta );
-      FileObject fileObject = HopVfs.getFileObject( data.filenames[ data.filenr ], getPipelineMeta() );
+      FileObject fileObject = HopVfs.getFileObject( data.filenames[ data.filenr ] );
       if ( !( fileObject instanceof LocalFile ) ) {
         // We can only use NIO on local files at the moment, so that's what we limit ourselves to.
         //
@@ -440,11 +435,11 @@ public class CsvInput
   }
 
   String[] readFieldNamesFromFile( String fileName, CsvInputMeta csvInputMeta ) throws HopException {
-    String delimiter = environmentSubstitute( csvInputMeta.getDelimiter() );
-    String enclosure = environmentSubstitute( csvInputMeta.getEnclosure() );
-    String realEncoding = environmentSubstitute( csvInputMeta.getEncoding() );
+    String delimiter = resolve( csvInputMeta.getDelimiter() );
+    String enclosure = resolve( csvInputMeta.getEnclosure() );
+    String realEncoding = resolve( csvInputMeta.getEncoding() );
 
-    try ( FileObject fileObject = HopVfs.getFileObject( fileName, getPipelineMeta() );
+    try ( FileObject fileObject = HopVfs.getFileObject( fileName );
           BOMInputStream inputStream =
             new BOMInputStream( HopVfs.getInputStream( fileObject ), ByteOrderMark.UTF_8, ByteOrderMark.UTF_16LE,
               ByteOrderMark.UTF_16BE ) ) {
@@ -731,8 +726,8 @@ public class CsvInput
                 outputRowData[ actualFieldIndex ] = null;
 
                 if ( conversionExceptions == null ) {
-                  conversionExceptions = new ArrayList<Exception>();
-                  exceptionFields = new ArrayList<IValueMeta>();
+                  conversionExceptions = new ArrayList<>();
+                  exceptionFields = new ArrayList<>();
                 }
 
                 conversionExceptions.add( e );
@@ -834,14 +829,14 @@ public class CsvInput
 
     if ( super.init() ) {
       // PDI-10242 see if a variable is used as encoding value
-      String realEncoding = environmentSubstitute( meta.getEncoding() );
-      data.preferredBufferSize = Integer.parseInt( environmentSubstitute( meta.getBufferSize() ) );
+      String realEncoding = resolve( meta.getEncoding() );
+      data.preferredBufferSize = Integer.parseInt( resolve( meta.getBufferSize() ) );
 
       // If the transform doesn't have any previous transforms, we just get the filename.
       // Otherwise, we'll grab the list of file names later...
       //
       if ( getPipelineMeta().findNrPrevTransforms( getTransformMeta() ) == 0 ) {
-        String filename = environmentSubstitute( meta.getFilename() );
+        String filename = resolve( meta.getFilename() );
 
         if ( Utils.isEmpty( filename ) ) {
           logError( BaseMessages.getString( PKG, "CsvInput.MissingFilename.Message" ) );
@@ -861,12 +856,12 @@ public class CsvInput
       // PDI-2489 - set the delimiter byte value to the code point of the
       // character as represented in the input file's encoding
       try {
-        data.delimiter = data.encodingType.getBytes( environmentSubstitute( meta.getDelimiter() ), realEncoding );
+        data.delimiter = data.encodingType.getBytes( resolve( meta.getDelimiter() ), realEncoding );
 
         if ( Utils.isEmpty( meta.getEnclosure() ) ) {
           data.enclosure = null;
         } else {
-          data.enclosure = data.encodingType.getBytes( environmentSubstitute( meta.getEnclosure() ), realEncoding );
+          data.enclosure = data.encodingType.getBytes( resolve( meta.getEnclosure() ), realEncoding );
         }
 
       } catch ( UnsupportedEncodingException e ) {
@@ -882,13 +877,13 @@ public class CsvInput
 
       if ( meta.isRunningInParallel() ) {
         data.transformNumber = getCopyNr();
-        data.totalNumberOfTransforms = getTransformMeta().getCopies();
+        data.totalNumberOfTransforms = getTransformMeta().getCopies(this);
 
         // We are not handling a single file, but possibly a list of files...
         // As such, the fair thing to do is calculate the total size of the files
         // Then read the required block.
         //
-        data.fileSizes = new ArrayList<Long>();
+        data.fileSizes = new ArrayList<>();
         data.totalFileSize = 0L;
       }
 

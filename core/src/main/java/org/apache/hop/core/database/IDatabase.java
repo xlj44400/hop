@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.database;
 
@@ -26,6 +21,7 @@ import org.apache.hop.core.exception.HopDatabaseException;
 import org.apache.hop.core.exception.HopValueException;
 import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.variables.IVariables;
+import org.apache.hop.metadata.api.HopMetadataObject;
 
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -33,7 +29,6 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 
 /**
@@ -42,6 +37,9 @@ import java.util.Properties;
  * @author Matt
  * @since 11-mrt-2005
  */
+@HopMetadataObject(
+  objectFactory = DatabaseMetaObjectFactory.class
+)
 public interface IDatabase extends Cloneable {
   /**
    * @return the plugin id of this database
@@ -139,9 +137,9 @@ public interface IDatabase extends Cloneable {
   public String getDataTablespace();
 
   /**
-   * @param data_tablespace the tablespace to store data in
+   * @param dataTablespace the tablespace to store data in
    */
-  public void setDataTablespace( String data_tablespace );
+  public void setDataTablespace( String dataTablespace );
 
   /**
    * @return the tablespace to store indexes in
@@ -149,21 +147,21 @@ public interface IDatabase extends Cloneable {
   public String getIndexTablespace();
 
   /**
-   * @param index_tablespace the tablespace to store indexes in
+   * @param indexTablespace the tablespace to store indexes in
    */
-  public void setIndexTablespace( String index_tablespace );
+  public void setIndexTablespace( String indexTablespace );
 
   /**
    * @return The extra attributes for this database connection
    */
-  public Properties getAttributes();
+  public Map<String, String> getAttributes();
 
   /**
    * Set extra attributes on this database connection
    *
    * @param attributes The extra attributes to set on this database connection.
    */
-  public void setAttributes( Properties attributes );
+  public void setAttributes( Map<String,String> attributes );
 
   /**
    * Add extra attribute on this connection
@@ -208,13 +206,13 @@ public interface IDatabase extends Cloneable {
    * @param v             The value to describe
    * @param tk            The field that's going to be the technical key
    * @param pk            The field that's going to be the primary key
-   * @param use_autoinc   Use autoincrement or not
-   * @param add_fieldname Add the fieldname to the definition or not
-   * @param add_cr        Add a cariage return at the end of the definition or not.
+   * @param useAutoIncrement   Use autoincrement or not
+   * @param addFieldName Add the fieldname to the definition or not
+   * @param addCr        Add a cariage return at the end of the definition or not.
    * @return a value described as a field in this database.
    */
-  public String getFieldDefinition( IValueMeta v, String tk, String pk, boolean use_autoinc,
-                                    boolean add_fieldname, boolean add_cr );
+  public String getFieldDefinition( IValueMeta v, String tk, String pk, boolean useAutoIncrement,
+                                    boolean addFieldName, boolean addCr );
 
   /**
    * Get the list of possible access types for a database.
@@ -250,10 +248,10 @@ public interface IDatabase extends Cloneable {
   /**
    * Get the not found technical key.
    *
-   * @param use_autoinc Whether or not we want to use an auto increment field
+   * @param useAutoIncrement Whether or not we want to use an auto increment field
    * @return the lowest possible technical key to be used as the NOT FOUND row in a slowly changing dimension.
    */
-  public int getNotFoundTK( boolean use_autoinc );
+  public int getNotFoundTK( boolean useAutoIncrement );
 
   /**
    * Obtain the name of the JDBC driver class that we need to use!
@@ -373,11 +371,11 @@ public interface IDatabase extends Cloneable {
    * Get the schema-table combination to query the right table. Usually that is SCHEMA.TABLENAME, however there are
    * exceptions to this rule...
    *
-   * @param schema_name The schema name
-   * @param table_part  The tablename
+   * @param schemaName The schema name
+   * @param tablePart  The table name
    * @return the schema-table combination to query the right table.
    */
-  public String getSchemaTableCombination( String schema_name, String table_part );
+  public String getSchemaTableCombination( String schemaName, String tablePart );
 
   /**
    * Get the maximum length of a text field for this database connection. This includes optional CLOB, Memo and Text
@@ -398,43 +396,43 @@ public interface IDatabase extends Cloneable {
   /**
    * Generates the SQL statement to add a column to the specified table
    *
-   * @param tablename   The table to add
+   * @param tableName   The table to add
    * @param v           The column defined as a value
    * @param tk          the name of the technical key field
-   * @param use_autoinc whether or not this field uses auto increment
+   * @param useAutoIncrement whether or not this field uses auto increment
    * @param pk          the name of the primary key field
    * @param semicolon   whether or not to add a semi-colon behind the statement.
    * @return the SQL statement to add a column to the specified table
    */
-  public String getAddColumnStatement( String tablename, IValueMeta v, String tk, boolean use_autoinc,
+  public String getAddColumnStatement( String tableName, IValueMeta v, String tk, boolean useAutoIncrement,
                                        String pk, boolean semicolon );
 
   /**
    * Generates the SQL statement to drop a column from the specified table
    *
-   * @param tablename   The table to add
+   * @param tableName   The table to add
    * @param v           The column defined as a value
    * @param tk          the name of the technical key field
-   * @param use_autoinc whether or not this field uses auto increment
+   * @param useAutoIncrement whether or not this field uses auto increment
    * @param pk          the name of the primary key field
    * @param semicolon   whether or not to add a semi-colon behind the statement.
    * @return the SQL statement to drop a column from the specified table
    */
-  public String getDropColumnStatement( String tablename, IValueMeta v, String tk, boolean use_autoinc,
+  public String getDropColumnStatement( String tableName, IValueMeta v, String tk, boolean useAutoIncrement,
                                         String pk, boolean semicolon );
 
   /**
    * Generates the SQL statement to modify a column in the specified table
    *
-   * @param tablename   The table to add
+   * @param tableName   The table to add
    * @param v           The column defined as a value
    * @param tk          the name of the technical key field
-   * @param use_autoinc whether or not this field uses auto increment
+   * @param useAutoIncrement whether or not this field uses auto increment
    * @param pk          the name of the primary key field
    * @param semicolon   whether or not to add a semi-colon behind the statement.
    * @return the SQL statement to modify a column in the specified table
    */
-  public String getModifyColumnStatement( String tablename, IValueMeta v, String tk, boolean use_autoinc,
+  public String getModifyColumnStatement( String tableName, IValueMeta v, String tk, boolean useAutoIncrement,
                                           String pk, boolean semicolon );
 
   /**
@@ -622,19 +620,19 @@ public interface IDatabase extends Cloneable {
   public boolean supportsSetMaxRows();
 
   /**
-   * @param tablename The table to verify the existance for
+   * @param tableName The table to verify the existance for
    * @return The SQL to execute to verify if the given table exists. If an Exception is thrown for this SQL, we don't
    * have the table.
    */
-  public String getSqlTableExists( String tablename );
+  public String getSqlTableExists( String tableName );
 
   /**
    * @param column    The column to verify the existance for
-   * @param tablename The table to verify the existance for
+   * @param tableName The table to verify the existance for
    * @return The SQL to execute to verify if the given table exists. If an Exception is thrown for this SQL, we don't
    * have the column.
    */
-  public String getSqlColumnExists( String column, String tablename );
+  public String getSqlColumnExists( String column, String tableName );
 
   /**
    * @return true if the database is streaming results (normally this is an option just for MySQL).
@@ -919,19 +917,6 @@ public interface IDatabase extends Cloneable {
   public boolean releaseSavepoint();
 
   /**
-   * Get the next Batch ID from the logging tables.
-   *
-   * @param dbm        DatabaseMeta object
-   * @param ldb        Database connection
-   * @param schemaName Logging Schema Name
-   * @param tableName  Logging Table Name
-   * @param fieldName  Batch Id Field name
-   * @return next batch ID
-   * @throws HopDatabaseException
-   */
-  Long getNextBatchId( DatabaseMeta dbm, Database ldb, String schemaName, String tableName, String fieldName ) throws HopDatabaseException;
-
-  /**
    * Returns the tablespace DDL fragment for a "Data" tablespace. In most databases that use tablespaces this is where
    * the tables are to be created.
    *
@@ -1031,7 +1016,7 @@ public interface IDatabase extends Cloneable {
    * @param index the index to the column to customize
    * @return IValueMeta customized with the data base specific types
    */
-  public IValueMeta customizeValueFromSqlType(IValueMeta v, java.sql.ResultSetMetaData rm, int index )
+  public IValueMeta customizeValueFromSqlType(IValueMeta v, ResultSetMetaData rm, int index )
     throws SQLException;
 
   /**
@@ -1105,18 +1090,6 @@ public interface IDatabase extends Cloneable {
   String getPort();
 
   void setPort( String port );
-
-  /**
-   * Gets odbcDsn
-   *
-   * @return value of odbcDsn
-   */
-  public String getOdbcDsn();
-
-  /**
-   * @param odbcDsn The odbcDsn to set
-   */
-  public void setOdbcDsn( String odbcDsn );
 
   /**
    * @return A manually entered URL which will be used over the internally generated one

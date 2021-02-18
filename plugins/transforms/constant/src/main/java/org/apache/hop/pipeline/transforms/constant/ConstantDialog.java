@@ -1,31 +1,27 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.constant;
 
+
 import org.apache.hop.core.Const;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.row.value.ValueMetaFactory;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
@@ -41,23 +37,15 @@ import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.*;
 
-@PluginDialog(
-        id = "Constant",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        image = "constant.svg",
-        documentationUrl = "http://www.project-hop.org/manual/latest/plugins/transforms/constant.html"
-)
 public class ConstantDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = ConstantMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ConstantMeta.class; // For Translator
 
-  private Label wlFields;
   private TableView wFields;
-  private FormData fdlFields, fdFields;
 
-  private ConstantMeta input;
+  private final ConstantMeta input;
 
-  public ConstantDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public ConstantDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (ConstantMeta) in;
   }
 
@@ -70,12 +58,7 @@ public class ConstantDialog extends BaseTransformDialog implements ITransformDia
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      @Override
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
     changed = input.hasChanged();
 
     FormLayout formLayout = new FormLayout();
@@ -87,6 +70,16 @@ public class ConstantDialog extends BaseTransformDialog implements ITransformDia
 
     int middle = props.getMiddlePct();
     int margin = props.getMargin();
+
+    // The buttons at the bottom of the dialog
+    //
+    wOk = new Button( shell, SWT.PUSH );
+    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
+    wOk.addListener( SWT.Selection, e->ok() );
+    wCancel = new Button( shell, SWT.PUSH );
+    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
+    wCancel.addListener( SWT.Selection, e->cancel() );
+    setButtonPositions( new Button[] { wOk, wCancel }, margin, null );
 
     // Filename line
     wlTransformName = new Label( shell, SWT.RIGHT );
@@ -107,13 +100,13 @@ public class ConstantDialog extends BaseTransformDialog implements ITransformDia
     fdTransformName.right = new FormAttachment( 100, 0 );
     wTransformName.setLayoutData( fdTransformName );
 
-    wlFields = new Label( shell, SWT.NONE );
+    Label wlFields = new Label(shell, SWT.NONE);
     wlFields.setText( BaseMessages.getString( PKG, "ConstantDialog.Fields.Label" ) );
-    props.setLook( wlFields );
-    fdlFields = new FormData();
+    props.setLook(wlFields);
+    FormData fdlFields = new FormData();
     fdlFields.left = new FormAttachment( 0, 0 );
     fdlFields.top = new FormAttachment( wTransformName, margin );
-    wlFields.setLayoutData( fdlFields );
+    wlFields.setLayoutData(fdlFields);
 
     final int FieldsCols = 10;
     final int FieldsRows = input.getFieldName().length;
@@ -156,38 +149,17 @@ public class ConstantDialog extends BaseTransformDialog implements ITransformDia
 
     wFields =
       new TableView(
-        pipelineMeta, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
+        variables, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
 
-    fdFields = new FormData();
+    FormData fdFields = new FormData();
     fdFields.left = new FormAttachment( 0, 0 );
-    fdFields.top = new FormAttachment( wlFields, margin );
+    fdFields.top = new FormAttachment(wlFields, margin );
     fdFields.right = new FormAttachment( 100, 0 );
-    fdFields.bottom = new FormAttachment( 100, -50 );
-    wFields.setLayoutData( fdFields );
+    fdFields.bottom = new FormAttachment( wOk, -2*margin );
+    wFields.setLayoutData(fdFields);
 
-    wOk = new Button( shell, SWT.PUSH );
-    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
-    wCancel = new Button( shell, SWT.PUSH );
-    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
 
-    setButtonPositions( new Button[] { wOk, wCancel }, margin, wFields );
 
-    // Add listeners
-    lsOk = new Listener() {
-      @Override
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
-    lsCancel = new Listener() {
-      @Override
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-
-    wOk.addListener( SWT.Selection, lsOk );
-    wCancel.addListener( SWT.Selection, lsCancel );
 
     lsDef = new SelectionAdapter() {
       @Override
@@ -206,14 +178,11 @@ public class ConstantDialog extends BaseTransformDialog implements ITransformDia
       }
     } );
 
-    lsResize = new Listener() {
-      @Override
-      public void handleEvent( Event event ) {
-        Point size = shell.getSize();
-        wFields.setSize( size.x - 10, size.y - 50 );
-        wFields.table.setSize( size.x - 10, size.y - 50 );
-        wFields.redraw();
-      }
+    lsResize = event -> {
+      Point size = shell.getSize();
+      wFields.setSize( size.x - 10, size.y - 50 );
+      wFields.table.setSize( size.x - 10, size.y - 50 );
+      wFields.redraw();
     };
     shell.addListener( SWT.Resize, lsResize );
 

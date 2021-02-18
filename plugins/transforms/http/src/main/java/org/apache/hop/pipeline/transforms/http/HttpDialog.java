@@ -1,32 +1,27 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.http;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
@@ -34,138 +29,75 @@ import org.apache.hop.pipeline.transform.ITransformDialog;
 import org.apache.hop.pipeline.transform.TransformMeta;
 import org.apache.hop.ui.core.PropsUi;
 import org.apache.hop.ui.core.dialog.ErrorDialog;
-import org.apache.hop.ui.core.widget.ColumnInfo;
-import org.apache.hop.ui.core.widget.ComboVar;
-import org.apache.hop.ui.core.widget.PasswordTextVar;
-import org.apache.hop.ui.core.widget.TableView;
-import org.apache.hop.ui.core.widget.TextVar;
+import org.apache.hop.ui.core.widget.*;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
-import org.eclipse.swt.events.FocusListener;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Group;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-@PluginDialog(
-        id = "Http",
-        image = "http.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = "http://www.project-hop.org/manual/latest/plugins/transforms/http.html"
-)
 public class HttpDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = HttpMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = HttpMeta.class; // For Translator
 
   private Label wlUrl;
   private TextVar wUrl;
-  private FormData fdlUrl, fdUrl;
 
-  private Label wlResult;
   private TextVar wResult;
-  private FormData fdlResult, fdResult;
 
-  private Label wlFields;
   private TableView wFields;
-  private FormData fdlFields, fdFields;
 
-  private Label wlHeaders;
   private TableView wHeaders;
-  private FormData fdlHeaders, fdHeaders;
 
-  private Label wlUrlInField;
   private Button wUrlInField;
-  private FormData fdlUrlInField, fdUrlInField;
 
   private Label wlUrlField;
   private ComboVar wUrlField;
-  private FormData fdlUrlField, fdUrlField;
 
   private ComboVar wEncoding;
 
-  private Button wGet, wGetHeaders;
-  private Listener lsGet, lsGetHeaders;
-
-  private Label wlHttpLogin;
   private TextVar wHttpLogin;
 
-  private Label wlHttpPassword;
   private TextVar wHttpPassword;
 
-  private Label wlProxyHost;
   private TextVar wProxyHost;
 
-  private Label wlProxyPort;
   private TextVar wProxyPort;
 
-  private CTabFolder wTabFolder;
-
-  private CTabItem wGeneralTab, wAdditionalTab;
-  private FormData fdTabFolder;
-
-  private Composite wGeneralComp, wAdditionalComp;
-  private FormData fdGeneralComp, fdAdditionalComp;
-
-  private Label wlResultCode;
   private TextVar wResultCode;
-  private FormData fdlResultCode, fdResultCode;
 
-  private Label wlResponseTime;
   private TextVar wResponseTime;
-  private FormData fdlResponseTime, fdResponseTime;
 
-  private Label wlResponseHeader;
   private TextVar wResponseHeader;
-  private FormData fdlResponseHeader, fdResponseHeader;
 
-  private HttpMeta input;
+  private final HttpMeta input;
 
   private ColumnInfo[] colinf;
   private ColumnInfo[] colinfHeaders;
 
-  private Map<String, Integer> inputFields;
+  private final Map<String, Integer> inputFields;
 
   private boolean gotEncodings = false;
 
-  private Label wlConnectionTimeOut;
   private TextVar wConnectionTimeOut;
 
-  private Label wlSocketTimeOut;
   private TextVar wSocketTimeOut;
 
-  private Label wlCloseIdleConnectionsTime;
   private TextVar wCloseIdleConnectionsTime;
 
-  public HttpDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public HttpDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (HttpMeta) in;
-    inputFields = new HashMap<String, Integer>();
+    inputFields = new HashMap<>();
   }
 
   public String open() {
@@ -176,11 +108,7 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
 
     changed = input.hasChanged();
 
@@ -193,6 +121,15 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
 
     int middle = props.getMiddlePct();
     int margin = props.getMargin();
+
+    // THE BUTTONS
+    wOk = new Button( shell, SWT.PUSH );
+    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
+    wOk.addListener( SWT.Selection, e -> ok() );
+    wCancel = new Button( shell, SWT.PUSH );
+    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
+    wCancel.addListener( SWT.Selection, e -> cancel() );
+    setButtonPositions( new Button[] { wOk, wCancel }, margin, null);
 
     // TransformName line
     //
@@ -215,17 +152,17 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     wTransformName.setLayoutData( fdTransformName );
     Control lastControl = wTransformName;
 
-    wTabFolder = new CTabFolder( shell, SWT.BORDER );
-    props.setLook( wTabFolder, PropsUi.WIDGET_STYLE_TAB );
+    CTabFolder wTabFolder = new CTabFolder(shell, SWT.BORDER);
+    props.setLook(wTabFolder, PropsUi.WIDGET_STYLE_TAB );
 
     // ////////////////////////
     // START OF GENERAL TAB ///
     // ////////////////////////
-    wGeneralTab = new CTabItem( wTabFolder, SWT.NONE );
+    CTabItem wGeneralTab = new CTabItem(wTabFolder, SWT.NONE);
     wGeneralTab.setText( BaseMessages.getString( PKG, "HTTPDialog.GeneralTab.Title" ) );
 
-    wGeneralComp = new Composite( wTabFolder, SWT.NONE );
-    props.setLook( wGeneralComp );
+    Composite wGeneralComp = new Composite(wTabFolder, SWT.NONE);
+    props.setLook(wGeneralComp);
 
     FormLayout fileLayout = new FormLayout();
     fileLayout.marginWidth = 3;
@@ -235,7 +172,7 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     // ////////////////////////
     // START Settings GROUP
 
-    Group gSettings = new Group( wGeneralComp, SWT.SHADOW_ETCHED_IN );
+    Group gSettings = new Group(wGeneralComp, SWT.SHADOW_ETCHED_IN );
     gSettings.setText( BaseMessages.getString( PKG, "HTTPDialog.SettingsGroup.Label" ) );
     FormLayout SettingsLayout = new FormLayout();
     SettingsLayout.marginWidth = 3;
@@ -248,39 +185,39 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     wlUrl = new Label( gSettings, SWT.RIGHT );
     wlUrl.setText( BaseMessages.getString( PKG, "HTTPDialog.URL.Label" ) );
     props.setLook( wlUrl );
-    fdlUrl = new FormData();
+    FormData fdlUrl = new FormData();
     fdlUrl.left = new FormAttachment( 0, 0 );
     fdlUrl.right = new FormAttachment( middle, -margin );
     fdlUrl.top = new FormAttachment( lastControl, margin );
-    wlUrl.setLayoutData( fdlUrl );
+    wlUrl.setLayoutData(fdlUrl);
 
-    wUrl = new TextVar( pipelineMeta, gSettings, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wUrl = new TextVar( variables, gSettings, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wUrl );
     wUrl.addModifyListener( lsMod );
-    fdUrl = new FormData();
+    FormData fdUrl = new FormData();
     fdUrl.left = new FormAttachment( middle, 0 );
     fdUrl.top = new FormAttachment( lastControl, margin );
     fdUrl.right = new FormAttachment( 100, 0 );
-    wUrl.setLayoutData( fdUrl );
+    wUrl.setLayoutData(fdUrl);
     lastControl = wUrl;
 
     // UrlInField line
     //
-    wlUrlInField = new Label( gSettings, SWT.RIGHT );
+    Label wlUrlInField = new Label(gSettings, SWT.RIGHT);
     wlUrlInField.setText( BaseMessages.getString( PKG, "HTTPDialog.UrlInField.Label" ) );
-    props.setLook( wlUrlInField );
-    fdlUrlInField = new FormData();
+    props.setLook(wlUrlInField);
+    FormData fdlUrlInField = new FormData();
     fdlUrlInField.left = new FormAttachment( 0, 0 );
     fdlUrlInField.top = new FormAttachment( lastControl, margin );
     fdlUrlInField.right = new FormAttachment( middle, -margin );
-    wlUrlInField.setLayoutData( fdlUrlInField );
+    wlUrlInField.setLayoutData(fdlUrlInField);
     wUrlInField = new Button( gSettings, SWT.CHECK );
     props.setLook( wUrlInField );
-    fdUrlInField = new FormData();
+    FormData fdUrlInField = new FormData();
     fdUrlInField.left = new FormAttachment( middle, 0 );
-    fdUrlInField.top = new FormAttachment( lastControl, margin );
+    fdUrlInField.top = new FormAttachment( wlUrlInField, 0, SWT.CENTER );
     fdUrlInField.right = new FormAttachment( 100, 0 );
-    wUrlInField.setLayoutData( fdUrlInField );
+    wUrlInField.setLayoutData(fdUrlInField);
     wUrlInField.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
@@ -294,27 +231,27 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     wlUrlField = new Label( gSettings, SWT.RIGHT );
     wlUrlField.setText( BaseMessages.getString( PKG, "HTTPDialog.UrlField.Label" ) );
     props.setLook( wlUrlField );
-    fdlUrlField = new FormData();
+    FormData fdlUrlField = new FormData();
     fdlUrlField.left = new FormAttachment( 0, 0 );
     fdlUrlField.right = new FormAttachment( middle, -margin );
     fdlUrlField.top = new FormAttachment( lastControl, margin );
-    wlUrlField.setLayoutData( fdlUrlField );
+    wlUrlField.setLayoutData(fdlUrlField);
 
-    wUrlField = new ComboVar( pipelineMeta, gSettings, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wUrlField = new ComboVar( variables, gSettings, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wUrlField.setToolTipText( BaseMessages.getString( PKG, "HTTPDialog.UrlField.Tooltip" ) );
     props.setLook( wUrlField );
     wUrlField.addModifyListener( lsMod );
-    fdUrlField = new FormData();
+    FormData fdUrlField = new FormData();
     fdUrlField.left = new FormAttachment( middle, 0 );
     fdUrlField.top = new FormAttachment( lastControl, margin );
     fdUrlField.right = new FormAttachment( 100, 0 );
-    wUrlField.setLayoutData( fdUrlField );
+    wUrlField.setLayoutData(fdUrlField);
     wUrlField.setEnabled( false );
     wUrlField.addFocusListener( new FocusListener() {
-      public void focusLost( org.eclipse.swt.events.FocusEvent e ) {
+      public void focusLost( FocusEvent e ) {
       }
 
-      public void focusGained( org.eclipse.swt.events.FocusEvent e ) {
+      public void focusGained( FocusEvent e ) {
         Cursor busy = new Cursor( shell.getDisplay(), SWT.CURSOR_WAIT );
         shell.setCursor( busy );
         BaseTransformDialog.getFieldsFromPrevious( wUrlField, pipelineMeta, transformMeta );
@@ -334,7 +271,7 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     fdlEncoding.left = new FormAttachment( 0, 0 );
     fdlEncoding.right = new FormAttachment( middle, -margin );
     wlEncoding.setLayoutData( fdlEncoding );
-    wEncoding = new ComboVar( pipelineMeta, gSettings, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wEncoding = new ComboVar( variables, gSettings, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wEncoding );
     wEncoding.addModifyListener( lsMod );
     FormData fdEncoding = new FormData();
@@ -344,10 +281,10 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     wEncoding.setLayoutData( fdEncoding );
     lastControl = wEncoding;
     wEncoding.addFocusListener( new FocusListener() {
-      public void focusLost( org.eclipse.swt.events.FocusEvent e ) {
+      public void focusLost( FocusEvent e ) {
       }
 
-      public void focusGained( org.eclipse.swt.events.FocusEvent e ) {
+      public void focusGained( FocusEvent e ) {
         Cursor busy = new Cursor( shell.getDisplay(), SWT.CURSOR_WAIT );
         shell.setCursor( busy );
         setEncodings();
@@ -356,15 +293,15 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
       }
     } );
 
-    wlConnectionTimeOut = new Label( gSettings, SWT.RIGHT );
+    Label wlConnectionTimeOut = new Label(gSettings, SWT.RIGHT);
     wlConnectionTimeOut.setText( BaseMessages.getString( PKG, "HTTPDialog.ConnectionTimeOut.Label" ) );
-    props.setLook( wlConnectionTimeOut );
+    props.setLook(wlConnectionTimeOut);
     FormData fdlConnectionTimeOut = new FormData();
     fdlConnectionTimeOut.top = new FormAttachment( wEncoding, margin );
     fdlConnectionTimeOut.left = new FormAttachment( 0, 0 );
     fdlConnectionTimeOut.right = new FormAttachment( middle, -margin );
     wlConnectionTimeOut.setLayoutData( fdlConnectionTimeOut );
-    wConnectionTimeOut = new TextVar( pipelineMeta, gSettings, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wConnectionTimeOut = new TextVar( variables, gSettings, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wConnectionTimeOut.addModifyListener( lsMod );
     wConnectionTimeOut.setToolTipText( BaseMessages.getString( PKG, "HTTPDialog.ConnectionTimeOut.Tooltip" ) );
     props.setLook( wConnectionTimeOut );
@@ -374,15 +311,15 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     fdConnectionTimeOut.right = new FormAttachment( 100, 0 );
     wConnectionTimeOut.setLayoutData( fdConnectionTimeOut );
 
-    wlSocketTimeOut = new Label( gSettings, SWT.RIGHT );
+    Label wlSocketTimeOut = new Label(gSettings, SWT.RIGHT);
     wlSocketTimeOut.setText( BaseMessages.getString( PKG, "HTTPDialog.SocketTimeOut.Label" ) );
-    props.setLook( wlSocketTimeOut );
+    props.setLook(wlSocketTimeOut);
     FormData fdlSocketTimeOut = new FormData();
     fdlSocketTimeOut.top = new FormAttachment( wConnectionTimeOut, margin );
     fdlSocketTimeOut.left = new FormAttachment( 0, 0 );
     fdlSocketTimeOut.right = new FormAttachment( middle, -margin );
     wlSocketTimeOut.setLayoutData( fdlSocketTimeOut );
-    wSocketTimeOut = new TextVar( pipelineMeta, gSettings, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wSocketTimeOut = new TextVar( variables, gSettings, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wSocketTimeOut.addModifyListener( lsMod );
     wSocketTimeOut.setToolTipText( BaseMessages.getString( PKG, "HTTPDialog.SocketTimeOut.Tooltip" ) );
     props.setLook( wSocketTimeOut );
@@ -392,16 +329,16 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     fdSocketTimeOut.right = new FormAttachment( 100, 0 );
     wSocketTimeOut.setLayoutData( fdSocketTimeOut );
 
-    wlCloseIdleConnectionsTime = new Label( gSettings, SWT.RIGHT );
+    Label wlCloseIdleConnectionsTime = new Label(gSettings, SWT.RIGHT);
     wlCloseIdleConnectionsTime
       .setText( BaseMessages.getString( PKG, "HTTPDialog.CloseIdleConnectionsTime.Label" ) );
-    props.setLook( wlCloseIdleConnectionsTime );
+    props.setLook(wlCloseIdleConnectionsTime);
     FormData fdlCloseIdleConnectionsTime = new FormData();
     fdlCloseIdleConnectionsTime.top = new FormAttachment( wSocketTimeOut, margin );
     fdlCloseIdleConnectionsTime.left = new FormAttachment( 0, 0 );
     fdlCloseIdleConnectionsTime.right = new FormAttachment( middle, -margin );
     wlCloseIdleConnectionsTime.setLayoutData( fdlCloseIdleConnectionsTime );
-    wCloseIdleConnectionsTime = new TextVar( pipelineMeta, gSettings, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wCloseIdleConnectionsTime = new TextVar( variables, gSettings, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wCloseIdleConnectionsTime.addModifyListener( lsMod );
     wCloseIdleConnectionsTime.setToolTipText( BaseMessages.getString(
       PKG, "HTTPDialog.CloseIdleConnectionsTime.Tooltip" ) );
@@ -424,7 +361,7 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     // ////////////////////////
     // START Output Fields GROUP
 
-    Group gOutputFields = new Group( wGeneralComp, SWT.SHADOW_ETCHED_IN );
+    Group gOutputFields = new Group(wGeneralComp, SWT.SHADOW_ETCHED_IN );
     gOutputFields.setText( BaseMessages.getString( PKG, "HTTPDialog.OutputFieldsGroup.Label" ) );
     FormLayout OutputFieldsLayout = new FormLayout();
     OutputFieldsLayout.marginWidth = 3;
@@ -434,75 +371,75 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
 
     // Result line...
     //
-    wlResult = new Label( gOutputFields, SWT.RIGHT );
+    Label wlResult = new Label(gOutputFields, SWT.RIGHT);
     wlResult.setText( BaseMessages.getString( PKG, "HTTPDialog.Result.Label" ) );
-    props.setLook( wlResult );
-    fdlResult = new FormData();
+    props.setLook(wlResult);
+    FormData fdlResult = new FormData();
     fdlResult.left = new FormAttachment( 0, 0 );
     fdlResult.right = new FormAttachment( middle, -margin );
     fdlResult.top = new FormAttachment( lastControl, margin );
-    wlResult.setLayoutData( fdlResult );
-    wResult = new TextVar( pipelineMeta, gOutputFields, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wlResult.setLayoutData(fdlResult);
+    wResult = new TextVar( variables, gOutputFields, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wResult );
     wResult.addModifyListener( lsMod );
-    fdResult = new FormData();
+    FormData fdResult = new FormData();
     fdResult.left = new FormAttachment( middle, 0 );
     fdResult.top = new FormAttachment( lastControl, margin );
     fdResult.right = new FormAttachment( 100, 0 );
-    wResult.setLayoutData( fdResult );
+    wResult.setLayoutData(fdResult);
 
     // Resultcode line...
-    wlResultCode = new Label( gOutputFields, SWT.RIGHT );
+    Label wlResultCode = new Label(gOutputFields, SWT.RIGHT);
     wlResultCode.setText( BaseMessages.getString( PKG, "HTTPDialog.ResultCode.Label" ) );
-    props.setLook( wlResultCode );
-    fdlResultCode = new FormData();
+    props.setLook(wlResultCode);
+    FormData fdlResultCode = new FormData();
     fdlResultCode.left = new FormAttachment( 0, 0 );
     fdlResultCode.right = new FormAttachment( middle, -margin );
     fdlResultCode.top = new FormAttachment( wResult, margin );
-    wlResultCode.setLayoutData( fdlResultCode );
-    wResultCode = new TextVar( pipelineMeta, gOutputFields, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wlResultCode.setLayoutData(fdlResultCode);
+    wResultCode = new TextVar( variables, gOutputFields, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wResultCode );
     wResultCode.addModifyListener( lsMod );
-    fdResultCode = new FormData();
+    FormData fdResultCode = new FormData();
     fdResultCode.left = new FormAttachment( middle, 0 );
     fdResultCode.top = new FormAttachment( wResult, margin );
     fdResultCode.right = new FormAttachment( 100, 0 );
-    wResultCode.setLayoutData( fdResultCode );
+    wResultCode.setLayoutData(fdResultCode);
 
     // Response time line...
-    wlResponseTime = new Label( gOutputFields, SWT.RIGHT );
+    Label wlResponseTime = new Label(gOutputFields, SWT.RIGHT);
     wlResponseTime.setText( BaseMessages.getString( PKG, "HTTPDialog.ResponseTime.Label" ) );
-    props.setLook( wlResponseTime );
-    fdlResponseTime = new FormData();
+    props.setLook(wlResponseTime);
+    FormData fdlResponseTime = new FormData();
     fdlResponseTime.left = new FormAttachment( 0, 0 );
     fdlResponseTime.right = new FormAttachment( middle, -margin );
     fdlResponseTime.top = new FormAttachment( wResultCode, margin );
-    wlResponseTime.setLayoutData( fdlResponseTime );
-    wResponseTime = new TextVar( pipelineMeta, gOutputFields, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wlResponseTime.setLayoutData(fdlResponseTime);
+    wResponseTime = new TextVar( variables, gOutputFields, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wResponseTime );
     wResponseTime.addModifyListener( lsMod );
-    fdResponseTime = new FormData();
+    FormData fdResponseTime = new FormData();
     fdResponseTime.left = new FormAttachment( middle, 0 );
     fdResponseTime.top = new FormAttachment( wResultCode, margin );
     fdResponseTime.right = new FormAttachment( 100, 0 );
-    wResponseTime.setLayoutData( fdResponseTime );
+    wResponseTime.setLayoutData(fdResponseTime);
     // Response header line...
-    wlResponseHeader = new Label( gOutputFields, SWT.RIGHT );
+    Label wlResponseHeader = new Label(gOutputFields, SWT.RIGHT);
     wlResponseHeader.setText( BaseMessages.getString( PKG, "HTTPDialog.ResponseHeader.Label" ) );
-    props.setLook( wlResponseHeader );
-    fdlResponseHeader = new FormData();
+    props.setLook(wlResponseHeader);
+    FormData fdlResponseHeader = new FormData();
     fdlResponseHeader.left = new FormAttachment( 0, 0 );
     fdlResponseHeader.right = new FormAttachment( middle, -margin );
     fdlResponseHeader.top = new FormAttachment( wResponseTime, margin );
-    wlResponseHeader.setLayoutData( fdlResponseHeader );
-    wResponseHeader = new TextVar( pipelineMeta, gOutputFields, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wlResponseHeader.setLayoutData(fdlResponseHeader);
+    wResponseHeader = new TextVar( variables, gOutputFields, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wResponseHeader );
     wResponseHeader.addModifyListener( lsMod );
-    fdResponseHeader = new FormData();
+    FormData fdResponseHeader = new FormData();
     fdResponseHeader.left = new FormAttachment( middle, 0 );
     fdResponseHeader.top = new FormAttachment( wResponseTime, margin );
     fdResponseHeader.right = new FormAttachment( 100, 0 );
-    wResponseHeader.setLayoutData( fdResponseHeader );
+    wResponseHeader.setLayoutData(fdResponseHeader);
 
     FormData fdOutputFields = new FormData();
     fdOutputFields.left = new FormAttachment( 0, 0 );
@@ -518,7 +455,7 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     // ////////////////////////
     // START Http AUTH GROUP
 
-    Group gHttpAuth = new Group( wGeneralComp, SWT.SHADOW_ETCHED_IN );
+    Group gHttpAuth = new Group(wGeneralComp, SWT.SHADOW_ETCHED_IN );
     gHttpAuth.setText( BaseMessages.getString( PKG, "HTTPDialog.HttpAuthGroup.Label" ) );
     FormLayout httpAuthLayout = new FormLayout();
     httpAuthLayout.marginWidth = 3;
@@ -527,15 +464,15 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     props.setLook( gHttpAuth );
 
     // Http Login
-    wlHttpLogin = new Label( gHttpAuth, SWT.RIGHT );
+    Label wlHttpLogin = new Label(gHttpAuth, SWT.RIGHT);
     wlHttpLogin.setText( BaseMessages.getString( PKG, "HTTPDialog.HttpLogin.Label" ) );
-    props.setLook( wlHttpLogin );
+    props.setLook(wlHttpLogin);
     FormData fdlHttpLogin = new FormData();
     fdlHttpLogin.top = new FormAttachment( 0, margin );
     fdlHttpLogin.left = new FormAttachment( 0, 0 );
     fdlHttpLogin.right = new FormAttachment( middle, -margin );
     wlHttpLogin.setLayoutData( fdlHttpLogin );
-    wHttpLogin = new TextVar( pipelineMeta, gHttpAuth, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wHttpLogin = new TextVar( variables, gHttpAuth, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wHttpLogin.addModifyListener( lsMod );
     wHttpLogin.setToolTipText( BaseMessages.getString( PKG, "HTTPDialog.HttpLogin.Tooltip" ) );
     props.setLook( wHttpLogin );
@@ -546,15 +483,15 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     wHttpLogin.setLayoutData( fdHttpLogin );
 
     // Http Password
-    wlHttpPassword = new Label( gHttpAuth, SWT.RIGHT );
+    Label wlHttpPassword = new Label(gHttpAuth, SWT.RIGHT);
     wlHttpPassword.setText( BaseMessages.getString( PKG, "HTTPDialog.HttpPassword.Label" ) );
-    props.setLook( wlHttpPassword );
+    props.setLook(wlHttpPassword);
     FormData fdlHttpPassword = new FormData();
     fdlHttpPassword.top = new FormAttachment( wHttpLogin, margin );
     fdlHttpPassword.left = new FormAttachment( 0, 0 );
     fdlHttpPassword.right = new FormAttachment( middle, -margin );
     wlHttpPassword.setLayoutData( fdlHttpPassword );
-    wHttpPassword = new PasswordTextVar( pipelineMeta, gHttpAuth, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wHttpPassword = new PasswordTextVar( variables, gHttpAuth, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wHttpPassword.addModifyListener( lsMod );
     wHttpPassword.setToolTipText( BaseMessages.getString( PKG, "HTTPDialog.HttpPassword.Tooltip" ) );
     props.setLook( wHttpPassword );
@@ -578,7 +515,7 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     // ////////////////////////
     // START PROXY GROUP
 
-    Group gProxy = new Group( wGeneralComp, SWT.SHADOW_ETCHED_IN );
+    Group gProxy = new Group(wGeneralComp, SWT.SHADOW_ETCHED_IN );
     gProxy.setText( BaseMessages.getString( PKG, "HTTPDialog.ProxyGroup.Label" ) );
     FormLayout proxyLayout = new FormLayout();
     proxyLayout.marginWidth = 3;
@@ -587,15 +524,15 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     props.setLook( gProxy );
 
     // Http Login
-    wlProxyHost = new Label( gProxy, SWT.RIGHT );
+    Label wlProxyHost = new Label(gProxy, SWT.RIGHT);
     wlProxyHost.setText( BaseMessages.getString( PKG, "HTTPDialog.ProxyHost.Label" ) );
-    props.setLook( wlProxyHost );
+    props.setLook(wlProxyHost);
     FormData fdlProxyHost = new FormData();
     fdlProxyHost.top = new FormAttachment( 0, margin );
     fdlProxyHost.left = new FormAttachment( 0, 0 );
     fdlProxyHost.right = new FormAttachment( middle, -margin );
     wlProxyHost.setLayoutData( fdlProxyHost );
-    wProxyHost = new TextVar( pipelineMeta, gProxy, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wProxyHost = new TextVar( variables, gProxy, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wProxyHost.addModifyListener( lsMod );
     wProxyHost.setToolTipText( BaseMessages.getString( PKG, "HTTPDialog.ProxyHost.Tooltip" ) );
     props.setLook( wProxyHost );
@@ -606,15 +543,15 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     wProxyHost.setLayoutData( fdProxyHost );
 
     // Http Password
-    wlProxyPort = new Label( gProxy, SWT.RIGHT );
+    Label wlProxyPort = new Label(gProxy, SWT.RIGHT);
     wlProxyPort.setText( BaseMessages.getString( PKG, "HTTPDialog.ProxyPort.Label" ) );
-    props.setLook( wlProxyPort );
+    props.setLook(wlProxyPort);
     FormData fdlProxyPort = new FormData();
     fdlProxyPort.top = new FormAttachment( wProxyHost, margin );
     fdlProxyPort.left = new FormAttachment( 0, 0 );
     fdlProxyPort.right = new FormAttachment( middle, -margin );
     wlProxyPort.setLayoutData( fdlProxyPort );
-    wProxyPort = new TextVar( pipelineMeta, gProxy, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wProxyPort = new TextVar( variables, gProxy, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wProxyPort.addModifyListener( lsMod );
     wProxyPort.setToolTipText( BaseMessages.getString( PKG, "HTTPDialog.ProxyPort.Tooltip" ) );
     props.setLook( wProxyPort );
@@ -634,45 +571,45 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     // ////////////////////////
     lastControl = gProxy;
 
-    fdGeneralComp = new FormData();
+    FormData fdGeneralComp = new FormData();
     fdGeneralComp.left = new FormAttachment( 0, 0 );
     fdGeneralComp.top = new FormAttachment( wTransformName, margin );
     fdGeneralComp.right = new FormAttachment( 100, 0 );
     fdGeneralComp.bottom = new FormAttachment( 100, 0 );
-    wGeneralComp.setLayoutData( fdGeneralComp );
+    wGeneralComp.setLayoutData(fdGeneralComp);
 
     wGeneralComp.layout();
-    wGeneralTab.setControl( wGeneralComp );
+    wGeneralTab.setControl(wGeneralComp);
 
     // ///////////////////////////////////////////////////////////
     // / END OF GENERAL TAB
     // ///////////////////////////////////////////////////////////
     // Additional tab...
     //
-    wAdditionalTab = new CTabItem( wTabFolder, SWT.NONE );
+    CTabItem wAdditionalTab = new CTabItem(wTabFolder, SWT.NONE);
     wAdditionalTab.setText( BaseMessages.getString( PKG, "HTTPDialog.FieldsTab.Title" ) );
 
     FormLayout addLayout = new FormLayout();
     addLayout.marginWidth = Const.FORM_MARGIN;
     addLayout.marginHeight = Const.FORM_MARGIN;
 
-    wAdditionalComp = new Composite( wTabFolder, SWT.NONE );
+    Composite wAdditionalComp = new Composite(wTabFolder, SWT.NONE);
     wAdditionalComp.setLayout( addLayout );
-    props.setLook( wAdditionalComp );
+    props.setLook(wAdditionalComp);
 
-    wlFields = new Label( wAdditionalComp, SWT.NONE );
+    Label wlFields = new Label(wAdditionalComp, SWT.NONE);
     wlFields.setText( BaseMessages.getString( PKG, "HTTPDialog.Parameters.Label" ) );
-    props.setLook( wlFields );
-    fdlFields = new FormData();
+    props.setLook(wlFields);
+    FormData fdlFields = new FormData();
     fdlFields.left = new FormAttachment( 0, 0 );
     fdlFields.top = new FormAttachment( lastControl, margin );
-    wlFields.setLayoutData( fdlFields );
+    wlFields.setLayoutData(fdlFields);
     lastControl = wlFields;
 
-    wGet = new Button( wAdditionalComp, SWT.PUSH );
+    Button wGet = new Button(wAdditionalComp, SWT.PUSH);
     wGet.setText( BaseMessages.getString( PKG, "HTTPDialog.GetFields.Button" ) );
     FormData fdGet = new FormData();
-    fdGet.top = new FormAttachment( wlFields, margin );
+    fdGet.top = new FormAttachment(wlFields, margin );
     fdGet.right = new FormAttachment( 100, 0 );
     wGet.setLayoutData( fdGet );
 
@@ -689,23 +626,23 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
 
     wFields =
       new TableView(
-        pipelineMeta, wAdditionalComp, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod,
+        variables, wAdditionalComp, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod,
         props );
 
-    fdFields = new FormData();
+    FormData fdFields = new FormData();
     fdFields.left = new FormAttachment( 0, 0 );
-    fdFields.top = new FormAttachment( wlFields, margin );
-    fdFields.right = new FormAttachment( wGet, -margin );
-    fdFields.bottom = new FormAttachment( wlFields, 200 );
-    wFields.setLayoutData( fdFields );
+    fdFields.top = new FormAttachment(wlFields, margin );
+    fdFields.right = new FormAttachment(wGet, -margin );
+    fdFields.bottom = new FormAttachment(wlFields, 200 );
+    wFields.setLayoutData(fdFields);
 
-    wlHeaders = new Label( wAdditionalComp, SWT.NONE );
+    Label wlHeaders = new Label(wAdditionalComp, SWT.NONE);
     wlHeaders.setText( BaseMessages.getString( PKG, "HTTPDialog.Headers.Label" ) );
-    props.setLook( wlHeaders );
-    fdlHeaders = new FormData();
+    props.setLook(wlHeaders);
+    FormData fdlHeaders = new FormData();
     fdlHeaders.left = new FormAttachment( 0, 0 );
     fdlHeaders.top = new FormAttachment( wFields, margin );
-    wlHeaders.setLayoutData( fdlHeaders );
+    wlHeaders.setLayoutData(fdlHeaders);
 
     final int HeadersRows = input.getHeaderParameter().length;
 
@@ -719,98 +656,65 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
     colinfHeaders[ 1 ].setUsingVariables( true );
     wHeaders =
       new TableView(
-        pipelineMeta, wAdditionalComp, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinfHeaders, HeadersRows,
+        variables, wAdditionalComp, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinfHeaders, HeadersRows,
         lsMod, props );
 
-    wGetHeaders = new Button( wAdditionalComp, SWT.PUSH );
+    Button wGetHeaders = new Button(wAdditionalComp, SWT.PUSH);
     wGetHeaders.setText( BaseMessages.getString( PKG, "HTTPDialog.GetHeaders.Button" ) );
     FormData fdGetHeaders = new FormData();
-    fdGetHeaders.top = new FormAttachment( wlHeaders, margin );
+    fdGetHeaders.top = new FormAttachment(wlHeaders, margin );
     fdGetHeaders.right = new FormAttachment( 100, 0 );
     wGetHeaders.setLayoutData( fdGetHeaders );
 
-    fdHeaders = new FormData();
+    FormData fdHeaders = new FormData();
     fdHeaders.left = new FormAttachment( 0, 0 );
-    fdHeaders.top = new FormAttachment( wlHeaders, margin );
-    fdHeaders.right = new FormAttachment( wGetHeaders, -margin );
+    fdHeaders.top = new FormAttachment(wlHeaders, margin );
+    fdHeaders.right = new FormAttachment(wGetHeaders, -margin );
     fdHeaders.bottom = new FormAttachment( 100, -margin );
-    wHeaders.setLayoutData( fdHeaders );
+    wHeaders.setLayoutData(fdHeaders);
 
     //
     // Search the fields in the background
 
-    final Runnable runnable = new Runnable() {
-      public void run() {
-        TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
-        if ( transformMeta != null ) {
-          try {
-            IRowMeta row = pipelineMeta.getPrevTransformFields( transformMeta );
+    final Runnable runnable = () -> {
+      TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
+      if ( transformMeta != null ) {
+        try {
+          IRowMeta row = pipelineMeta.getPrevTransformFields( variables, transformMeta );
 
-            // Remember these fields...
-            for ( int i = 0; i < row.size(); i++ ) {
-              inputFields.put( row.getValueMeta( i ).getName(), Integer.valueOf( i ) );
-            }
-            setComboBoxes();
-          } catch ( HopException e ) {
-            logError( BaseMessages.getString( PKG, "System.Dialog.GetFieldsFailed.Message" ) );
+          // Remember these fields...
+          for ( int i = 0; i < row.size(); i++ ) {
+            inputFields.put( row.getValueMeta( i ).getName(), i);
           }
+          setComboBoxes();
+        } catch ( HopException e ) {
+          logError( BaseMessages.getString( PKG, "System.Dialog.GetFieldsFailed.Message" ) );
         }
       }
     };
     new Thread( runnable ).start();
 
-    fdAdditionalComp = new FormData();
+    FormData fdAdditionalComp = new FormData();
     fdAdditionalComp.left = new FormAttachment( 0, 0 );
     fdAdditionalComp.top = new FormAttachment( wTransformName, margin );
     fdAdditionalComp.right = new FormAttachment( 100, 0 );
     fdAdditionalComp.bottom = new FormAttachment( 100, 0 );
-    wAdditionalComp.setLayoutData( fdAdditionalComp );
+    wAdditionalComp.setLayoutData(fdAdditionalComp);
 
     wAdditionalComp.layout();
-    wAdditionalTab.setControl( wAdditionalComp );
+    wAdditionalTab.setControl(wAdditionalComp);
     // ////// END of Additional Tab
 
-    fdTabFolder = new FormData();
+    FormData fdTabFolder = new FormData();
     fdTabFolder.left = new FormAttachment( 0, 0 );
     fdTabFolder.top = new FormAttachment( wTransformName, margin );
     fdTabFolder.right = new FormAttachment( 100, 0 );
-    fdTabFolder.bottom = new FormAttachment( 100, -50 );
-    wTabFolder.setLayoutData( fdTabFolder );
-
-    // THE BUTTONS
-    wOk = new Button( shell, SWT.PUSH );
-    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
-    wCancel = new Button( shell, SWT.PUSH );
-    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
-
-    setButtonPositions( new Button[] { wOk, wCancel }, margin, wTabFolder );
+    fdTabFolder.bottom = new FormAttachment( wOk, -2*margin );
+    wTabFolder.setLayoutData(fdTabFolder);
 
     // Add listeners
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
-    lsGet = new Listener() {
-      public void handleEvent( Event e ) {
-        get();
-      }
-    };
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-    lsGetHeaders = new Listener() {
-      public void handleEvent( Event e ) {
-        getHeadersFields();
-      }
-    };
-
-    wOk.addListener( SWT.Selection, lsOk );
-    wGet.addListener( SWT.Selection, lsGet );
-    wCancel.addListener( SWT.Selection, lsCancel );
-    wGetHeaders.addListener( SWT.Selection, lsGetHeaders );
+    wGet.addListener( SWT.Selection, e -> get());
+    wGetHeaders.addListener( SWT.Selection, e -> getHeadersFields());
 
     lsDef = new SelectionAdapter() {
       public void widgetDefaultSelected( SelectionEvent e ) {
@@ -829,13 +733,11 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
       }
     } );
 
-    lsResize = new Listener() {
-      public void handleEvent( Event event ) {
-        Point size = shell.getSize();
-        wFields.setSize( size.x - 10, size.y - 50 );
-        wFields.table.setSize( size.x - 10, size.y - 50 );
-        wFields.redraw();
-      }
+    lsResize = event -> {
+      Point size = shell.getSize();
+      wFields.setSize( size.x - 10, size.y - 50 );
+      wFields.table.setSize( size.x - 10, size.y - 50 );
+      wFields.redraw();
     };
     shell.addListener( SWT.Resize, lsResize );
 
@@ -862,10 +764,9 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
       gotEncodings = true;
 
       wEncoding.removeAll();
-      List<Charset> values = new ArrayList<Charset>( Charset.availableCharsets().values() );
-      for ( int i = 0; i < values.size(); i++ ) {
-        Charset charSet = values.get( i );
-        wEncoding.add( charSet.displayName() );
+      List<Charset> values = new ArrayList<>(Charset.availableCharsets().values());
+      for (Charset charSet : values) {
+        wEncoding.add(charSet.displayName());
       }
 
       // Now select the default!
@@ -880,7 +781,7 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
   protected void setComboBoxes() {
     // Something was changed in the row.
     //
-    final Map<String, Integer> fields = new HashMap<String, Integer>();
+    final Map<String, Integer> fields = new HashMap<>();
 
     // Add the currentMeta fields...
     fields.putAll( inputFields );
@@ -1029,7 +930,7 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
 
   private void get() {
     try {
-      IRowMeta r = pipelineMeta.getPrevTransformFields( transformName );
+      IRowMeta r = pipelineMeta.getPrevTransformFields( variables, transformName );
       if ( r != null && !r.isEmpty() ) {
         BaseTransformDialog.getFieldsFromPrevious( r, wFields, 1, new int[] { 1, 2 }, new int[] { 3 }, -1, -1, null );
       }
@@ -1042,7 +943,7 @@ public class HttpDialog extends BaseTransformDialog implements ITransformDialog 
 
   private void getHeadersFields() {
     try {
-      IRowMeta r = pipelineMeta.getPrevTransformFields( transformName );
+      IRowMeta r = pipelineMeta.getPrevTransformFields( variables, transformName );
       if ( r != null && !r.isEmpty() ) {
         BaseTransformDialog.getFieldsFromPrevious( r, wHeaders, 1, new int[] { 1, 2 }, new int[] { 3 }, -1, -1, null );
       }

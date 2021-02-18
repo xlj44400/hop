@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Pentaho Data Integration
- *
- * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.testing.transforms.exectests;
 
@@ -28,7 +23,7 @@ import org.apache.hop.core.exception.HopXmlException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.xml.XmlHandler;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
@@ -43,8 +38,8 @@ import org.w3c.dom.Node;
   id = "ExecuteTests",
   description = "Execute Unit Tests",
   name = "Execute Unit Tests",
-  image = "ui/images/TRNEx.svg",
-  categoryDescription = "Flow"
+  image = "executetests.svg",
+  categoryDescription = "i18n:org.apache.hop.pipeline.transform:BaseTransform.Category.Flow"
 )
 public class ExecuteTestsMeta extends BaseTransformMeta implements ITransformMeta<ExecuteTests, ExecuteTestsData> {
 
@@ -71,15 +66,15 @@ public class ExecuteTestsMeta extends BaseTransformMeta implements ITransformMet
   }
 
   @Override public void getFields( IRowMeta inputRowMeta, String name, IRowMeta[] info, TransformMeta nextTransform,
-                                   IVariables variables, IMetaStore metaStore ) {
+                                   IVariables variables, IHopMetadataProvider metadataProvider ) {
     IRowMeta rowMeta = UnitTestResult.getRowMeta();
     int index = 0;
-    rowMeta.getValueMeta( index++ ).setName( variables.environmentSubstitute( pipelineNameField ) );
-    rowMeta.getValueMeta( index++ ).setName( variables.environmentSubstitute( unitTestNameField ) );
-    rowMeta.getValueMeta( index++ ).setName( variables.environmentSubstitute( dataSetNameField ) );
-    rowMeta.getValueMeta( index++ ).setName( variables.environmentSubstitute( transformNameField ) );
-    rowMeta.getValueMeta( index++ ).setName( variables.environmentSubstitute( errorField ) );
-    rowMeta.getValueMeta( index++ ).setName( variables.environmentSubstitute( commentField ) );
+    rowMeta.getValueMeta( index++ ).setName( variables.resolve( pipelineNameField ) );
+    rowMeta.getValueMeta( index++ ).setName( variables.resolve( unitTestNameField ) );
+    rowMeta.getValueMeta( index++ ).setName( variables.resolve( dataSetNameField ) );
+    rowMeta.getValueMeta( index++ ).setName( variables.resolve( transformNameField ) );
+    rowMeta.getValueMeta( index++ ).setName( variables.resolve( errorField ) );
+    rowMeta.getValueMeta( index++ ).setName( variables.resolve( commentField ) );
 
     inputRowMeta.clear();
     inputRowMeta.addRowMeta( rowMeta );
@@ -101,7 +96,7 @@ public class ExecuteTestsMeta extends BaseTransformMeta implements ITransformMet
   }
 
   @Override
-  public void loadXml( Node transformNode, IMetaStore metaStore ) throws HopXmlException {
+  public void loadXml( Node transformNode, IHopMetadataProvider metadataProvider ) throws HopXmlException {
     try {
 
       testNameInputField = XmlHandler.getTagValue( transformNode, TAG_TEST_NAME_INPUT_FIELD );

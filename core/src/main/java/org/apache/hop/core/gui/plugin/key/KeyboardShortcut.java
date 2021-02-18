@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.gui.plugin.key;
 
@@ -64,26 +59,35 @@ public class KeyboardShortcut {
       return parentMethodName.toString();
     }
     StringBuilder str = new StringBuilder();
-    if ( shift ) {
-      str.append( "SHIFT-" );
-    }
     if ( control ) {
-      str.append( "CTRL-" );
+      str.append( "Ctrl+" );
     }
     if ( alt ) {
-      str.append( "ALT-" );
+      str.append( "Alt+" );
+    }
+    if ( shift ) {
+      str.append( "Shift+" );
     }
     if ( command ) {
-      str.append( "CMD-" );
+      str.append( "Cmd+" );
     }
-    // Character
-    if ( keyCode >= 97 && keyCode <= 122 ) {
+        
+    // Character upper
+    if ( keyCode >= 65 && keyCode <= 90 ) {
+      str.append( (char) keyCode );
+    }
+    // Character lower
+    else if ( keyCode >= 97 && keyCode <= 122 ) {
+      str.append( Character.toUpperCase( (char) keyCode ) );
+    }
+    // Delete key
+    else if ( keyCode == 127 ) {
+      str.append( "Delete" );
+    } 
+    // Digit
+    else if ( keyCode >= 48 && keyCode <= 57 ) {
       str.append( ( (char) keyCode ) );
-    } else
-      // Digit
-      if ( keyCode >= 48 && keyCode <= 57 ) {
-        str.append( ( (char) keyCode ) );
-      }
+    }
     return str.toString();
   }
 

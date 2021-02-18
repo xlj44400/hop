@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.hop.ui.pipeline.transform.common;
 
 import org.apache.hop.core.Const;
@@ -12,13 +29,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TextFileLineUtil {
+  private static final Class<?> PKG = TextFileLineUtil.class; // For Translator
+
   public static final int FILE_FORMAT_DOS = 0;
   public static final int FILE_FORMAT_UNIX = 1;
   public static final int FILE_FORMAT_MIXED = 2;
   public static final int FILE_TYPE_CSV = 0;
   public static final int FILE_TYPE_FIXED = 1;
-
-  private static Class<?> PKG = TextFileLineUtil.class; // for i18n purposes, needed by Translator!!
 
   public static final String getLine( ILogChannel log, InputStreamReader reader, int formatNr,
                                       StringBuilder line ) throws HopFileException {
@@ -126,15 +143,15 @@ public class TextFileLineUtil {
       boolean dencl = false;
 
       int len_encl = ( enclosure == null ? 0 : enclosure.length() );
-      int len_esc = ( escapeCharacter == null ? 0 : escapeCharacter.length() );
+      int lenEsc = ( escapeCharacter == null ? 0 : escapeCharacter.length() );
 
       while ( pos < length ) {
         int from = pos;
         int next;
 
         boolean encl_found;
-        boolean contains_escaped_enclosures = false;
-        boolean contains_escaped_separators = false;
+        boolean containsEscaped_enclosures = false;
+        boolean containsEscapedSeparators = false;
 
         // Is the field beginning with an enclosure?
         // "aa;aa";123;"aaa-aaa";000;...
@@ -149,14 +166,14 @@ public class TextFileLineUtil {
           boolean is_enclosure =
             len_encl > 0
               && p + len_encl < length && line.substring( p, p + len_encl ).equalsIgnoreCase( enclosure );
-          boolean is_escape =
-            len_esc > 0
-              && p + len_esc < length && line.substring( p, p + len_esc ).equalsIgnoreCase( escapeCharacter );
+          boolean isEscape =
+            lenEsc > 0
+              && p + lenEsc < length && line.substring( p, p + lenEsc ).equalsIgnoreCase( escapeCharacter );
 
           boolean enclosure_after = false;
 
           // Is it really an enclosure? See if it's not repeated twice or escaped!
-          if ( ( is_enclosure || is_escape ) && p < length - 1 ) {
+          if ( ( is_enclosure || isEscape ) && p < length - 1 ) {
             String strnext = line.substring( p + len_encl, p + 2 * len_encl );
             if ( strnext.equalsIgnoreCase( enclosure ) ) {
               p++;
@@ -164,8 +181,8 @@ public class TextFileLineUtil {
               dencl = true;
 
               // Remember to replace them later on!
-              if ( is_escape ) {
-                contains_escaped_enclosures = true;
+              if ( isEscape ) {
+                containsEscaped_enclosures = true;
               }
             }
           }
@@ -176,11 +193,11 @@ public class TextFileLineUtil {
             enclosure_after = false;
             is_enclosure =
               len_encl > 0 && p + len_encl < length && line.substring( p, p + len_encl ).equals( enclosure );
-            is_escape =
-              len_esc > 0 && p + len_esc < length && line.substring( p, p + len_esc ).equals( escapeCharacter );
+            isEscape =
+              lenEsc > 0 && p + lenEsc < length && line.substring( p, p + lenEsc ).equals( escapeCharacter );
 
             // Is it really an enclosure? See if it's not repeated twice or escaped!
-            if ( ( is_enclosure || is_escape ) && p < length - 1 ) {
+            if ( ( is_enclosure || isEscape ) && p < length - 1 ) {
               String strnext = line.substring( p + len_encl, p + 2 * len_encl );
               if ( strnext.equals( enclosure ) ) {
                 p++;
@@ -188,8 +205,8 @@ public class TextFileLineUtil {
                 dencl = true;
 
                 // Remember to replace them later on!
-                if ( is_escape ) {
-                  contains_escaped_enclosures = true; // remember
+                if ( isEscape ) {
+                  containsEscaped_enclosures = true; // remember
                 }
               }
             }
@@ -213,13 +230,13 @@ public class TextFileLineUtil {
             next = line.indexOf( delimiter, startpoint );
 
             // See if this position is preceded by an escape character.
-            if ( len_esc > 0 && next - len_esc > 0 ) {
-              String before = line.substring( next - len_esc, next );
+            if ( lenEsc > 0 && next - lenEsc > 0 ) {
+              String before = line.substring( next - lenEsc, next );
 
               if ( escapeCharacter != null && escapeCharacter.equals( before ) ) {
                 // take the next separator, this one is escaped...
                 startpoint = next + 1;
-                contains_escaped_separators = true;
+                containsEscapedSeparators = true;
               } else {
                 found = true;
               }
@@ -261,13 +278,13 @@ public class TextFileLineUtil {
         }
 
         // replace the escaped enclosures with enclosures...
-        if ( contains_escaped_enclosures ) {
+        if ( containsEscaped_enclosures ) {
           String replace = escapeCharacter + enclosure;
           pol = Const.replace( pol, replace, enclosure );
         }
 
         // replace the escaped separators with separators...
-        if ( contains_escaped_separators ) {
+        if ( containsEscapedSeparators ) {
           String replace = escapeCharacter + delimiter;
           pol = Const.replace( pol, replace, delimiter );
         }

@@ -1,29 +1,24 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.abort;
 
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
@@ -33,58 +28,33 @@ import org.apache.hop.ui.core.widget.TextVar;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.apache.hop.ui.util.SwtSvgImageUtil;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Group;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
-@PluginDialog(
-        id = "Abort",
-        image = "abort.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = "http://www.project-hop.org/manual/latest/plugins/transforms/abort.html"
-)
 public class AbortDialog extends BaseTransformDialog implements ITransformDialog {
-  private static final Class<?> PKG = AbortDialog.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = AbortDialog.class; // For Translator
 
-  private Label wlRowThreshold;
   private TextVar wRowThreshold;
-  private FormData fdlRowThreshold, fdRowThreshold;
 
-  private Label wlMessage;
   private TextVar wMessage;
-  private FormData fdlMessage, fdMessage;
 
   private Button wAlwaysLogRows;
-  private FormData fdAlwaysLogRows;
 
-  private AbortMeta input;
+  private final AbortMeta input;
   private ModifyListener lsMod;
   private SelectionAdapter lsSelMod;
-  private Group wLoggingGroup;
   private Button wAbortButton;
   private Button wAbortWithErrorButton;
   private Button wSafeStopButton;
   private Group wOptionsGroup;
   private Label hSpacer;
 
-  public AbortDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public AbortDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (AbortMeta) in;
   }
 
@@ -178,16 +148,8 @@ public class AbortDialog extends BaseTransformDialog implements ITransformDialog
     buildLogging( wOptionsGroup );
 
     // Add listeners
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
+    lsCancel = e -> cancel();
+    lsOk = e -> ok();
 
     wCancel.addListener( SWT.Selection, lsCancel );
     wOk.addListener( SWT.Selection, lsOk );
@@ -266,29 +228,29 @@ public class AbortDialog extends BaseTransformDialog implements ITransformDialog
     wSafeStopButton.setLayoutData( fdSafeStop );
     props.setLook( wSafeStopButton );
 
-    wlRowThreshold = new Label( wOptionsGroup, SWT.RIGHT );
+    Label wlRowThreshold = new Label(wOptionsGroup, SWT.RIGHT);
     wlRowThreshold.setText( BaseMessages.getString( PKG, "AbortDialog.Options.RowThreshold.Label" ) );
-    props.setLook( wlRowThreshold );
-    fdlRowThreshold = new FormData();
+    props.setLook(wlRowThreshold);
+    FormData fdlRowThreshold = new FormData();
     fdlRowThreshold.left = new FormAttachment( 0, 0 );
     fdlRowThreshold.top = new FormAttachment( wSafeStopButton, 10 );
-    wlRowThreshold.setLayoutData( fdlRowThreshold );
+    wlRowThreshold.setLayoutData(fdlRowThreshold);
 
-    wRowThreshold = new TextVar( pipelineMeta, wOptionsGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wRowThreshold = new TextVar( variables, wOptionsGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wRowThreshold.setText( "" );
     props.setLook( wRowThreshold );
     wRowThreshold.addModifyListener( lsMod );
     wRowThreshold.setToolTipText( BaseMessages.getString( PKG, "AbortDialog.Options.RowThreshold.Tooltip" ) );
-    fdRowThreshold = new FormData();
+    FormData fdRowThreshold = new FormData();
     fdRowThreshold.left = new FormAttachment( 0, 0 );
-    fdRowThreshold.top = new FormAttachment( wlRowThreshold, 5 );
+    fdRowThreshold.top = new FormAttachment(wlRowThreshold, 5 );
     fdRowThreshold.width = 174;
-    wRowThreshold.setLayoutData( fdRowThreshold );
+    wRowThreshold.setLayoutData(fdRowThreshold);
   }
 
   private void buildLogging( Composite widgetAbove ) {
-    wLoggingGroup = new Group( shell, SWT.SHADOW_ETCHED_IN );
-    props.setLook( wLoggingGroup );
+    Group wLoggingGroup = new Group(shell, SWT.SHADOW_ETCHED_IN);
+    props.setLook(wLoggingGroup);
     wLoggingGroup.setText( BaseMessages.getString( PKG, "AbortDialog.Logging.Group" ) );
     FormLayout flLoggingGroup = new FormLayout();
     flLoggingGroup.marginHeight = 15;
@@ -302,33 +264,33 @@ public class AbortDialog extends BaseTransformDialog implements ITransformDialog
     fdLoggingGroup.bottom = new FormAttachment( hSpacer, -15 );
     wLoggingGroup.setLayoutData( fdLoggingGroup );
 
-    wlMessage = new Label( wLoggingGroup, SWT.RIGHT );
+    Label wlMessage = new Label(wLoggingGroup, SWT.RIGHT);
     wlMessage.setText( BaseMessages.getString( PKG, "AbortDialog.Logging.AbortMessage.Label" ) );
-    props.setLook( wlMessage );
-    fdlMessage = new FormData();
+    props.setLook(wlMessage);
+    FormData fdlMessage = new FormData();
     fdlMessage.left = new FormAttachment( 0, 0 );
     fdlMessage.top = new FormAttachment( 0, 0 );
-    wlMessage.setLayoutData( fdlMessage );
+    wlMessage.setLayoutData(fdlMessage);
 
-    wMessage = new TextVar( pipelineMeta, wLoggingGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wMessage = new TextVar( variables, wLoggingGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wMessage.setText( "" );
     props.setLook( wMessage );
     wMessage.addModifyListener( lsMod );
     wMessage.setToolTipText( BaseMessages.getString( PKG, "AbortDialog.Logging.AbortMessage.Tooltip" ) );
-    fdMessage = new FormData();
+    FormData fdMessage = new FormData();
     fdMessage.left = new FormAttachment( 0, 0 );
-    fdMessage.top = new FormAttachment( wlMessage, 5 );
+    fdMessage.top = new FormAttachment(wlMessage, 5 );
     fdMessage.right = new FormAttachment( 100, 0 );
-    wMessage.setLayoutData( fdMessage );
+    wMessage.setLayoutData(fdMessage);
 
-    wAlwaysLogRows = new Button( wLoggingGroup, SWT.CHECK );
+    wAlwaysLogRows = new Button(wLoggingGroup, SWT.CHECK );
     wAlwaysLogRows.setText( BaseMessages.getString( PKG, "AbortDialog.Logging.AlwaysLogRows.Label" ) );
     props.setLook( wAlwaysLogRows );
     wAlwaysLogRows.setToolTipText( BaseMessages.getString( PKG, "AbortDialog.Logging.AlwaysLogRows.Tooltip" ) );
-    fdAlwaysLogRows = new FormData();
+    FormData fdAlwaysLogRows = new FormData();
     fdAlwaysLogRows.left = new FormAttachment( 0, 0 );
     fdAlwaysLogRows.top = new FormAttachment( wMessage, 10 );
-    wAlwaysLogRows.setLayoutData( fdAlwaysLogRows );
+    wAlwaysLogRows.setLayoutData(fdAlwaysLogRows);
     wAlwaysLogRows.addSelectionListener( lsSelMod );
   }
 

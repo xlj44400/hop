@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.gettablenames;
 
@@ -48,7 +43,7 @@ import org.apache.hop.pipeline.transform.TransformMeta;
 
 public class GetTableNames extends BaseTransform<GetTableNamesMeta, GetTableNamesData> implements ITransform<GetTableNamesMeta, GetTableNamesData> {
 
-  private static Class<?> PKG = GetTableNamesMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = GetTableNamesMeta.class; // For Translator
 
   public GetTableNames( TransformMeta transformMeta, GetTableNamesMeta meta, GetTableNamesData data, int copyNr, PipelineMeta pipelineMeta,
                         Pipeline pipeline ) {
@@ -109,7 +104,7 @@ public class GetTableNames extends BaseTransform<GetTableNamesMeta, GetTableName
         data.outputRowMeta = new RowMeta();
       }
 
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
     }
 
@@ -395,14 +390,14 @@ public class GetTableNames extends BaseTransform<GetTableNamesMeta, GetTableName
         logError( BaseMessages.getString( PKG, "GetTableNames.Error.TablenameFieldNameMissing" ) );
         return false;
       }
-      String realSchemaName = environmentSubstitute( meta.getSchemaName() );
+      String realSchemaName = resolve( meta.getSchemaName() );
       if ( !Utils.isEmpty( realSchemaName ) ) {
         data.realSchemaName = realSchemaName;
       }
-      data.realTableNameFieldName = environmentSubstitute( meta.getTablenameFieldName() );
-      data.realObjectTypeFieldName = environmentSubstitute( meta.getObjectTypeFieldName() );
-      data.realIsSystemObjectFieldName = environmentSubstitute( meta.isSystemObjectFieldName() );
-      data.realSqlCreationFieldName = environmentSubstitute( meta.getSqlCreationFieldName() );
+      data.realTableNameFieldName = resolve( meta.getTablenameFieldName() );
+      data.realObjectTypeFieldName = resolve( meta.getObjectTypeFieldName() );
+      data.realIsSystemObjectFieldName = resolve( meta.isSystemObjectFieldName() );
+      data.realSqlCreationFieldName = resolve( meta.getSqlCreationFieldName() );
       if ( !meta.isIncludeCatalog()
         && !meta.isIncludeSchema() && !meta.isIncludeTable() && !meta.isIncludeView()
         && !meta.isIncludeProcedure() && !meta.isIncludeSynonym() ) {
@@ -413,7 +408,7 @@ public class GetTableNames extends BaseTransform<GetTableNamesMeta, GetTableName
       try {
         // Create the output row meta-data
         data.outputRowMeta = new RowMeta();
-        meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore ); // get the
+        meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider ); // get the
         // metadata
         // populated
       } catch ( Exception e ) {
@@ -422,8 +417,7 @@ public class GetTableNames extends BaseTransform<GetTableNamesMeta, GetTableName
         return false;
       }
 
-      data.db = new Database( this, meta.getDatabase() );
-      data.db.shareVariablesWith( this );
+      data.db = new Database( this, this, meta.getDatabase() );
       try {
         data.db.connect( getPartitionId() );
 

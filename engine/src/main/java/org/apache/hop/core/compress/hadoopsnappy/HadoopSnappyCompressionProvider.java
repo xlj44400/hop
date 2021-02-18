@@ -1,27 +1,23 @@
-/*******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.compress.hadoopsnappy;
 
+import org.apache.hop.core.compress.CompressionPlugin;
 import org.apache.hop.core.compress.ICompressionProvider;
 
 import java.io.IOException;
@@ -29,6 +25,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 
+@CompressionPlugin(
+  id = "HADOOPSNAPPY",
+  name = "Hadoop-snappy",
+  description = "Hadoop Snappy compression"
+)
 public class HadoopSnappyCompressionProvider implements ICompressionProvider {
 
   public static final int IO_COMPRESSION_CODEC_SNAPPY_DEFAULT_BUFFERSIZE = 256 * 1024;
@@ -36,7 +37,7 @@ public class HadoopSnappyCompressionProvider implements ICompressionProvider {
   private static final String HADOOP_CONFIG_UTIL_CLASS_PROPERTY = "hadoop.config.util.class";
 
   private static final String[] HADOOP_CONFIG_UTIL_CLASS = { "org.apache.hadoop.hive.jdbc.HadoopConfigurationUtil",
-    "org.pentaho.hadoop.hive.jdbc.HadoopConfigurationUtil", };
+    "org.apache.hop.hadoop.hive.jdbc.HadoopConfigurationUtil", };
 
   private static final String GET_ACTIVE_CONFIGURATION_METHOD = "getActiveConfiguration";
 
@@ -45,11 +46,11 @@ public class HadoopSnappyCompressionProvider implements ICompressionProvider {
   /**
    * Locate the Snappy Shim for the active Hadoop Configuration via the Hadoop Configuration Util
    *
-   * @return A {@link org.pentaho.hadoop.shim.spi.SnappyShim} to interact with Snappy
+   * @return A {@link org.apache.hop.hadoop.shim.spi.SnappyShim} to interact with Snappy
    * @throws Exception Error locating a valid Snappy shim:
    *                   <p>
    *                   <ul>
-   *                   <li>{@link org.pentaho.hadoop.hive.jdbc.HadoopConfigurationUtil} could not be located</li>
+   *                   <li>{@link org.apache.hop.hadoop.hive.jdbc.HadoopConfigurationUtil} could not be located</li>
    *                   <li>No active Hadoop configuration</li>
    *                   <li>Active Hadoop configuration doesn't support Snappy</li>
    *                   </ul>

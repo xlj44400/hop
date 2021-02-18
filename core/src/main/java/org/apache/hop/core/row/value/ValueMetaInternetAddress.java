@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.row.value;
 
@@ -29,6 +24,7 @@ import org.apache.hop.core.exception.HopDatabaseException;
 import org.apache.hop.core.exception.HopValueException;
 import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -40,6 +36,12 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Date;
 
+@ValueMetaPlugin(
+  id = "10",
+  name = "Internet Address",
+  description = "Internet Address",
+  image = "images/inet.svg"
+)
 public class ValueMetaInternetAddress extends ValueMetaDate {
 
   @Override
@@ -305,35 +307,35 @@ public class ValueMetaInternetAddress extends ValueMetaDate {
 
   @Override
   public Object convertDataFromString( String pol, IValueMeta convertMeta, String nullIf, String ifNull,
-                                       int trim_type ) throws HopValueException {
+                                       int trimType ) throws HopValueException {
     // null handling and conversion of value to null
     //
-    String null_value = nullIf;
-    if ( null_value == null ) {
+    String nullValue = nullIf;
+    if ( nullValue == null ) {
       switch ( convertMeta.getType() ) {
         case IValueMeta.TYPE_BOOLEAN:
-          null_value = Const.NULL_BOOLEAN;
+          nullValue = Const.NULL_BOOLEAN;
           break;
         case IValueMeta.TYPE_STRING:
-          null_value = Const.NULL_STRING;
+          nullValue = Const.NULL_STRING;
           break;
         case IValueMeta.TYPE_BIGNUMBER:
-          null_value = Const.NULL_BIGNUMBER;
+          nullValue = Const.NULL_BIGNUMBER;
           break;
         case IValueMeta.TYPE_NUMBER:
-          null_value = Const.NULL_NUMBER;
+          nullValue = Const.NULL_NUMBER;
           break;
         case IValueMeta.TYPE_INTEGER:
-          null_value = Const.NULL_INTEGER;
+          nullValue = Const.NULL_INTEGER;
           break;
         case IValueMeta.TYPE_DATE:
-          null_value = Const.NULL_DATE;
+          nullValue = Const.NULL_DATE;
           break;
         case IValueMeta.TYPE_BINARY:
-          null_value = Const.NULL_BINARY;
+          nullValue = Const.NULL_BINARY;
           break;
         default:
-          null_value = Const.NULL_NONE;
+          nullValue = Const.NULL_NONE;
           break;
       }
     }
@@ -346,7 +348,7 @@ public class ValueMetaInternetAddress extends ValueMetaDate {
       // because you could get an NPE since you haven't checked isEmpty(pol)
       // yet!
       if ( Utils.isEmpty( pol )
-        || pol.equalsIgnoreCase( Const.rightPad( new StringBuilder( null_value ), pol.length() ) ) ) {
+        || pol.equalsIgnoreCase( Const.rightPad( new StringBuilder( nullValue ), pol.length() ) ) ) {
         pol = ifNull;
       }
     }
@@ -359,12 +361,12 @@ public class ValueMetaInternetAddress extends ValueMetaDate {
     } else {
       // if the null_value is specified, we try to match with that.
       //
-      if ( !Utils.isEmpty( null_value ) ) {
-        if ( null_value.length() <= pol.length() ) {
+      if ( !Utils.isEmpty( nullValue ) ) {
+        if ( nullValue.length() <= pol.length() ) {
           // If the polled value is equal to the spaces right-padded null_value,
           // we have a match
           //
-          if ( pol.equalsIgnoreCase( Const.rightPad( new StringBuilder( null_value ), pol.length() ) ) ) {
+          if ( pol.equalsIgnoreCase( Const.rightPad( new StringBuilder( nullValue ), pol.length() ) ) ) {
             return null;
           }
         }
@@ -380,7 +382,7 @@ public class ValueMetaInternetAddress extends ValueMetaDate {
 
     StringBuilder strpol;
     // Trimming
-    switch ( trim_type ) {
+    switch ( trimType ) {
       case IValueMeta.TRIM_TYPE_LEFT:
         strpol = new StringBuilder( pol );
         while ( strpol.length() > 0 && strpol.charAt( 0 ) == ' ' ) {
@@ -457,12 +459,12 @@ public class ValueMetaInternetAddress extends ValueMetaDate {
   }
 
   @Override
-  public IValueMeta getMetadataPreview( DatabaseMeta databaseMeta, ResultSet rs )
+  public IValueMeta getMetadataPreview( IVariables variables, DatabaseMeta databaseMeta, ResultSet rs )
     throws HopDatabaseException {
 
     try {
       if ( "INET".equalsIgnoreCase( rs.getString( "TYPE_NAME" ) ) ) {
-        IValueMeta vmi = super.getMetadataPreview( databaseMeta, rs );
+        IValueMeta vmi = super.getMetadataPreview( variables, databaseMeta, rs );
         IValueMeta valueMeta = new ValueMetaInternetAddress( name );
         valueMeta.setLength( vmi.getLength() );
         valueMeta.setOriginalColumnType( vmi.getOriginalColumnType() );
@@ -480,12 +482,12 @@ public class ValueMetaInternetAddress extends ValueMetaDate {
   }
 
   @Override
-  public IValueMeta getValueFromSqlType(DatabaseMeta databaseMeta, String name, ResultSetMetaData rm,
-                                        int index, boolean ignoreLength, boolean lazyConversion ) throws HopDatabaseException {
+  public IValueMeta getValueFromSqlType( IVariables variables, DatabaseMeta databaseMeta, String name, ResultSetMetaData rm,
+                                         int index, boolean ignoreLength, boolean lazyConversion ) throws HopDatabaseException {
 
     try {
       int type = rm.getColumnType( index );
-      if ( type == java.sql.Types.OTHER ) {
+      if ( type == Types.OTHER ) {
 
         String columnTypeName = rm.getColumnTypeName( index );
         if ( "INET".equalsIgnoreCase( columnTypeName ) ) {
@@ -535,17 +537,17 @@ public class ValueMetaInternetAddress extends ValueMetaDate {
 
   @Override
   public String getDatabaseColumnTypeDefinition( IDatabase iDatabase, String tk, String pk,
-                                                 boolean use_autoinc, boolean add_fieldname, boolean add_cr ) {
+                                                 boolean useAutoIncrement, boolean addFieldName, boolean addCr ) {
 
     String retval = null;
     if ( iDatabase.isPostgresVariant() ) {
-      if ( add_fieldname ) {
+      if ( addFieldName ) {
         retval = getName() + " ";
       } else {
         retval = "";
       }
       retval += "INET";
-      if ( add_cr ) {
+      if ( addCr ) {
         retval += Const.CR;
       }
     }

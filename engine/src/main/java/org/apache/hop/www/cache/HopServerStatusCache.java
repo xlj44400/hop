@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.www.cache;
 
@@ -42,19 +37,17 @@ import java.util.concurrent.TimeUnit;
 
 public class HopServerStatusCache implements Cache {
 
-  public static final String CARTE_STATUS_CACHE = "CARTE_CACHE";
+  public static final String HOP_SERVER_STATUS_CACHE = "HOP_SERVER_CACHE";
 
   /**
-   * Switching the thread launched to be daemon otherwise it blocks the pentaho server shutdown
+   * Switching the thread launched to be daemon otherwise it blocks the Hop server shutdown
    */
   private final ScheduledExecutorService removeService = Executors.newSingleThreadScheduledExecutor(
-    new ThreadFactory() {
-      public Thread newThread( Runnable r ) {
-        Thread t = Executors.defaultThreadFactory().newThread( r );
-        t.setDaemon( true );
-        t.setName( HopServerStatusCache.class.getSimpleName() );
-        return t;
-      }
+    r -> {
+      Thread t = Executors.defaultThreadFactory().newThread( r );
+      t.setDaemon( true );
+      t.setName( HopServerStatusCache.class.getSimpleName() );
+      return t;
     } );
 
   private final Map<String, CachedItem> cachedMap = new ConcurrentHashMap<>();
@@ -73,8 +66,8 @@ public class HopServerStatusCache implements Cache {
   }
 
   private HopServerStatusCache() {
-    period = Integer.parseInt( Const.getEnvironmentVariable( "CARTE_CLEAR_PERIOD", "1" ) );
-    timeUnit = TimeUnit.valueOf( Const.getEnvironmentVariable( "CARTE_CLEAR_TIMEUNIT", "DAYS" ) );
+    period = Integer.parseInt( Const.getEnvironmentVariable( "HOP_SERVER_CLEAR_PERIOD", "1" ) );
+    timeUnit = TimeUnit.valueOf( Const.getEnvironmentVariable( "HOP_SERVER_CLEAR_TIMEUNIT", "DAYS" ) );
 
     removeService.scheduleAtFixedRate( this::clear, 1, 1, TimeUnit.DAYS );
   }

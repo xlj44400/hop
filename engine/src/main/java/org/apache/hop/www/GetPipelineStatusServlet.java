@@ -1,30 +1,26 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.www;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.hop.cluster.HttpUtil;
+import org.apache.hop.server.HttpUtil;
 import org.apache.hop.core.Const;
+import org.apache.hop.core.annotations.HopServerServlet;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.gui.Point;
 import org.apache.hop.core.logging.HopLogStore;
@@ -50,10 +46,10 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.Date;
 
-
+@HopServerServlet(id="pipelineStatus", name = "Get the status of a pipeline")
 public class GetPipelineStatusServlet extends BaseHttpServlet implements IHopServerPlugin {
 
-  private static Class<?> PKG = GetPipelineStatusServlet.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = GetPipelineStatusServlet.class; // For Translator
 
   private static final long serialVersionUID = 3634806745372015720L;
 
@@ -74,132 +70,7 @@ public class GetPipelineStatusServlet extends BaseHttpServlet implements IHopSer
     super( pipelineMap );
   }
 
-  /**
-   * <div id="mindtouch">
-   * <h1>/hop/pipelineStatus</h1>
-   * <a name="GET"></a>
-   * <h2>GET</h2>
-   * <p>Retrieves status of the specified pipeline. Status is returned as HTML or XML output
-   * depending on the input parameters. Status contains information about last execution of the pipeline.</p>
-   * <p><b>Example Request:</b><br />
-   * <pre function="syntax.xml">
-   * GET /hop/pipelineStatus/?name=dummy-pipeline&xml=Y
-   * </pre>
-   *
-   * </p>
-   * <h3>Parameters</h3>
-   * <table class="hop-table">
-   * <tbody>
-   * <tr>
-   * <th>name</th>
-   * <th>description</th>
-   * <th>type</th>
-   * </tr>
-   * <tr>
-   * <td>name</td>
-   * <td>Name of the pipeline to be used for status generation.</td>
-   * <td>query</td>
-   * </tr>
-   * <tr>
-   * <td>xml</td>
-   * <td>Boolean flag which defines output format <code>Y</code> forces XML output to be generated.
-   * HTML is returned otherwise.</td>
-   * <td>boolean, optional</td>
-   * </tr>
-   * <tr>
-   * <td>id</td>
-   * <td>HopServer id of the pipeline to be used for status generation.</td>
-   * <td>query, optional</td>
-   * </tr>
-   * <tr>
-   * <td>from</td>
-   * <td>Start line number of the execution log to be included into response.</td>
-   * <td>integer, optional</td>
-   * </tr>
-   * </tbody>
-   * </table>
-   *
-   * <h3>Response Body</h3>
-   * <table class="hop-table">
-   * <tbody>
-   * <tr>
-   * <td align="right">element:</td>
-   * <td>(custom)</td>
-   * </tr>
-   * <tr>
-   * <td align="right">media types:</td>
-   * <td>text/xml, text/html</td>
-   * </tr>
-   * </tbody>
-   * </table>
-   * <p> Response XML or HTML response containing details about the pipeline specified.
-   * If an error occurs during method invocation <code>result</code> field of the response
-   * will contain <code>ERROR</code> status.</p>
-   *
-   * <p><b>Example Response:</b></p>
-   * <pre function="syntax.xml">
-   * <?xml version="1.0" encoding="UTF-8"?>
-   * <pipeline-status>
-   * <pipeline_name>dummy-pipeline</pipeline_Name>
-   * <id>c56961b2-c848-49b8-abde-76c8015e29b0</id>
-   * <status_desc>Stopped</status_desc>
-   * <error_desc/>
-   * <paused>N</paused>
-   * <transform_status_list>
-   * <transform_status><transformName>Dummy &#x28;do nothing&#x29;</transformName>
-   * <copy>0</copy><linesRead>0</linesRead>
-   * <linesWritten>0</linesWritten><linesInput>0</linesInput>
-   * <linesOutput>0</linesOutput><linesUpdated>0</linesUpdated>
-   * <linesRejected>0</linesRejected><errors>0</errors>
-   * <statusDescription>Stopped</statusDescription><seconds>0.0</seconds>
-   * <speed>-</speed><priority>-</priority><stopped>Y</stopped>
-   * <paused>N</paused>
-   * </transform_status>
-   * </transform_status_list>
-   * <first_log_line_nr>0</first_log_line_nr>
-   * <last_log_line_nr>37</last_log_line_nr>
-   * <result>
-   * <lines_input>0</lines_input>
-   * <lines_output>0</lines_output>
-   * <lines_read>0</lines_read>
-   * <lines_written>0</lines_written>
-   * <lines_updated>0</lines_updated>
-   * <lines_rejected>0</lines_rejected>
-   * <lines_deleted>0</lines_deleted>
-   * <nr_errors>0</nr_errors>
-   * <nr_files_retrieved>0</nr_files_retrieved>
-   * <entry_nr>0</entry_nr>
-   * <result>Y</result>
-   * <exit_status>0</exit_status>
-   * <is_stopped>Y</is_stopped>
-   * <log_channel_id>10e2c832-07da-409a-a5ba-4b90a234e957</log_channel_id>
-   * <log_text/>
-   * <result-file></result-file>
-   * <result-rows></result-rows>
-   * </result>
-   * <logging_string>&#x3c;&#x21;&#x5b;CDATA&#x5b;H4sIAAAAAAAAADMyMDTRNzTUNzJRMDSyMrC0MjFV0FVIKc3NrdQtKUrMKwbyXDKLCxJLkjMy89IViksSi0pSUxTS8osUwPJARm5iSWZ&#x2b;nkI0kq5YXi4AQVH5bFoAAAA&#x3d;&#x5d;&#x5d;&#x3e;</logging_string>
-   * </pipeline-status>
-   * </pre>
-   *
-   * <h3>Status Codes</h3>
-   * <table class="hop-table">
-   * <tbody>
-   * <tr>
-   * <th>code</th>
-   * <th>description</th>
-   * </tr>
-   * <tr>
-   * <td>200</td>
-   * <td>Request was processed.</td>
-   * </tr>
-   * <tr>
-   * <td>500</td>
-   * <td>Internal server error occurs during request processing.</td>
-   * </tr>
-   * </tbody>
-   * </table>
-   * </div>
-   */
+
   public void doGet( HttpServletRequest request, HttpServletResponse response ) throws ServletException,
     IOException {
 
@@ -274,14 +145,14 @@ public class GetPipelineStatusServlet extends BaseHttpServlet implements IHopSer
             response.setContentType( "text/xml" );
             response.setCharacterEncoding( Const.XML_ENCODING );
 
-            SlaveServerPipelineStatus pipelineStatus = new SlaveServerPipelineStatus( pipelineName, entry.getId(), pipeline.getStatusDescription() );
+            HopServerPipelineStatus pipelineStatus = new HopServerPipelineStatus( pipelineName, entry.getId(), pipeline.getStatusDescription() );
             pipelineStatus.setFirstLoggingLineNr( startLineNr );
             pipelineStatus.setLastLoggingLineNr( lastLineNr );
             pipelineStatus.setLogDate( new Date() );
             pipelineStatus.setExecutionStartDate( pipeline.getExecutionStartDate() );
             pipelineStatus.setExecutionEndDate( pipeline.getExecutionEndDate() );
 
-            for ( IEngineComponent component : pipeline.getComponents()) {
+            for ( IEngineComponent component : pipeline.getComponents() ) {
               if ( ( component.isRunning() ) || ( component.getStatus() != ComponentExecutionStatus.STATUS_EMPTY ) ) {
                 TransformStatus transformStatus = new TransformStatus( component );
                 pipelineStatus.getTransformStatusList().add( transformStatus );
@@ -333,7 +204,7 @@ public class GetPipelineStatusServlet extends BaseHttpServlet implements IHopSer
         out.println( "<HEAD>" );
         out.println( "<TITLE>"
           + BaseMessages.getString( PKG, "PipelineStatusServlet.HopPipelineStatus" ) + "</TITLE>" );
-        if ( EnvUtil.getSystemProperty( Const.HOP_CARTE_REFRESH_STATUS, "N" ).equalsIgnoreCase( "Y" ) ) {
+        if ( EnvUtil.getSystemProperty( Const.HOP_SERVER_REFRESH_STATUS, "N" ).equalsIgnoreCase( "Y" ) ) {
           out.println( "<META http-equiv=\"Refresh\" content=\"10;url="
             + convertContextPath( CONTEXT_PATH ) + "?name=" + URLEncoder.encode( pipelineName, "UTF-8" ) + "&id="
             + URLEncoder.encode( id, "UTF-8" ) + "\">" );
@@ -374,7 +245,8 @@ public class GetPipelineStatusServlet extends BaseHttpServlet implements IHopSer
               + BaseMessages.getString( PKG, "PipelineStatusServlet.StartDate" ) + "</th> </tr>" );
           out.print( "<tr class=\"cellTableRow\" style=\"border: solid; border-width: 1px 0; border-bottom: none; font-size: 12; text-align: left;\">" );
           out.print( "<td style=\"padding: 8px 10px 10px 10px\" class=\"cellTableCell cellTableFirstColumn\">" + Encode.forHtml( id ) + "</td>" );
-          out.print( "<td style=\"padding: 8px 10px 10px 10px\" class=\"cellTableCell\" id=\"statusColor\" style=\"font-weight: bold;\">" + Encode.forHtml( pipeline.getStatusDescription() ) + "</td>" );
+          out.print(
+            "<td style=\"padding: 8px 10px 10px 10px\" class=\"cellTableCell\" id=\"statusColor\" style=\"font-weight: bold;\">" + Encode.forHtml( pipeline.getStatusDescription() ) + "</td>" );
           String dateStr = XmlHandler.date2string( pipeline.getExecutionStartDate() );
           out.print( "<td style=\"padding: 8px 10px 10px 10px\" class=\"cellTableCell cellTableLastColumn\">" + dateStr.substring( 0, dateStr.indexOf( ' ' ) ) + "</td>" );
           out.print( "</tr>" );
@@ -385,7 +257,7 @@ public class GetPipelineStatusServlet extends BaseHttpServlet implements IHopSer
           out.print( "<a target=\"_blank\" href=\""
             + convertContextPath( GetPipelineStatusServlet.CONTEXT_PATH ) + "?name="
             + URLEncoder.encode( pipelineName, "UTF-8" ) + "&id=" + URLEncoder.encode( id, "UTF-8" ) + "&xml=y\">"
-            + "<img src=\"" + prefix + "/images/view-as-xml.svg\" style=\"display: block; margin: auto; width: 22px; height: 22px;\"></a>" );
+            + "<img src=\"" + prefix + "/images/download.svg\" style=\"display: block; margin: auto; width: 22px; height: 22px;\"></a>" );
           out.print( "</div>" );
           out.println( "<div style=\"text-align: center; padding-top: 12px; font-size: 12px;\">" );
           out.print( "<a target=\"_blank\" href=\""
@@ -463,21 +335,20 @@ public class GetPipelineStatusServlet extends BaseHttpServlet implements IHopSer
           // URLEncoder.encode(pipelineName, "UTF-8") + "&id="+id+"\">"
           // + BaseMessages.getString(PKG, "PipelineStatusServlet.GetPipelineImage") + "</a>");
           Point max = pipeline.getPipelineMeta().getMaximum();
-          max.x += 20;
-          max.y += 20;
-          out.print( "<iframe height=\""
-            + max.y + "\" width=\"" + 875 + "\" seamless src=\""
-            + convertContextPath( GetPipelineImageServlet.CONTEXT_PATH ) + "?name="
+          max.x = (int)(max.x * GetPipelineImageServlet.ZOOM_FACTOR) + 100;
+          max.y = (int)(max.y * GetPipelineImageServlet.ZOOM_FACTOR) + 50;
+          out.print( "<iframe height=\"" + (max.y+100) + "px\" width=\"" + (max.x+100) + "px\" "
+            + "src=\"" + convertContextPath( GetPipelineImageServlet.CONTEXT_PATH ) + "?name="
             + URLEncoder.encode( pipelineName, "UTF-8" ) + "&id=" + URLEncoder.encode( id, "UTF-8" )
-            + "\"></iframe>" );
+            + "\" frameborder=\"0\"></iframe>" );
+          ;
           out.print( "</div>" );
 
           // Put the logging below that.
           out.print( "<div class=\"row\" style=\"padding: 0px 0px 30px 0px;\">" );
           out.print( "<div class=\"workspaceHeading\" style=\"padding: 0px 0px 30px 0px;\">Pipeline log</div>" );
-          out
-            .println( "<textarea id=\"pipelinelog\" cols=\"120\" rows=\"20\" "
-              + "wrap=\"off\" name=\"Pipeline log\" readonly=\"readonly\" style=\"height: auto;\">"
+          out.println( "<textarea id=\"pipelinelog\" cols=\"120\" rows=\"20\" "
+              + "wrap=\"off\" name=\"Pipeline log\" readonly=\"readonly\" style=\"height: auto; width: 100%;\">"
               + Encode.forHtml( getLogText( pipeline, startLineNr, lastLineNr ) ) + "</textarea>" );
           out.print( "</div>" );
 

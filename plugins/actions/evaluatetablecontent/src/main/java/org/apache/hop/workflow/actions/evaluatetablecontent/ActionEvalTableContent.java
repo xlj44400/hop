@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.evaluatetablecontent;
 
@@ -41,7 +36,7 @@ import org.apache.hop.workflow.action.IAction;
 import org.apache.hop.workflow.action.ActionBase;
 import org.apache.hop.workflow.action.validator.ActionValidatorUtils;
 import org.apache.hop.workflow.action.validator.AndValidator;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.resource.ResourceEntry;
 import org.apache.hop.resource.ResourceEntry.ResourceType;
 import org.apache.hop.resource.ResourceReference;
@@ -59,14 +54,14 @@ import java.util.List;
 
 @Action(
 		  id = "EVAL_TABLE_CONTENT",
-		  i18nPackageName = "org.apache.hop.workflow.actions.evaluatetablecontent",
-		  name = "ActionEvalTableContent.Name",
-		  description = "ActionEvalTableContent.Description",
+		  name = "i18n::ActionEvalTableContent.Name",
+		  description = "i18n::ActionEvalTableContent.Description",
 		  image = "EvalTableContent.svg",
-		  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Conditions"
+		  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Conditions",
+		  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/evaluatetablecontent.html"
 )
 public class ActionEvalTableContent extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionEvalTableContent.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionEvalTableContent.class; // For Translator
 
   private boolean addRowsResult;
   private boolean clearResultList;
@@ -74,7 +69,7 @@ public class ActionEvalTableContent extends ActionBase implements Cloneable, IAc
   private boolean useCustomSql;
   private String customSql;
   private DatabaseMeta connection;
-  private String tablename;
+  private String tableName;
   private String schemaname;
   private String limit;
   private int successCondition;
@@ -111,7 +106,7 @@ public class ActionEvalTableContent extends ActionBase implements Cloneable, IAc
     clearResultList = true;
     customSql = null;
     schemaname = null;
-    tablename = null;
+    tableName = null;
     connection = null;
   }
 
@@ -152,7 +147,7 @@ public class ActionEvalTableContent extends ActionBase implements Cloneable, IAc
     retval.append( super.getXml() );
     retval.append( "      " ).append( XmlHandler.addTagValue( "connection", connection == null ? null : connection.getName() ) );
     retval.append( "      " ).append( XmlHandler.addTagValue( "schemaname", schemaname ) );
-    retval.append( "      " ).append( XmlHandler.addTagValue( "tablename", tablename ) );
+    retval.append( "      " ).append( XmlHandler.addTagValue( "tablename", tableName ) );
     retval.append( "      " ).append( XmlHandler.addTagValue( "success_condition", getSuccessConditionCode( successCondition ) ) );
     retval.append( "      " ).append( XmlHandler.addTagValue( "limit", limit ) );
     retval.append( "      " ).append( XmlHandler.addTagValue( "is_custom_sql", useCustomSql) );
@@ -192,13 +187,13 @@ public class ActionEvalTableContent extends ActionBase implements Cloneable, IAc
   }
 
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
       String dbname = XmlHandler.getTagValue( entrynode, "connection" );
-      connection = DatabaseMeta.loadDatabase( metaStore, dbname );
+      connection = DatabaseMeta.loadDatabase( metadataProvider, dbname );
       schemaname = XmlHandler.getTagValue( entrynode, "schemaname" );
-      tablename = XmlHandler.getTagValue( entrynode, "tablename" );
+      tableName = XmlHandler.getTagValue( entrynode, "tablename" );
       successCondition =
         getSucessConditionByCode( Const.NVL( XmlHandler.getTagValue( entrynode, "success_condition" ), "" ) );
       limit = Const.NVL( XmlHandler.getTagValue( entrynode, "limit" ), "0" );
@@ -234,7 +229,7 @@ public class ActionEvalTableContent extends ActionBase implements Cloneable, IAc
     return connection;
   }
 
-  public boolean evaluates() {
+  @Override public boolean isEvaluation() {
     return true;
   }
 
@@ -255,21 +250,20 @@ public class ActionEvalTableContent extends ActionBase implements Cloneable, IAc
 
     boolean successOK = false;
 
-    int nrRowsLimit = Const.toInt( environmentSubstitute( limit ), 0 );
+    int nrRowsLimit = Const.toInt( resolve( limit ), 0 );
     if ( log.isDetailed() ) {
       logDetailed( BaseMessages.getString( PKG, "ActionEvalTableContent.Log.nrRowsLimit", "" + nrRowsLimit ) );
     }
 
     if ( connection != null ) {
-      Database db = new Database( this, connection );
-      db.shareVariablesWith( this );
+      Database db = new Database( this, this, connection );
       try {
         db.connect();
 
         if (useCustomSql) {
           String realCustomSql = customSql;
           if ( useVars ) {
-            realCustomSql = environmentSubstitute( realCustomSql );
+            realCustomSql = resolve( realCustomSql );
           }
           if ( log.isDebug() ) {
             logDebug( BaseMessages.getString( PKG, "ActionEvalTableContent.Log.EnteredCustomSQL", realCustomSql ) );
@@ -283,14 +277,14 @@ public class ActionEvalTableContent extends ActionBase implements Cloneable, IAc
           }
 
         } else {
-          String realTablename = environmentSubstitute( tablename );
-          String realSchemaname = environmentSubstitute( schemaname );
+          String realTablename = resolve( tableName );
+          String realSchemaname = resolve( schemaname );
 
           if ( !Utils.isEmpty( realTablename ) ) {
             if ( !Utils.isEmpty( realSchemaname ) ) {
               countSqlStatement =
                 selectCount
-                  + db.getDatabaseMeta().getQuotedSchemaTableCombination( realSchemaname, realTablename );
+                  + db.getDatabaseMeta().getQuotedSchemaTableCombination( this, realSchemaname, realTablename );
             } else {
               countSqlStatement = selectCount + db.getDatabaseMeta().quoteField( realTablename );
             }
@@ -318,7 +312,7 @@ public class ActionEvalTableContent extends ActionBase implements Cloneable, IAc
               // ad rows to result
               IRowMeta rowMeta = db.getQueryFields( countSqlStatement, false );
 
-              List<RowMetaAndData> rows = new ArrayList<RowMetaAndData>();
+              List<RowMetaAndData> rows = new ArrayList<>();
               for ( int i = 0; i < ar.size(); i++ ) {
                 rows.add( new RowMetaAndData( rowMeta, ar.get( i ) ) );
               }
@@ -395,8 +389,8 @@ public class ActionEvalTableContent extends ActionBase implements Cloneable, IAc
     return new DatabaseMeta[] { connection, };
   }
 
-  public List<ResourceReference> getResourceDependencies( WorkflowMeta workflowMeta ) {
-    List<ResourceReference> references = super.getResourceDependencies( workflowMeta );
+  public List<ResourceReference> getResourceDependencies( IVariables variables, WorkflowMeta workflowMeta ) {
+    List<ResourceReference> references = super.getResourceDependencies( variables, workflowMeta );
     if ( connection != null ) {
       ResourceReference reference = new ResourceReference( this );
       reference.getEntries().add( new ResourceEntry( connection.getHostname(), ResourceType.SERVER ) );
@@ -408,7 +402,7 @@ public class ActionEvalTableContent extends ActionBase implements Cloneable, IAc
 
   @Override
   public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     ActionValidatorUtils.andValidator().validate( this, "WaitForSQL", remarks,
       AndValidator.putValidators( ActionValidatorUtils.notBlankValidator() ) );
   }
@@ -462,11 +456,11 @@ public class ActionEvalTableContent extends ActionBase implements Cloneable, IAc
   }
 
   public String getTablename() {
-    return tablename;
+    return tableName;
   }
 
-  public void setTablename( String tablename ) {
-    this.tablename = tablename;
+  public void setTablename( String tableName ) {
+    this.tableName = tableName;
   }
 
   public String getSchemaname() {

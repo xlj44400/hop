@@ -1,34 +1,29 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.filterrows;
 
 import org.apache.hop.core.Condition;
 import org.apache.hop.core.Const;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.exception.HopException;
-import org.apache.hop.core.row.RowMeta;
 import org.apache.hop.core.row.IRowMeta;
+import org.apache.hop.core.row.RowMeta;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
@@ -40,53 +35,30 @@ import org.apache.hop.ui.core.widget.ConditionEditor;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CCombo;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
 import java.util.List;
 
-@PluginDialog(
-        id = "FilterRows",
-        image = "filterrows.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = ""
-)
 public class FilterRowsDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = FilterRowsMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = FilterRowsMeta.class; // For Translator
 
-  private Label wlTrueTo;
   private CCombo wTrueTo;
-  private FormData fdlTrueTo, fdTrueTo;
 
-  private Label wlFalseTo;
   private CCombo wFalseTo;
-  private FormData fdlFalseTo, fdFalseFrom;
 
-  private Label wlCondition;
   private ConditionEditor wCondition;
-  private FormData fdlCondition, fdCondition;
 
-  private FilterRowsMeta input;
-  private Condition condition;
+  private final FilterRowsMeta input;
+  private final Condition condition;
 
   private Condition backupCondition;
 
-  public FilterRowsDialog( Shell parent, Object in, PipelineMeta tr, String sname ) {
-    super( parent, (BaseTransformMeta) in, tr, sname );
+  public FilterRowsDialog( Shell parent, IVariables variables, Object in, PipelineMeta tr, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, tr, sname );
     input = (FilterRowsMeta) in;
 
     condition = (Condition) input.getCondition().clone();
@@ -101,11 +73,7 @@ public class FilterRowsDialog extends BaseTransformDialog implements ITransformD
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
     backupChanged = input.hasChanged();
     backupCondition = (Condition) condition.clone();
 
@@ -139,72 +107,70 @@ public class FilterRowsDialog extends BaseTransformDialog implements ITransformD
     wTransformName.setLayoutData( fdTransformName );
 
     // Send 'True' data to...
-    wlTrueTo = new Label( shell, SWT.RIGHT );
+    Label wlTrueTo = new Label(shell, SWT.RIGHT);
     wlTrueTo.setText( BaseMessages.getString( PKG, "FilterRowsDialog.SendTrueTo.Label" ) );
-    props.setLook( wlTrueTo );
-    fdlTrueTo = new FormData();
+    props.setLook(wlTrueTo);
+    FormData fdlTrueTo = new FormData();
     fdlTrueTo.left = new FormAttachment( 0, 0 );
     fdlTrueTo.right = new FormAttachment( middle, -margin );
     fdlTrueTo.top = new FormAttachment( wTransformName, margin );
-    wlTrueTo.setLayoutData( fdlTrueTo );
+    wlTrueTo.setLayoutData(fdlTrueTo);
     wTrueTo = new CCombo( shell, SWT.BORDER );
     props.setLook( wTrueTo );
 
     TransformMeta transforminfo = pipelineMeta.findTransform( transformName );
     if ( transforminfo != null ) {
       List<TransformMeta> nextTransforms = pipelineMeta.findNextTransforms( transforminfo );
-      for ( int i = 0; i < nextTransforms.size(); i++ ) {
-        TransformMeta transformMeta = nextTransforms.get( i );
-        wTrueTo.add( transformMeta.getName() );
+      for (TransformMeta transformMeta : nextTransforms) {
+        wTrueTo.add(transformMeta.getName());
       }
     }
 
     wTrueTo.addModifyListener( lsMod );
-    fdTrueTo = new FormData();
+    FormData fdTrueTo = new FormData();
     fdTrueTo.left = new FormAttachment( middle, 0 );
     fdTrueTo.top = new FormAttachment( wTransformName, margin );
     fdTrueTo.right = new FormAttachment( 100, 0 );
-    wTrueTo.setLayoutData( fdTrueTo );
+    wTrueTo.setLayoutData(fdTrueTo);
 
     // Send 'False' data to...
-    wlFalseTo = new Label( shell, SWT.RIGHT );
+    Label wlFalseTo = new Label(shell, SWT.RIGHT);
     wlFalseTo.setText( BaseMessages.getString( PKG, "FilterRowsDialog.SendFalseTo.Label" ) );
-    props.setLook( wlFalseTo );
-    fdlFalseTo = new FormData();
+    props.setLook(wlFalseTo);
+    FormData fdlFalseTo = new FormData();
     fdlFalseTo.left = new FormAttachment( 0, 0 );
     fdlFalseTo.right = new FormAttachment( middle, -margin );
     fdlFalseTo.top = new FormAttachment( wTrueTo, margin );
-    wlFalseTo.setLayoutData( fdlFalseTo );
+    wlFalseTo.setLayoutData(fdlFalseTo);
     wFalseTo = new CCombo( shell, SWT.BORDER );
     props.setLook( wFalseTo );
 
     transforminfo = pipelineMeta.findTransform( transformName );
     if ( transforminfo != null ) {
       List<TransformMeta> nextTransforms = pipelineMeta.findNextTransforms( transforminfo );
-      for ( int i = 0; i < nextTransforms.size(); i++ ) {
-        TransformMeta transformMeta = nextTransforms.get( i );
-        wFalseTo.add( transformMeta.getName() );
+      for (TransformMeta transformMeta : nextTransforms) {
+        wFalseTo.add(transformMeta.getName());
       }
     }
 
     wFalseTo.addModifyListener( lsMod );
-    fdFalseFrom = new FormData();
+    FormData fdFalseFrom = new FormData();
     fdFalseFrom.left = new FormAttachment( middle, 0 );
     fdFalseFrom.top = new FormAttachment( wTrueTo, margin );
     fdFalseFrom.right = new FormAttachment( 100, 0 );
-    wFalseTo.setLayoutData( fdFalseFrom );
+    wFalseTo.setLayoutData(fdFalseFrom);
 
-    wlCondition = new Label( shell, SWT.NONE );
+    Label wlCondition = new Label(shell, SWT.NONE);
     wlCondition.setText( BaseMessages.getString( PKG, "FilterRowsDialog.Condition.Label" ) );
-    props.setLook( wlCondition );
-    fdlCondition = new FormData();
+    props.setLook(wlCondition);
+    FormData fdlCondition = new FormData();
     fdlCondition.left = new FormAttachment( 0, 0 );
     fdlCondition.top = new FormAttachment( wFalseTo, margin );
-    wlCondition.setLayoutData( fdlCondition );
+    wlCondition.setLayoutData(fdlCondition);
 
     IRowMeta inputfields = null;
     try {
-      inputfields = pipelineMeta.getPrevTransformFields( transformName );
+      inputfields = pipelineMeta.getPrevTransformFields( variables, transformName );
     } catch ( HopException ke ) {
       inputfields = new RowMeta();
       new ErrorDialog(
@@ -222,25 +188,17 @@ public class FilterRowsDialog extends BaseTransformDialog implements ITransformD
 
     wCondition = new ConditionEditor( shell, SWT.BORDER, condition, inputfields );
 
-    fdCondition = new FormData();
+    FormData fdCondition = new FormData();
     fdCondition.left = new FormAttachment( 0, 0 );
-    fdCondition.top = new FormAttachment( wlCondition, margin );
+    fdCondition.top = new FormAttachment(wlCondition, margin );
     fdCondition.right = new FormAttachment( 100, 0 );
     fdCondition.bottom = new FormAttachment( wOk, -2 * margin );
-    wCondition.setLayoutData( fdCondition );
+    wCondition.setLayoutData(fdCondition);
     wCondition.addModifyListener( lsMod );
 
     // Add listeners
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
+    lsCancel = e -> cancel();
+    lsOk = e -> ok();
 
     wCancel.addListener( SWT.Selection, lsCancel );
     wOk.addListener( SWT.Selection, lsOk );

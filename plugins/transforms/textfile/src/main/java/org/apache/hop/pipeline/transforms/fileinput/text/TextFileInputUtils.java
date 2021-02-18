@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.fileinput.text;
 
@@ -50,7 +45,7 @@ import java.util.List;
  * @author Alexander Buloichik
  */
 public class TextFileInputUtils {
-  private static Class<?> PKG = TextFileInputUtils.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = TextFileInputUtils.class; // For Translator
 
   public static final String[] guessStringsFromLine( IVariables variables, ILogChannel log, String line,
                                                      TextFileInputMeta inf, String delimiter, String enclosure, String escapeCharacter ) throws HopException {
@@ -72,16 +67,16 @@ public class TextFileInputUtils {
         boolean dencl = false;
 
         int len_encl = ( enclosure == null ? 0 : enclosure.length() );
-        int len_esc = ( escapeCharacter == null ? 0 : escapeCharacter.length() );
+        int lenEsc = ( escapeCharacter == null ? 0 : escapeCharacter.length() );
 
         while ( pos < length ) {
           int from = pos;
           int next;
 
           boolean encl_found;
-          boolean contains_escaped_enclosures = false;
-          boolean contains_escaped_separators = false;
-          boolean contains_escaped_escape = false;
+          boolean containsEscaped_enclosures = false;
+          boolean containsEscapedSeparators = false;
+          boolean containsEscapedEscape = false;
 
           // Is the field beginning with an enclosure?
           // "aa;aa";123;"aaa-aaa";000;...
@@ -96,14 +91,14 @@ public class TextFileInputUtils {
             boolean is_enclosure =
               len_encl > 0 && p + len_encl < length && line.substring( p, p + len_encl ).equalsIgnoreCase(
                 enclosure );
-            boolean is_escape =
-              len_esc > 0 && p + len_esc < length && line.substring( p, p + len_esc ).equalsIgnoreCase(
+            boolean isEscape =
+              lenEsc > 0 && p + lenEsc < length && line.substring( p, p + lenEsc ).equalsIgnoreCase(
                 escapeCharacter );
 
             boolean enclosure_after = false;
 
             // Is it really an enclosure? See if it's not repeated twice or escaped!
-            if ( ( is_enclosure || is_escape ) && p < length - 1 ) {
+            if ( ( is_enclosure || isEscape ) && p < length - 1 ) {
               String strnext = line.substring( p + len_encl, p + 2 * len_encl );
               if ( strnext.equalsIgnoreCase( enclosure ) ) {
                 p++;
@@ -111,14 +106,14 @@ public class TextFileInputUtils {
                 dencl = true;
 
                 // Remember to replace them later on!
-                if ( is_escape ) {
-                  contains_escaped_enclosures = true;
+                if ( isEscape ) {
+                  containsEscaped_enclosures = true;
                 }
               } else if ( strnext.equals( escapeCharacter ) ) {
                 p++;
                 // Remember to replace them later on!
-                if ( is_escape ) {
-                  contains_escaped_escape = true; // remember
+                if ( isEscape ) {
+                  containsEscapedEscape = true; // remember
                 }
               }
             }
@@ -129,11 +124,11 @@ public class TextFileInputUtils {
               enclosure_after = false;
               is_enclosure =
                 len_encl > 0 && p + len_encl < length && line.substring( p, p + len_encl ).equals( enclosure );
-              is_escape =
-                len_esc > 0 && p + len_esc < length && line.substring( p, p + len_esc ).equals( escapeCharacter );
+              isEscape =
+                lenEsc > 0 && p + lenEsc < length && line.substring( p, p + lenEsc ).equals( escapeCharacter );
 
               // Is it really an enclosure? See if it's not repeated twice or escaped!
-              if ( ( is_enclosure || is_escape ) && p < length - 1 ) {
+              if ( ( is_enclosure || isEscape ) && p < length - 1 ) {
 
                 String strnext = line.substring( p + len_encl, p + 2 * len_encl );
                 if ( strnext.equals( enclosure ) ) {
@@ -142,14 +137,14 @@ public class TextFileInputUtils {
                   dencl = true;
 
                   // Remember to replace them later on!
-                  if ( is_escape ) {
-                    contains_escaped_enclosures = true; // remember
+                  if ( isEscape ) {
+                    containsEscaped_enclosures = true; // remember
                   }
                 } else if ( strnext.equals( escapeCharacter ) ) {
                   p++;
                   // Remember to replace them later on!
-                  if ( is_escape ) {
-                    contains_escaped_escape = true; // remember
+                  if ( isEscape ) {
+                    containsEscapedEscape = true; // remember
                   }
                 }
               }
@@ -174,14 +169,14 @@ public class TextFileInputUtils {
               next = line.indexOf( delimiter, startpoint );
 
               // See if this position is preceded by an escape character.
-              if ( len_esc > 0 && next - len_esc > 0 ) {
-                String before = line.substring( next - len_esc, next );
+              if ( lenEsc > 0 && next - lenEsc > 0 ) {
+                String before = line.substring( next - lenEsc, next );
 
                 if ( escapeCharacter.equals( before ) ) {
                   // take the next separator, this one is escaped...
                   startpoint = next + 1;
                   // tries++;
-                  contains_escaped_separators = true;
+                  containsEscapedSeparators = true;
                 } else {
                   found = true;
                 }
@@ -219,7 +214,7 @@ public class TextFileInputUtils {
           }
 
           // replace the escaped enclosures with enclosures...
-          if ( contains_escaped_enclosures ) {
+          if ( containsEscaped_enclosures ) {
             String replace = escapeCharacter + enclosure;
             String replaceWith = enclosure;
 
@@ -227,7 +222,7 @@ public class TextFileInputUtils {
           }
 
           // replace the escaped separators with separators...
-          if ( contains_escaped_separators ) {
+          if ( containsEscapedSeparators ) {
             String replace = escapeCharacter + delimiter;
             String replaceWith = delimiter;
 
@@ -235,7 +230,7 @@ public class TextFileInputUtils {
           }
 
           // replace the escaped escape with escape...
-          if ( contains_escaped_escape ) {
+          if ( containsEscapedEscape ) {
             String replace = escapeCharacter + escapeCharacter;
             String replaceWith = escapeCharacter;
 
@@ -346,7 +341,7 @@ public class TextFileInputUtils {
 
         String nullif = fieldnr < nrFields ? f.getNullString() : "";
         String ifnull = fieldnr < nrFields ? f.getIfNullValue() : "";
-        int trim_type = fieldnr < nrFields ? f.getTrimType() : IValueMeta.TRIM_TYPE_NONE;
+        int trimType = fieldnr < nrFields ? f.getTrimType() : IValueMeta.TRIM_TYPE_NONE;
 
         if ( fieldnr < strings.length ) {
           String pol = strings[ fieldnr ];
@@ -354,7 +349,7 @@ public class TextFileInputUtils {
             if ( valueMeta.isNull( pol ) || !Utils.isEmpty( nullif ) && nullif.equals( pol ) ) {
               pol = null;
             }
-            value = valueMeta.convertDataFromString( pol, convertMeta, nullif, ifnull, trim_type );
+            value = valueMeta.convertDataFromString( pol, convertMeta, nullif, ifnull, trimType );
           } catch ( Exception e ) {
             // OK, give some feedback!
             // when getting fields, failOnParseError will be set to false, as we do not want one mis-configured field
@@ -527,16 +522,16 @@ public class TextFileInputUtils {
         boolean dencl = false;
 
         int len_encl = ( enclosure == null ? 0 : enclosure.length() );
-        int len_esc = ( escapeCharacters == null ? 0 : escapeCharacters.length() );
+        int lenEsc = ( escapeCharacters == null ? 0 : escapeCharacters.length() );
 
         while ( pos < length ) {
           int from = pos;
           int next;
 
           boolean encl_found;
-          boolean contains_escaped_enclosures = false;
-          boolean contains_escaped_separators = false;
-          boolean contains_escaped_escape = false;
+          boolean containsEscaped_enclosures = false;
+          boolean containsEscapedSeparators = false;
+          boolean containsEscapedEscape = false;
 
           // Is the field beginning with an enclosure?
           // "aa;aa";123;"aaa-aaa";000;...
@@ -551,14 +546,14 @@ public class TextFileInputUtils {
             boolean is_enclosure =
               len_encl > 0 && p + len_encl < length && line.substring( p, p + len_encl ).equalsIgnoreCase(
                 enclosure );
-            boolean is_escape =
-              len_esc > 0 && p + len_esc < length && line.substring( p, p + len_esc ).equalsIgnoreCase(
+            boolean isEscape =
+              lenEsc > 0 && p + lenEsc < length && line.substring( p, p + lenEsc ).equalsIgnoreCase(
                 inf.content.escapeCharacter );
 
             boolean enclosure_after = false;
 
             // Is it really an enclosure? See if it's not repeated twice or escaped!
-            if ( ( is_enclosure || is_escape ) && p < length - 1 ) {
+            if ( ( is_enclosure || isEscape ) && p < length - 1 ) {
               String strnext = line.substring( p + len_encl, p + 2 * len_encl );
               if ( strnext.equalsIgnoreCase( enclosure ) ) {
                 p++;
@@ -566,14 +561,14 @@ public class TextFileInputUtils {
                 dencl = true;
 
                 // Remember to replace them later on!
-                if ( is_escape ) {
-                  contains_escaped_enclosures = true;
+                if ( isEscape ) {
+                  containsEscaped_enclosures = true;
                 }
               } else if ( strnext.equals( inf.content.escapeCharacter ) ) {
                 p++;
                 // Remember to replace them later on!
-                if ( is_escape ) {
-                  contains_escaped_escape = true; // remember
+                if ( isEscape ) {
+                  containsEscapedEscape = true; // remember
                 }
               }
             }
@@ -584,12 +579,12 @@ public class TextFileInputUtils {
               enclosure_after = false;
               is_enclosure =
                 len_encl > 0 && p + len_encl < length && line.substring( p, p + len_encl ).equals( enclosure );
-              is_escape =
-                len_esc > 0 && p + len_esc < length && line.substring( p, p + len_esc ).equals(
+              isEscape =
+                lenEsc > 0 && p + lenEsc < length && line.substring( p, p + lenEsc ).equals(
                   inf.content.escapeCharacter );
 
               // Is it really an enclosure? See if it's not repeated twice or escaped!
-              if ( ( is_enclosure || is_escape ) && p < length - 1 ) {
+              if ( ( is_enclosure || isEscape ) && p < length - 1 ) {
 
                 String strnext = line.substring( p + len_encl, p + 2 * len_encl );
                 if ( strnext.equals( enclosure ) ) {
@@ -598,14 +593,14 @@ public class TextFileInputUtils {
                   dencl = true;
 
                   // Remember to replace them later on!
-                  if ( is_escape ) {
-                    contains_escaped_enclosures = true; // remember
+                  if ( isEscape ) {
+                    containsEscaped_enclosures = true; // remember
                   }
                 } else if ( strnext.equals( inf.content.escapeCharacter ) ) {
                   p++;
                   // Remember to replace them later on!
-                  if ( is_escape ) {
-                    contains_escaped_escape = true; // remember
+                  if ( isEscape ) {
+                    containsEscapedEscape = true; // remember
                   }
                 }
               }
@@ -630,18 +625,18 @@ public class TextFileInputUtils {
               next = line.indexOf( delimiter, startpoint );
 
               // See if this position is preceded by an escape character.
-              if ( len_esc > 0 && next > 0 ) {
-                String before = line.substring( next - len_esc, next );
+              if ( lenEsc > 0 && next > 0 ) {
+                String before = line.substring( next - lenEsc, next );
 
                 if ( inf.content.escapeCharacter.equals( before ) ) {
-                  int previous_escapes = 1;
+                  int previousEscapes = 1;
 
-                  int start = next - len_esc - 1;
+                  int start = next - lenEsc - 1;
                   int end = next - 1;
 
                   while ( start >= 0 ) {
                     if ( inf.content.escapeCharacter.equals( line.substring( start, end ) ) ) {
-                      previous_escapes++;
+                      previousEscapes++;
                       start--;
                       end--;
                     } else {
@@ -651,11 +646,11 @@ public class TextFileInputUtils {
 
                   // If behind the seperator there are a odd number of escaped
                   // The separator is escaped.
-                  if ( previous_escapes % 2 != 0 ) {
+                  if ( previousEscapes % 2 != 0 ) {
                     // take the next separator, this one is escaped...
                     startpoint = next + 1;
                     // tries++;
-                    contains_escaped_separators = true;
+                    containsEscapedSeparators = true;
                   } else {
                     found = true;
                   }
@@ -697,7 +692,7 @@ public class TextFileInputUtils {
           }
 
           // replace the escaped enclosures with enclosures...
-          if ( contains_escaped_enclosures ) {
+          if ( containsEscaped_enclosures ) {
             String replace = inf.content.escapeCharacter + enclosure;
             String replaceWith = enclosure;
 
@@ -705,7 +700,7 @@ public class TextFileInputUtils {
           }
 
           // replace the escaped separators with separators...
-          if ( contains_escaped_separators ) {
+          if ( containsEscapedSeparators ) {
             String replace = inf.content.escapeCharacter + delimiter;
             String replaceWith = delimiter;
 
@@ -713,8 +708,8 @@ public class TextFileInputUtils {
           }
 
           // replace the escaped escape with escape...
-          contains_escaped_escape = pol.contains( inf.content.escapeCharacter + inf.content.escapeCharacter );
-          if ( contains_escaped_escape ) {
+          containsEscapedEscape = pol.contains( inf.content.escapeCharacter + inf.content.escapeCharacter );
+          if ( containsEscapedEscape ) {
             String replace = inf.content.escapeCharacter + inf.content.escapeCharacter;
             String replaceWith = inf.content.escapeCharacter;
 
@@ -725,7 +720,7 @@ public class TextFileInputUtils {
           try {
             strings[ fieldnr ] = pol;
           } catch ( ArrayIndexOutOfBoundsException e ) {
-            // In case we didn't allocate enough space.
+            // In case we didn't allocate enough variables.
             // This happens when you have less header values specified than there are actual values in the rows.
             // As this is "the exception" we catch and resize here.
             //

@@ -1,28 +1,22 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.memgroupby;
 
-import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.collect.ContiguousSet;
@@ -352,7 +346,7 @@ public class MemoryGroupByAggregationTest {
 
     // Spy on transform, regrettable but we need to easily inject rows
     MemoryGroupBy transform = spy( new MemoryGroupBy( transformMeta, meta, data, 0, pipelineMeta, mock( Pipeline.class ) ) );
-    transform.copyVariablesFrom( variables );
+    transform.copyFrom( variables );
     doNothing().when( transform ).putRow( (IRowMeta) any(), (Object[]) any() );
     doNothing().when( transform ).setOutputDone();
 
@@ -399,14 +393,12 @@ public class MemoryGroupByAggregationTest {
 
     return FluentIterable.from( ContiguousSet.create( rows, DiscreteDomain.integers() ) )
       .transform( Functions.forMap( data.rowMap(), ImmutableMap.<Integer, Optional<Object>>of() ) )
-      .transform( new Function<Map<Integer, Optional<Object>>, Object[]>() {
-        @Override public Object[] apply( Map<Integer, Optional<Object>> input ) {
-          Object[] row = new Object[ rowMeta.size() ];
-          for ( Map.Entry<Integer, Optional<Object>> entry : input.entrySet() ) {
-            row[ entry.getKey() ] = entry.getValue().orNull();
-          }
-          return row;
+      .transform( input -> {
+        Object[] row = new Object[ rowMeta.size() ];
+        for ( Map.Entry<Integer, Optional<Object>> entry : input.entrySet() ) {
+          row[ entry.getKey() ] = entry.getValue().orNull();
         }
+        return row;
       } );
   }
 }

@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 package org.apache.hop.databases.exasol4;
 
 import org.apache.hop.core.database.DatabaseMeta;
@@ -29,14 +24,12 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class Exasol4DatabaseMetaTest {
-  Exasol4DatabaseMeta nativeMeta, odbcMeta;
+  Exasol4DatabaseMeta nativeMeta;
 
   @Before
   public void setupBefore() {
     nativeMeta = new Exasol4DatabaseMeta();
     nativeMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_NATIVE );
-    odbcMeta = new Exasol4DatabaseMeta();
-    odbcMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_ODBC ); // according to the allowable types, this should be irrelevant
   }
 
   @Test
@@ -44,7 +37,6 @@ public class Exasol4DatabaseMetaTest {
     assertArrayEquals( new int[] { DatabaseMeta.TYPE_ACCESS_NATIVE },
       nativeMeta.getAccessTypeList() );
     assertEquals( 8563, nativeMeta.getDefaultDatabasePort() );
-    assertEquals( -1, odbcMeta.getDefaultDatabasePort() );
     assertFalse( nativeMeta.supportsAutoInc() );
     assertEquals( "com.exasol.jdbc.EXADriver", nativeMeta.getDriverClass() );
     assertEquals( "jdbc:exa:FOO:BAR", nativeMeta.getURL( "FOO", "BAR", "IGNORED" ) );

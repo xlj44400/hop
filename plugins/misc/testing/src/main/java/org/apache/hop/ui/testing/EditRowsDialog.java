@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Pentaho Data Integration
- *
- * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.testing;
 
@@ -66,7 +61,7 @@ import java.util.List;
  * @since 19-03-2014
  */
 public class EditRowsDialog {
-  private static Class<?> PKG = EditRowsDialog.class; // for i18n purposes, needed by Translator2!!
+  private static final Class<?> PKG = EditRowsDialog.class; // For Translator
 
   public static final int MAX_BINARY_STRING_PREVIEW_SIZE = 1000000;
 
@@ -146,19 +141,11 @@ public class EditRowsDialog {
 
     wOK = new Button( shell, SWT.PUSH );
     wOK.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
-    wOK.addListener( SWT.Selection, new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    } );
+    wOK.addListener( SWT.Selection, e -> ok() );
 
     wCancel = new Button( shell, SWT.PUSH );
     wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
-    wCancel.addListener( SWT.Selection, new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    } );
+    wCancel.addListener( SWT.Selection, e -> cancel() );
 
     // Position the buttons...
     //
@@ -261,16 +248,14 @@ public class EditRowsDialog {
    * Copy information from the meta-data input to the dialog fields.
    */
   private void getData() {
-    shell.getDisplay().asyncExec( new Runnable() {
-      public void run() {
-        lineNr = 0;
-        for ( int i = 0; i < rowBuffer.size(); i++ ) {
-          TableItem item = wFields.table.getItem( i );
-          Object[] row = rowBuffer.get( i );
-          getDataForRow( item, row );
-        }
-        wFields.optWidth( true, 200 );
+    shell.getDisplay().asyncExec( () -> {
+      lineNr = 0;
+      for ( int i = 0; i < rowBuffer.size(); i++ ) {
+        TableItem item = wFields.table.getItem( i );
+        Object[] row = rowBuffer.get( i );
+        getDataForRow( item, row );
       }
+      wFields.optWidth( true, 200 );
     } );
   }
 
@@ -359,7 +344,7 @@ public class EditRowsDialog {
         stringRowMeta.addValueMeta( stringValueMeta );
       }
 
-      List<Object[]> list = new ArrayList<Object[]>();
+      List<Object[]> list = new ArrayList<>();
 
       // Now read all the rows in the dialog, including the empty rows...
       //

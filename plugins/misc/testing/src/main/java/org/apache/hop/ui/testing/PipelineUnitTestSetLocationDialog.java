@@ -1,28 +1,40 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Pentaho Data Integration
- *
- * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.testing;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.hop.core.Const;
+import org.apache.hop.core.SourceToTargetMapping;
+import org.apache.hop.core.exception.HopException;
+import org.apache.hop.core.row.IRowMeta;
+import org.apache.hop.core.variables.Variables;
+import org.apache.hop.i18n.BaseMessages;
+import org.apache.hop.testing.DataSet;
+import org.apache.hop.testing.PipelineUnitTestFieldMapping;
+import org.apache.hop.testing.PipelineUnitTestSetLocation;
+import org.apache.hop.ui.core.PropsUi;
+import org.apache.hop.ui.core.dialog.EnterMappingDialog;
+import org.apache.hop.ui.core.dialog.ErrorDialog;
+import org.apache.hop.ui.core.gui.GuiResource;
+import org.apache.hop.ui.core.gui.WindowProperty;
+import org.apache.hop.ui.core.widget.ColumnInfo;
+import org.apache.hop.ui.core.widget.TableView;
+import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -41,31 +53,13 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TableItem;
-import org.apache.hop.core.Const;
-import org.apache.hop.core.SourceToTargetMapping;
-import org.apache.hop.core.database.DatabaseMeta;
-import org.apache.hop.core.exception.HopException;
-import org.apache.hop.core.row.IRowMeta;
-import org.apache.hop.core.variables.Variables;
-import org.apache.hop.testing.DataSet;
-import org.apache.hop.testing.PipelineUnitTestFieldMapping;
-import org.apache.hop.testing.PipelineUnitTestSetLocation;
-import org.apache.hop.i18n.BaseMessages;
-import org.apache.hop.ui.core.PropsUi;
-import org.apache.hop.ui.core.dialog.EnterMappingDialog;
-import org.apache.hop.ui.core.dialog.ErrorDialog;
-import org.apache.hop.ui.core.gui.GuiResource;
-import org.apache.hop.ui.core.gui.WindowProperty;
-import org.apache.hop.ui.core.widget.ColumnInfo;
-import org.apache.hop.ui.core.widget.TableView;
-import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class PipelineUnitTestSetLocationDialog extends Dialog {
-  private static Class<?> PKG = PipelineUnitTestSetLocationDialog.class; // for i18n purposes, needed by Translator2!!
+  private static final Class<?> PKG = PipelineUnitTestSetLocationDialog.class; // For Translator
 
   private PipelineUnitTestSetLocation location;
   private final List<DataSet> dataSets;
@@ -92,8 +86,6 @@ public class PipelineUnitTestSetLocationDialog extends Dialog {
   private int margin;
 
   private boolean ok;
-
-  private List<DatabaseMeta> databases;
 
   public PipelineUnitTestSetLocationDialog( Shell parent, PipelineUnitTestSetLocation location, List<DataSet> dataSets, Map<String, IRowMeta> transformFieldsMap ) {
     super( parent, SWT.NONE );
@@ -253,26 +245,10 @@ public class PipelineUnitTestSetLocationDialog extends Dialog {
 
 
     // Add listeners
-    wOK.addListener( SWT.Selection, new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    } );
-    wMapFields.addListener( SWT.Selection, new Listener() {
-      public void handleEvent( Event e ) {
-        getFieldMappings();
-      }
-    } );
-    wGetSortFields.addListener( SWT.Selection, new Listener() {
-      public void handleEvent( Event e ) {
-        getSortFields();
-      }
-    } );
-    wCancel.addListener( SWT.Selection, new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    } );
+    wOK.addListener( SWT.Selection, e -> ok() );
+    wMapFields.addListener( SWT.Selection, e -> getFieldMappings() );
+    wGetSortFields.addListener( SWT.Selection, e -> getSortFields() );
+    wCancel.addListener( SWT.Selection, e -> cancel() );
 
     SelectionAdapter selAdapter = new SelectionAdapter() {
       public void widgetDefaultSelected( SelectionEvent e ) {

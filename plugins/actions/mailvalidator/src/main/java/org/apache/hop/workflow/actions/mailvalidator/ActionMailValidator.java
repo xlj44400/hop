@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.mailvalidator;
 
@@ -31,7 +26,7 @@ import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.xml.XmlHandler;
 import org.apache.hop.i18n.BaseMessages;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.workflow.WorkflowMeta;
 import org.apache.hop.workflow.action.ActionBase;
 import org.apache.hop.workflow.action.IAction;
@@ -41,23 +36,16 @@ import org.w3c.dom.Node;
 
 import java.util.List;
 
-/**
- * Action mail validator.
- *
- * @author Samatar
- * @since 23-06-2008
- */
-
 @Action(
-  id = "MAIL_VALIDATOR",
-  i18nPackageName = "org.apache.hop.workflow.actions.mailvalidator",
-  name = "ActionMailValidator.Name",
-  description = "ActionMailValidator.Description",
-  image = "MailValidator.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Mail"
+        id = "MAIL_VALIDATOR",
+        name = "i18n::ActionMailValidator.Name",
+        description = "i18n::ActionMailValidator.Description",
+        image = "MailValidator.svg",
+        categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Mail",
+        documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/mailvalidator.html"
 )
 public class ActionMailValidator extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionMailValidator.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionMailValidator.class; // For Translator
 
   private boolean smtpCheck;
   private String timeout;
@@ -155,7 +143,7 @@ public class ActionMailValidator extends ActionBase implements Cloneable, IActio
   }
 
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
       smtpCheck = "Y".equalsIgnoreCase( XmlHandler.getTagValue( entrynode, "smtpCheck" ) );
@@ -182,12 +170,12 @@ public class ActionMailValidator extends ActionBase implements Cloneable, IActio
     result.setNrErrors( 1 );
     result.setResult( false );
 
-    String realEmailAddress = environmentSubstitute( emailAddress );
+    String realEmailAddress = resolve( emailAddress );
     if ( Utils.isEmpty( realEmailAddress ) ) {
       logError( BaseMessages.getString( PKG, "ActionMailValidator.Error.EmailEmpty" ) );
       return result;
     }
-    String realSender = environmentSubstitute( emailSender );
+    String realSender = resolve( emailSender );
     if ( smtpCheck ) {
       // check sender
       if ( Utils.isEmpty( realSender ) ) {
@@ -196,10 +184,10 @@ public class ActionMailValidator extends ActionBase implements Cloneable, IActio
       }
     }
 
-    String realDefaultSMTP = environmentSubstitute( defaultSMTP );
-    int timeOut = Const.toInt( environmentSubstitute( timeout ), 0 );
+    String realDefaultSMTP = resolve( defaultSMTP );
+    int timeOut = Const.toInt( resolve( timeout ), 0 );
 
-    // Split the mail-address: separated by space
+    // Split the mail-address: separated by variables
     String[] mailsCheck = realEmailAddress.split( " " );
     boolean exitloop = false;
     boolean mailIsValid = false;
@@ -241,12 +229,12 @@ public class ActionMailValidator extends ActionBase implements Cloneable, IActio
     return result;
   }
 
-  public boolean evaluates() {
+  @Override public boolean isEvaluation() {
     return true;
   }
 
   @Override
-  public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables, IMetaStore metaStore ) {
+  public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables, IHopMetadataProvider metadataProvider ) {
 
     ActionValidatorUtils.andValidator().validate( this, "emailAddress", remarks,
       AndValidator.putValidators( ActionValidatorUtils.notBlankValidator() ) );

@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.file.workflow.delegates;
 
@@ -26,7 +21,7 @@ import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.ui.hopgui.file.workflow.HopGuiWorkflowGraph;
 import org.apache.hop.workflow.WorkflowHopMeta;
 import org.apache.hop.workflow.WorkflowMeta;
-import org.apache.hop.workflow.action.ActionCopy;
+import org.apache.hop.workflow.action.ActionMeta;
 import org.apache.hop.ui.core.PropsUi;
 import org.apache.hop.ui.hopgui.HopGui;
 import org.eclipse.swt.SWT;
@@ -34,7 +29,7 @@ import org.eclipse.swt.widgets.MessageBox;
 
 public class HopGuiWorkflowHopDelegate {
 
-  private static Class<?> PKG = HopGui.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = HopGui.class; // For Translator
 
 
   private HopGui hopGui;
@@ -47,7 +42,7 @@ public class HopGuiWorkflowHopDelegate {
     this.props = PropsUi.getInstance();
   }
 
-  public void newHop( WorkflowMeta workflowMeta, ActionCopy fr, ActionCopy to ) {
+  public void newHop( WorkflowMeta workflowMeta, ActionMeta fr, ActionMeta to ) {
     WorkflowHopMeta hi = new WorkflowHopMeta( fr, to );
     newHop( workflowMeta, hi );
   }
@@ -63,7 +58,6 @@ public class HopGuiWorkflowHopDelegate {
         //
         workflowMeta.removeWorkflowHop( idx );
       } else {
-        // TODO: Create a new Undo/Redo system
         hopGui.undoDelegate.addUndoNew( workflowMeta, new WorkflowHopMeta[] { hopMeta }, new int[] { workflowMeta.indexOfWorkflowHop( hopMeta ) } );
       }
 

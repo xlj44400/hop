@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.file.pipeline.delegates;
 
@@ -33,12 +28,11 @@ import org.apache.hop.pipeline.transform.TransformErrorMeta;
 import org.apache.hop.pipeline.transform.TransformMeta;
 import org.apache.hop.ui.core.PropsUi;
 import org.apache.hop.ui.core.dialog.ErrorDialog;
+import org.apache.hop.ui.core.dialog.MessageDialogWithToggle;
 import org.apache.hop.ui.core.gui.GuiResource;
 import org.apache.hop.ui.hopgui.HopGui;
 import org.apache.hop.ui.hopgui.file.pipeline.HopGuiPipelineGraph;
 import org.apache.hop.ui.pipeline.dialog.PipelineHopDialog;
-import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.dialogs.MessageDialogWithToggle;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.MessageBox;
 
@@ -48,7 +42,7 @@ import java.util.List;
 public class HopGuiPipelineHopDelegate {
 
   // TODO: move i18n package to HopGui
-  private static Class<?> PKG = HopGui.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = HopGui.class; // For Translator
 
   public static final int MESSAGE_DIALOG_WITH_TOGGLE_YES_BUTTON_ID = 256;
 
@@ -87,8 +81,7 @@ public class HopGuiPipelineHopDelegate {
         //
         pipelineMeta.removePipelineHop( idx );
       } else {
-        // TODO: Create a new Undo/Redo system
-        // addUndoNew( pipelineMeta, new PipelineHopMeta[] { pipelineHopMeta }, new int[] { pipelineMeta.indexOfPipelineHop( pipelineHopMeta ) } );
+        hopGui.undoDelegate.addUndoNew( pipelineMeta, new PipelineHopMeta[] { pipelineHopMeta }, new int[] { pipelineMeta.indexOfPipelineHop( pipelineHopMeta ) } );
       }
 
       pipelineGraph.redraw();
@@ -134,7 +127,7 @@ public class HopGuiPipelineHopDelegate {
       // StackOverflow there ;-)
       try {
         if ( !newHop.getToTransform().getTransform().excludeFromRowLayoutVerification() ) {
-          pipelineMeta.checkRowMixingStatically( newHop.getToTransform(), null );
+          pipelineMeta.checkRowMixingStatically( pipelineGraph.getVariables(), newHop.getToTransform(), null );
         }
       } catch ( HopRowException re ) {
         // Show warning about mixing rows with conflicting layouts...
@@ -163,11 +156,10 @@ public class HopGuiPipelineHopDelegate {
         && !fr.getTransform().excludeFromCopyDistributeVerification() ) {
         MessageDialogWithToggle md =
           new MessageDialogWithToggle(
-            hopGui.getShell(), BaseMessages.getString( PKG, "System.Warning" ), null, BaseMessages.getString(
+            hopGui.getShell(), BaseMessages.getString( PKG, "System.Warning" ), BaseMessages.getString(
             PKG, "HopGui.Dialog.CopyOrDistribute.Message", fr.getName(), Integer.toString( nrNextTransforms ) ),
-            MessageDialog.WARNING, getRowDistributionLabels(), 0, BaseMessages.getString(
+            SWT.ICON_WARNING, getRowDistributionLabels(), BaseMessages.getString(
             PKG, "HopGui.Message.Warning.NotShowWarning" ), !props.showCopyOrDistributeWarning() );
-        MessageDialogWithToggle.setDefaultImage( GuiResource.getInstance().getImageHopUi() );
         int idx = md.open();
         props.setShowCopyOrDistributeWarning( !md.getToggleState() );
 

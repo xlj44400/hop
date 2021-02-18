@@ -1,35 +1,27 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.logging;
 
-import org.apache.hop.core.Const;
 import org.apache.hop.core.plugins.BasePluginType;
 import org.apache.hop.core.plugins.PluginAnnotationType;
 import org.apache.hop.core.plugins.PluginMainClassType;
-import org.apache.hop.core.plugins.IPluginType;
 import org.apache.hop.core.util.Utils;
 
-import java.lang.annotation.Annotation;
 import java.util.Map;
 
 /**
@@ -39,13 +31,12 @@ import java.util.Map;
  */
 @PluginMainClassType( ILoggingPlugin.class )
 @PluginAnnotationType( LoggingPlugin.class )
-public class LoggingPluginType extends BasePluginType implements IPluginType {
+public class LoggingPluginType extends BasePluginType<LoggingPlugin> {
 
   private static LoggingPluginType loggingPluginType;
 
   private LoggingPluginType() {
     super( LoggingPlugin.class, "LOGGING", "Logging Plugin" );
-    populateFolders( "logging" );
   }
 
   public static LoggingPluginType getInstance() {
@@ -56,88 +47,68 @@ public class LoggingPluginType extends BasePluginType implements IPluginType {
   }
 
   @Override
-  protected String getXmlPluginFile() {
-    return Const.XML_FILE_HOP_LOGGING_PLUGINS;
-  }
-
-  @Override
-  protected String getAlternativePluginFile() {
-    return Const.HOP_LOGGING_PLUGINS_FILE;
-  }
-
-  @Override
-  protected String getMainTag() {
-    return "logging-plugins";
-  }
-
-  @Override
-  protected String getSubTag() {
-    return "logging-plugin";
-  }
-
-  @Override
-  protected String extractCategory( Annotation annotation ) {
+  protected String extractCategory( LoggingPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected String extractDesc( Annotation annotation ) {
+  protected String extractDesc( LoggingPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected String extractID( Annotation annotation ) {
-    String id = ( (LoggingPlugin) annotation ).id();
+  protected String extractID( LoggingPlugin annotation ) {
+    String id = annotation.id();
     return id;
   }
 
   @Override
-  protected String extractName( Annotation annotation ) {
-    String name = ( (LoggingPlugin) annotation ).name();
+  protected String extractName( LoggingPlugin annotation ) {
+    String name = annotation.name();
     return Utils.isEmpty( name ) ? extractID( annotation ) : name;
   }
 
   @Override
-  protected String extractImageFile( Annotation annotation ) {
+  protected String extractImageFile( LoggingPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected boolean extractSeparateClassLoader( Annotation annotation ) {
-    return ( (LoggingPlugin) annotation ).isSeparateClassLoaderNeeded();
+  protected boolean extractSeparateClassLoader( LoggingPlugin annotation ) {
+    return annotation.isSeparateClassLoaderNeeded();
   }
 
   @Override
-  protected String extractI18nPackageName( Annotation annotation ) {
+  protected String extractI18nPackageName( LoggingPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected void addExtraClasses( Map<Class<?>, String> classMap, Class<?> clazz, Annotation annotation ) {
+  protected void addExtraClasses( Map<Class<?>, String> classMap, Class<?> clazz, LoggingPlugin annotation ) {
   }
 
   @Override
-  protected String extractDocumentationUrl( Annotation annotation ) {
+  protected String extractDocumentationUrl( LoggingPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected String extractCasesUrl( Annotation annotation ) {
+  protected String extractCasesUrl( LoggingPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected String extractForumUrl( Annotation annotation ) {
+  protected String extractForumUrl( LoggingPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected String extractClassLoaderGroup( Annotation annotation ) {
-    return ( (LoggingPlugin) annotation ).classLoaderGroup();
+  protected String extractClassLoaderGroup( LoggingPlugin annotation ) {
+    return annotation.classLoaderGroup();
   }
 
   @Override
-  protected String extractSuggestion( Annotation annotation ) {
+  protected String extractSuggestion( LoggingPlugin annotation ) {
     return null;
   }
 }

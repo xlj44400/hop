@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.filesexist;
 
@@ -35,7 +30,7 @@ import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.workflow.WorkflowMeta;
 import org.apache.hop.workflow.action.IAction;
 import org.apache.hop.workflow.action.ActionBase;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.w3c.dom.Node;
 
 import java.io.IOException;
@@ -50,14 +45,14 @@ import java.util.List;
 
 @Action(
   id = "FILES_EXIST",
-  i18nPackageName = "org.apache.hop.workflow.actions.filesexist",
-  name = "ActionFilesExist.Name",
-  description = "ActionFilesExist.Description",
+  name = "i18n::ActionFilesExist.Name",
+  description = "i18n::ActionFilesExist.Description",
   image = "FilesExist.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Conditions"
+  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Conditions",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/filesexist.html"
 )
 public class ActionFilesExist extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionFilesExist.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionFilesExist.class; // For Translator
 
   private String filename; // TODO: looks like it is not used: consider deleting
 
@@ -107,7 +102,7 @@ public class ActionFilesExist extends ActionBase implements Cloneable, IAction {
   }
 
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
       filename = XmlHandler.getTagValue( entrynode, "filename" );
@@ -163,8 +158,8 @@ public class ActionFilesExist extends ActionBase implements Cloneable, IAction {
         FileObject file = null;
 
         try {
-          String realFilefoldername = environmentSubstitute( arguments[ i ] );
-          file = HopVfs.getFileObject( realFilefoldername, this );
+          String realFilefoldername = resolve( arguments[ i ] );
+          file = HopVfs.getFileObject( realFilefoldername );
 
           if ( file.exists() && file.isReadable() ) { // TODO: is it needed to check file for readability?
             if ( log.isDetailed() ) {
@@ -208,13 +203,13 @@ public class ActionFilesExist extends ActionBase implements Cloneable, IAction {
     return result;
   }
 
-  public boolean evaluates() {
+  @Override public boolean isEvaluation() {
     return true;
   }
 
   @Override
   public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
   }
 
 }

@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.fileinput;
 
@@ -77,7 +72,7 @@ import java.util.Map;
  */
 @Deprecated
 public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInputData> implements ITransform<TextFileInputMeta, TextFileInputData> {
-  private static Class<?> PKG = TextFileInputMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = TextFileInputMeta.class; // For Translator
 
   private static final int BUFFER_SIZE_INPUT_STREAM = 500;
 
@@ -191,15 +186,15 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
         boolean dencl = false;
 
         int len_encl = ( enclosure == null ? 0 : enclosure.length() );
-        int len_esc = ( escapeCharacter == null ? 0 : escapeCharacter.length() );
+        int lenEsc = ( escapeCharacter == null ? 0 : escapeCharacter.length() );
 
         while ( pos < length ) {
           int from = pos;
           int next;
 
           boolean encl_found;
-          boolean contains_escaped_enclosures = false;
-          boolean contains_escaped_separators = false;
+          boolean containsEscaped_enclosures = false;
+          boolean containsEscapedSeparators = false;
 
           // Is the field beginning with an enclosure?
           // "aa;aa";123;"aaa-aaa";000;...
@@ -214,14 +209,14 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
             boolean is_enclosure =
               len_encl > 0 && p + len_encl < length && line.substring( p, p + len_encl )
                 .equalsIgnoreCase( enclosure );
-            boolean is_escape =
-              len_esc > 0 && p + len_esc < length
-                && line.substring( p, p + len_esc ).equalsIgnoreCase( escapeCharacter );
+            boolean isEscape =
+              lenEsc > 0 && p + lenEsc < length
+                && line.substring( p, p + lenEsc ).equalsIgnoreCase( escapeCharacter );
 
             boolean enclosure_after = false;
 
             // Is it really an enclosure? See if it's not repeated twice or escaped!
-            if ( ( is_enclosure || is_escape ) && p < length - 1 ) {
+            if ( ( is_enclosure || isEscape ) && p < length - 1 ) {
               String strnext = line.substring( p + len_encl, p + 2 * len_encl );
               if ( strnext.equalsIgnoreCase( enclosure ) ) {
                 p++;
@@ -229,8 +224,8 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
                 dencl = true;
 
                 // Remember to replace them later on!
-                if ( is_escape ) {
-                  contains_escaped_enclosures = true;
+                if ( isEscape ) {
+                  containsEscaped_enclosures = true;
                 }
               }
             }
@@ -241,11 +236,11 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
               enclosure_after = false;
               is_enclosure =
                 len_encl > 0 && p + len_encl < length && line.substring( p, p + len_encl ).equals( enclosure );
-              is_escape =
-                len_esc > 0 && p + len_esc < length && line.substring( p, p + len_esc ).equals( escapeCharacter );
+              isEscape =
+                lenEsc > 0 && p + lenEsc < length && line.substring( p, p + lenEsc ).equals( escapeCharacter );
 
               // Is it really an enclosure? See if it's not repeated twice or escaped!
-              if ( ( is_enclosure || is_escape ) && p < length - 1 ) {
+              if ( ( is_enclosure || isEscape ) && p < length - 1 ) {
 
                 String strnext = line.substring( p + len_encl, p + 2 * len_encl );
                 if ( strnext.equals( enclosure ) ) {
@@ -254,8 +249,8 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
                   dencl = true;
 
                   // Remember to replace them later on!
-                  if ( is_escape ) {
-                    contains_escaped_enclosures = true; // remember
+                  if ( isEscape ) {
+                    containsEscaped_enclosures = true; // remember
                   }
                 }
               }
@@ -280,14 +275,14 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
               next = line.indexOf( delimiter, startpoint );
 
               // See if this position is preceded by an escape character.
-              if ( len_esc > 0 && next - len_esc > 0 ) {
-                String before = line.substring( next - len_esc, next );
+              if ( lenEsc > 0 && next - lenEsc > 0 ) {
+                String before = line.substring( next - lenEsc, next );
 
                 if ( escapeCharacter.equals( before ) ) {
                   // take the next separator, this one is escaped...
                   startpoint = next + 1;
                   // tries++;
-                  contains_escaped_separators = true;
+                  containsEscapedSeparators = true;
                 } else {
                   found = true;
                 }
@@ -325,7 +320,7 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
           }
 
           // replace the escaped enclosures with enclosures...
-          if ( contains_escaped_enclosures ) {
+          if ( containsEscaped_enclosures ) {
             String replace = escapeCharacter + enclosure;
             String replaceWith = enclosure;
 
@@ -333,7 +328,7 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
           }
 
           // replace the escaped separators with separators...
-          if ( contains_escaped_separators ) {
+          if ( containsEscapedSeparators ) {
             String replace = escapeCharacter + delimiter;
             String replaceWith = delimiter;
 
@@ -399,15 +394,15 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
         boolean dencl = false;
 
         int len_encl = ( enclosure == null ? 0 : enclosure.length() );
-        int len_esc = ( escapeCharacters == null ? 0 : escapeCharacters.length() );
+        int lenEsc = ( escapeCharacters == null ? 0 : escapeCharacters.length() );
 
         while ( pos < length ) {
           int from = pos;
           int next;
 
           boolean encl_found;
-          boolean contains_escaped_enclosures = false;
-          boolean contains_escaped_separators = false;
+          boolean containsEscaped_enclosures = false;
+          boolean containsEscapedSeparators = false;
 
           // Is the field beginning with an enclosure?
           // "aa;aa";123;"aaa-aaa";000;...
@@ -422,14 +417,14 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
             boolean is_enclosure =
               len_encl > 0 && p + len_encl < length
                 && line.substring( p, p + len_encl ).equalsIgnoreCase( enclosure );
-            boolean is_escape =
-              len_esc > 0 && p + len_esc < length
-                && line.substring( p, p + len_esc ).equalsIgnoreCase( inf.getEscapeCharacter() );
+            boolean isEscape =
+              lenEsc > 0 && p + lenEsc < length
+                && line.substring( p, p + lenEsc ).equalsIgnoreCase( inf.getEscapeCharacter() );
 
             boolean enclosure_after = false;
 
             // Is it really an enclosure? See if it's not repeated twice or escaped!
-            if ( ( is_enclosure || is_escape ) && p < length - 1 ) {
+            if ( ( is_enclosure || isEscape ) && p < length - 1 ) {
               String strnext = line.substring( p + len_encl, p + 2 * len_encl );
               if ( strnext.equalsIgnoreCase( enclosure ) ) {
                 p++;
@@ -437,8 +432,8 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
                 dencl = true;
 
                 // Remember to replace them later on!
-                if ( is_escape ) {
-                  contains_escaped_enclosures = true;
+                if ( isEscape ) {
+                  containsEscaped_enclosures = true;
                 }
               }
             }
@@ -450,12 +445,12 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
               is_enclosure =
                 len_encl > 0 && p + len_encl < length
                   && line.substring( p, p + len_encl ).equals( enclosure );
-              is_escape =
-                len_esc > 0 && p + len_esc < length
-                  && line.substring( p, p + len_esc ).equals( inf.getEscapeCharacter() );
+              isEscape =
+                lenEsc > 0 && p + lenEsc < length
+                  && line.substring( p, p + lenEsc ).equals( inf.getEscapeCharacter() );
 
               // Is it really an enclosure? See if it's not repeated twice or escaped!
-              if ( ( is_enclosure || is_escape ) && p < length - 1 ) {
+              if ( ( is_enclosure || isEscape ) && p < length - 1 ) {
 
                 String strnext = line.substring( p + len_encl, p + 2 * len_encl );
                 if ( strnext.equals( enclosure ) ) {
@@ -464,8 +459,8 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
                   dencl = true;
 
                   // Remember to replace them later on!
-                  if ( is_escape ) {
-                    contains_escaped_enclosures = true; // remember
+                  if ( isEscape ) {
+                    containsEscaped_enclosures = true; // remember
                   }
                 }
               }
@@ -490,14 +485,14 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
               next = line.indexOf( delimiter, startpoint );
 
               // See if this position is preceded by an escape character.
-              if ( len_esc > 0 && next - len_esc > 0 ) {
-                String before = line.substring( next - len_esc, next );
+              if ( lenEsc > 0 && next - lenEsc > 0 ) {
+                String before = line.substring( next - lenEsc, next );
 
                 if ( inf.getEscapeCharacter().equals( before ) ) {
                   // take the next separator, this one is escaped...
                   startpoint = next + 1;
                   // tries++;
-                  contains_escaped_separators = true;
+                  containsEscapedSeparators = true;
                 } else {
                   found = true;
                 }
@@ -535,7 +530,7 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
           }
 
           // replace the escaped enclosures with enclosures...
-          if ( contains_escaped_enclosures ) {
+          if ( containsEscaped_enclosures ) {
             String replace = inf.getEscapeCharacter() + enclosure;
             String replaceWith = enclosure;
 
@@ -543,7 +538,7 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
           }
 
           // replace the escaped separators with separators...
-          if ( contains_escaped_separators ) {
+          if ( containsEscapedSeparators ) {
             String replace = inf.getEscapeCharacter() + delimiter;
             String replaceWith = delimiter;
 
@@ -554,7 +549,7 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
           try {
             strings[ fieldnr ] = pol;
           } catch ( ArrayIndexOutOfBoundsException e ) {
-            // In case we didn't allocate enough space.
+            // In case we didn't allocate enough variables.
             // This happens when you have less header values specified than there are actual values in the rows.
             // As this is "the exception" we catch and resize here.
             //
@@ -681,7 +676,7 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
 
         String nullif = fieldnr < nrFields ? f.getNullString() : "";
         String ifnull = fieldnr < nrFields ? f.getIfNullValue() : "";
-        int trim_type = fieldnr < nrFields ? f.getTrimType() : IValueMeta.TRIM_TYPE_NONE;
+        int trimType = fieldnr < nrFields ? f.getTrimType() : IValueMeta.TRIM_TYPE_NONE;
 
         if ( fieldnr < strings.length ) {
           String pol = strings[ fieldnr ];
@@ -689,7 +684,7 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
             if ( valueMeta.isNull( pol ) ) {
               pol = null;
             }
-            value = valueMeta.convertDataFromString( pol, convertMeta, nullif, ifnull, trim_type );
+            value = valueMeta.convertDataFromString( pol, convertMeta, nullif, ifnull, trimType );
           } catch ( Exception e ) {
             // when getting fields, failOnParseError will be set to false, as we do not want one mis-configured field
             // to prevent us from analyzing other fields, we simply leave the string value as is
@@ -869,7 +864,7 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
           IRowMeta prevInfoFields = data.rowSet.getRowMeta();
           if ( idx < 0 ) {
             if ( meta.isPassingThruFields() ) {
-              data.passThruFields = new HashMap<FileObject, Object[]>();
+              data.passThruFields = new HashMap<>();
               infoTransform = new IRowMeta[] { prevInfoFields };
               data.nrPassThruFields = prevInfoFields.size();
             }
@@ -884,7 +879,7 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
           }
           String fileValue = prevInfoFields.getString( fileRow, idx );
           try {
-            FileObject fileObject = HopVfs.getFileObject( fileValue, getPipelineMeta() );
+            FileObject fileObject = HopVfs.getFileObject( fileValue );
             data.getFiles().addFile( fileObject );
             if ( meta.isPassingThruFields() ) {
               data.passThruFields.put( fileObject, fileRow );
@@ -907,7 +902,7 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
       }
 
       // // get the metadata populated. Simple and easy.
-      meta.getFields( data.outputRowMeta, getTransformName(), infoTransform, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), infoTransform, null, this, metadataProvider );
       // Create convert meta-data objects that will contain Date & Number formatters
       //
       data.convertRowMeta = data.outputRowMeta.cloneToType( IValueMeta.TYPE_STRING );
@@ -1123,9 +1118,9 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
     if ( putrow && r != null ) {
       // See if the previous values need to be repeated!
       if ( data.nr_repeats > 0 ) {
-        if ( data.previous_row == null ) { // First invocation...
+        if ( data.previousRow == null ) { // First invocation...
 
-          data.previous_row = data.outputRowMeta.cloneRow( r );
+          data.previousRow = data.outputRowMeta.cloneRow( r );
         } else {
           // int repnr = 0;
           for ( int i = 0; i < meta.getInputFields().length; i++ ) {
@@ -1133,11 +1128,11 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
               if ( r[ i ] == null ) {
                 // if it is empty: take the previous value!
 
-                r[ i ] = data.previous_row[ i ];
+                r[ i ] = data.previousRow[ i ];
               } else {
                 // not empty: change the previous_row entry!
 
-                data.previous_row[ i ] = r[ i ];
+                data.previousRow[ i ] = r[ i ];
               }
               // repnr++;
             }
@@ -1196,11 +1191,11 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
 
       int errorFileIndex =
         ( StringUtils.isBlank( meta.getFileErrorField() ) ) ? -1 : addValueMeta( rowMeta, this
-          .environmentSubstitute( meta.getFileErrorField() ) );
+          .resolve( meta.getFileErrorField() ) );
 
       int errorMessageIndex =
         StringUtils.isBlank( meta.getFileErrorMessageField() ) ? -1 : addValueMeta( rowMeta, this
-          .environmentSubstitute( meta.getFileErrorMessageField() ) );
+          .resolve( meta.getFileErrorMessageField() ) );
 
       try {
         Object[] rowData = getRow();
@@ -1547,9 +1542,9 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
       data.fileType = meta.getFileTypeNr();
 
       // Handle the possibility of a variable substitution
-      data.separator = environmentSubstitute( meta.getSeparator() );
-      data.enclosure = environmentSubstitute( meta.getEnclosure() );
-      data.escapeCharacter = environmentSubstitute( meta.getEscapeCharacter() );
+      data.separator = resolve( meta.getSeparator() );
+      data.enclosure = resolve( meta.getEnclosure() );
+      data.escapeCharacter = resolve( meta.getEscapeCharacter() );
 
       // Add additional fields
       if ( !Utils.isEmpty( meta.getShortFileNameField() ) ) {
@@ -1586,14 +1581,14 @@ public class TextFileInput extends BaseTransform<TextFileInputMeta, TextFileInpu
   }
 
   private void initErrorHandling() {
-    List<IFileErrorHandler> dataErrorLineHandlers = new ArrayList<IFileErrorHandler>( 2 );
+    List<IFileErrorHandler> dataErrorLineHandlers = new ArrayList<>( 2 );
     if ( meta.getLineNumberFilesDestinationDirectory() != null ) {
       dataErrorLineHandlers
-        .add( new FileErrorHandlerContentLineNumber( getPipeline().getExecutionStartDate(), environmentSubstitute( meta
+        .add( new FileErrorHandlerContentLineNumber( getPipeline().getExecutionStartDate(), resolve( meta
           .getLineNumberFilesDestinationDirectory() ), meta.getLineNumberFilesExtension(), meta.getEncoding(), this ) );
     }
     if ( meta.getErrorFilesDestinationDirectory() != null ) {
-      dataErrorLineHandlers.add( new FileErrorHandlerMissingFiles( getPipeline().getExecutionStartDate(), environmentSubstitute(
+      dataErrorLineHandlers.add( new FileErrorHandlerMissingFiles( getPipeline().getExecutionStartDate(), resolve(
         meta.getErrorFilesDestinationDirectory() ), meta.getErrorLineFilesExtension(), meta.getEncoding(), this ) );
     }
     data.dataErrorLineHandler = new CompositeFileErrorHandler( dataErrorLineHandlers );

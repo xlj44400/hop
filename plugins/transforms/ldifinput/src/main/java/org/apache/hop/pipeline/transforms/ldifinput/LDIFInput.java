@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.ldifinput;
 
@@ -33,17 +28,14 @@ import org.apache.hop.core.row.RowDataUtil;
 import org.apache.hop.core.row.RowMeta;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.IValueMeta;
-import org.apache.hop.core.util.StringUtil;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.vfs.HopVfs;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransform;
-import org.apache.hop.pipeline.transform.ITransformData;
 import org.apache.hop.pipeline.transform.ITransform;
 import org.apache.hop.pipeline.transform.TransformMeta;
-import org.apache.hop.pipeline.transform.ITransform;
 
 import java.util.Date;
 import java.util.Enumeration;
@@ -55,7 +47,7 @@ import java.util.Enumeration;
  * @since 24-05-2007
  */
 public class LDIFInput extends BaseTransform<LDIFInputMeta, LDIFInputData> implements ITransform<LDIFInputMeta, LDIFInputData> {
-  private static Class<?> PKG = LDIFInputMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = LDIFInputMeta.class; // For Translator
 
 
   public LDIFInput( TransformMeta transformMeta, LDIFInputMeta meta, LDIFInputData data, int copyNr, PipelineMeta pipelineMeta,
@@ -137,7 +129,7 @@ public class LDIFInput extends BaseTransform<LDIFInputMeta, LDIFInputData> imple
       for ( int i = 0; i < meta.getInputFields().length; i++ ) {
         LDIFInputField ldifInputField = meta.getInputFields()[ i ];
         // Get the Attribut to look for
-        String AttributValue = environmentSubstitute( ldifInputField.getAttribut() );
+        String AttributValue = resolve( ldifInputField.getAttribut() );
 
         String Value = GetValue( data.attributes_LDIF, AttributValue );
 
@@ -309,7 +301,7 @@ public class LDIFInput extends BaseTransform<LDIFInputMeta, LDIFInputData> imple
 
           data.inputRowMeta = getInputRowMeta();
           data.outputRowMeta = data.inputRowMeta.clone();
-          meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+          meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
           // Get total previous fields
           data.totalpreviousfields = data.inputRowMeta.size();
@@ -336,13 +328,13 @@ public class LDIFInput extends BaseTransform<LDIFInputMeta, LDIFInputData> imple
           }
 
         } // End if first
-        String filename = environmentSubstitute( getInputRowMeta().getString( data.readrow, data.indexOfFilenameField ) );
+        String filename = resolve( getInputRowMeta().getString( data.readrow, data.indexOfFilenameField ) );
         if ( isDetailed() ) {
           logDetailed( BaseMessages.getString( PKG, "LDIFInput.Log.FilenameInStream", meta
             .getDynamicFilenameField(), filename ) );
         }
 
-        data.file = HopVfs.getFileObject( filename, getPipelineMeta() );
+        data.file = HopVfs.getFileObject( filename );
       }
       data.filename = HopVfs.getFilename( data.file );
       // Add additional fields?
@@ -451,13 +443,13 @@ public class LDIFInput extends BaseTransform<LDIFInputMeta, LDIFInputData> imple
           // Create the output row meta-data
           data.outputRowMeta = new RowMeta();
 
-          meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+          meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
           // Create convert meta-data objects that will contain Date & Number formatters
           data.convertRowMeta = data.outputRowMeta.cloneToType( IValueMeta.TYPE_STRING );
 
           data.nrInputFields = meta.getInputFields().length;
-          data.multiValueSeparator = environmentSubstitute( meta.getMultiValuedSeparator() );
+          data.multiValueSeparator = resolve( meta.getMultiValuedSeparator() );
         } catch ( Exception e ) {
           logError( "Error initializing transform: " + e.toString() );
            e.printStackTrace();

@@ -1,32 +1,27 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.concurrency;
 
-import org.apache.commons.collections.ListUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.hop.core.gui.WorkflowTracker;
 import org.apache.hop.workflow.ActionResult;
 import org.apache.hop.workflow.WorkflowMeta;
-import org.apache.hop.workflow.action.ActionCopy;
+import org.apache.hop.workflow.action.ActionMeta;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -49,7 +44,7 @@ import static org.mockito.Mockito.when;
 /**
  * This test consists of two similar cases. There are three type of actors: getters, searchers and updaters. They work
  * simultaneously within their own threads. Getters invoke {@linkplain WorkflowTracker#getWorkflowTracker(int)} with a random
- * index, searchers call {@linkplain WorkflowTracker#findWorkflowTracker(ActionCopy)}, updaters add new children
+ * index, searchers call {@linkplain WorkflowTracker#findWorkflowTracker(ActionMeta)}, updaters add new children
  * <tt>updatersCycles</tt> times. The difference between two cases is the second has a small limit of stored children,
  * so the parent WorkflowTracker will be forced to remove some of its elements.
  *
@@ -102,20 +97,20 @@ public class WorkflowTrackerConcurrencyTest {
   public void readAndUpdateTrackerConcurrently() throws Exception {
     final AtomicBoolean condition = new AtomicBoolean( true );
 
-    List<Getter> getters = new ArrayList<Getter>( gettersAmount );
+    List<Getter> getters = new ArrayList<>( gettersAmount );
     for ( int i = 0; i < gettersAmount; i++ ) {
       getters.add( new Getter( condition, tracker ) );
     }
 
-    List<Searcher> searchers = new ArrayList<Searcher>( searchersAmount );
+    List<Searcher> searchers = new ArrayList<>( searchersAmount );
     for ( int i = 0; i < searchersAmount; i++ ) {
       int lookingFor = updatersAmount * updatersCycles / 2 + i;
       assertTrue( "We are looking for reachable index", lookingFor < updatersAmount * updatersCycles );
-      searchers.add( new Searcher( condition, tracker, mockJobEntryCopy( "workflow-action-" + lookingFor, lookingFor ) ) );
+      searchers.add( new Searcher( condition, tracker, mockActionMeta( "workflow-action-" + lookingFor ) ) );
     }
 
     final AtomicInteger generator = new AtomicInteger( 0 );
-    List<Updater> updaters = new ArrayList<Updater>( updatersAmount );
+    List<Updater> updaters = new ArrayList<>( updatersAmount );
     for ( int i = 0; i < updatersAmount; i++ ) {
       updaters.add( new Updater( tracker, updatersCycles, generator, "workflow-action-%d" ) );
     }
@@ -125,10 +120,9 @@ public class WorkflowTrackerConcurrencyTest {
     assertEquals( updatersAmount * updatersCycles, generator.get() );
   }
 
-  static ActionCopy mockJobEntryCopy( String name, int number ) {
-    ActionCopy copy = mock( ActionCopy.class );
+  static ActionMeta mockActionMeta( String name ) {
+    ActionMeta copy = mock( ActionMeta.class );
     when( copy.getName() ).thenReturn( name );
-    when( copy.getNr() ).thenReturn( number );
     return copy;
   }
 
@@ -164,9 +158,9 @@ public class WorkflowTrackerConcurrencyTest {
 
   private static class Searcher extends StopOnErrorCallable<Object> {
     private final WorkflowTracker tracker;
-    private final ActionCopy copy;
+    private final ActionMeta copy;
 
-    public Searcher( AtomicBoolean condition, WorkflowTracker tracker, ActionCopy copy ) {
+    public Searcher( AtomicBoolean condition, WorkflowTracker tracker, ActionMeta copy ) {
       super( condition );
       this.tracker = tracker;
       this.copy = copy;
@@ -203,7 +197,6 @@ public class WorkflowTrackerConcurrencyTest {
           int id = idGenerator.getAndIncrement();
           ActionResult result = new ActionResult();
           result.setActionName( String.format( resultNameTemplate, id ) );
-          result.setActionNr( id );
           WorkflowTracker child = new WorkflowTracker( mockWorkflowMeta( "child-" + id ), result );
           tracker.addWorkflowTracker( child );
         }

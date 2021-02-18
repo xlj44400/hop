@@ -1,30 +1,23 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transform;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.hop.core.ICheckResult;
-import org.apache.hop.core.HopAttribute;
 import org.apache.hop.core.IHopAttribute;
 import org.apache.hop.core.SqlStatement;
 import org.apache.hop.core.database.Database;
@@ -34,30 +27,25 @@ import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.exception.HopTransformException;
 import org.apache.hop.core.exception.HopXmlException;
 import org.apache.hop.core.file.IHasFilename;
-import org.apache.hop.core.logging.LogChannel;
 import org.apache.hop.core.logging.ILogChannel;
 import org.apache.hop.core.logging.ILoggingObject;
+import org.apache.hop.core.logging.LogChannel;
 import org.apache.hop.core.logging.LoggingObjectType;
 import org.apache.hop.core.logging.SimpleLoggingObject;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.RowMeta;
-import org.apache.hop.core.row.value.ValueMetaFactory;
-import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.variables.IVariables;
-import org.apache.hop.core.xml.XmlHandler;
-import org.apache.hop.metastore.api.IMetaStore;
-import org.apache.hop.pipeline.transform.errorhandling.IStream;
-import org.apache.hop.resource.ResourceDefinition;
-import org.apache.hop.resource.IResourceNaming;
-import org.apache.hop.resource.ResourceReference;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.pipeline.DatabaseImpact;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.PipelineMeta.PipelineType;
+import org.apache.hop.pipeline.transform.errorhandling.IStream;
 import org.apache.hop.pipeline.transform.errorhandling.Stream;
-import org.w3c.dom.Document;
+import org.apache.hop.resource.IResourceNaming;
+import org.apache.hop.resource.ResourceDefinition;
+import org.apache.hop.resource.ResourceReference;
 import org.w3c.dom.Node;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -166,8 +154,9 @@ public class BaseTransformMeta implements Cloneable {
    * Gets the table fields.
    *
    * @return the table fields
+   * @param variables
    */
-  public IRowMeta getTableFields() {
+  public IRowMeta getTableFields( IVariables variables ) {
     return null;
   }
 
@@ -188,18 +177,19 @@ public class BaseTransformMeta implements Cloneable {
    * @param name         Name of the transform to use as input for the origin field in the values
    * @param info         Fields used as extra lookup information
    * @param nextTransform     the next transform that is targeted
-   * @param variables        the space The variable space to use to replace variables
-   * @param metaStore    the MetaStore to use to load additional external data or metadata impacting the output fields
+   * @param variables        the variables The variable variables to use to replace variables
+   * @param metadataProvider    the MetaStore to use to load additional external data or metadata impacting the output fields
    * @throws HopTransformException the hop transform exception
    */
   public void getFields( IRowMeta inputRowMeta, String name, IRowMeta[] info, TransformMeta nextTransform,
-                         IVariables variables, IMetaStore metaStore ) throws HopTransformException {
+                         IVariables variables, IHopMetadataProvider metadataProvider ) throws HopTransformException {
     // Default: no values are added to the row in the transform
   }
 
   /**
    * Each transform must be able to report on the impact it has on a database, table field, etc.
    *
+   * @param variables The variables to use to resolve expressions
    * @param impact    The list of impacts @see org.apache.hop.pipelineMeta.DatabaseImpact
    * @param pipelineMeta The pipeline information
    * @param transformMeta  The transform information
@@ -207,11 +197,11 @@ public class BaseTransformMeta implements Cloneable {
    * @param input     The previous transform names
    * @param output    The output transform names
    * @param info      The fields used as information by this transform
-   * @param metaStore the MetaStore to use to load additional external data or metadata impacting the output fields
+   * @param metadataProvider the MetaStore to use to load additional external data or metadata impacting the output fields
    */
-  public void analyseImpact( List<DatabaseImpact> impact, PipelineMeta pipelineMeta, TransformMeta transformMeta,
+  public void analyseImpact( IVariables variables, List<DatabaseImpact> impact, PipelineMeta pipelineMeta, TransformMeta transformMeta,
                              IRowMeta prev, String[] input, String[] output,
-                             IRowMeta info, IMetaStore metaStore ) throws HopTransformException {
+                             IRowMeta info, IHopMetadataProvider metadataProvider ) throws HopTransformException {
 
   }
 
@@ -221,15 +211,17 @@ public class BaseTransformMeta implements Cloneable {
    * correctly. This can mean "create table", "create index" statements but also "alter table ... add/drop/modify"
    * statements.
    *
+   *
+   * @param variables
    * @param pipelineMeta PipelineMeta object containing the complete pipeline
    * @param transformMeta  TransformMeta object containing the complete transform
    * @param prev      Row containing meta-data for the input fields (no data)
-   * @param metaStore the MetaStore to use to load additional external data or metadata impacting the output fields
+   * @param metadataProvider the MetaStore to use to load additional external data or metadata impacting the output fields
    * @return The SQL Statements for this transform. If nothing has to be done, the SqlStatement.getSql() == null. @see
    * SqlStatement
    */
-  public SqlStatement getSqlStatements( PipelineMeta pipelineMeta, TransformMeta transformMeta, IRowMeta prev,
-                                        IMetaStore metaStore ) throws HopTransformException {
+  public SqlStatement getSqlStatements( IVariables variables, PipelineMeta pipelineMeta, TransformMeta transformMeta, IRowMeta prev,
+                                        IHopMetadataProvider metadataProvider ) throws HopTransformException {
     // default: this doesn't require any SQL statements to be executed!
     return new SqlStatement( transformMeta.getName(), null, null );
   }
@@ -258,7 +250,7 @@ public class BaseTransformMeta implements Cloneable {
    * <p>
    * This default implementation returns an empty row meaning that no fields are required for this transform to operate.
    *
-   * @param variables the variable space to use to do variable substitution.
+   * @param variables the variable variables to use to do variable substitution.
    * @return the required fields for this transforms meta data.
    * @throws HopException in case the required fields can't be determined
    */
@@ -305,46 +297,55 @@ public class BaseTransformMeta implements Cloneable {
    *
    * @return a list of all the resource dependencies that the transform is depending on
    */
-  public List<ResourceReference> getResourceDependencies( PipelineMeta pipelineMeta, TransformMeta transformInfo ) {
-    return Arrays.asList( new ResourceReference( transformInfo ) );
+  public List<ResourceReference> getResourceDependencies( IVariables variables, TransformMeta transformMeta ) {
+    return Arrays.asList( new ResourceReference( transformMeta ) );
   }
 
   /**
    * Export resources.
    *
-   * @param variables                   the space
+   * @param variables                   the variables
    * @param definitions             the definitions
    * @param iResourceNaming the resource naming interface
-   * @param metaStore               The place to load additional information
+   * @param metadataProvider               The place to load additional information
    * @return the string
    * @throws HopException the hop exception
    */
   public String exportResources( IVariables variables, Map<String, ResourceDefinition> definitions,
-                                 IResourceNaming iResourceNaming, IMetaStore metaStore ) throws HopException {
+                                 IResourceNaming iResourceNaming, IHopMetadataProvider metadataProvider ) throws HopException {
     return null;
   }
 
   /**
-   * This returns the expected name for the dialog that edits a action. The expected name is in the org.apache.hop.ui
-   * tree and has a class name that is the name of the action with 'Dialog' added to the end.
-   * <p>
-   * e.g. if the action is org.apache.hop.workflow.actions.zipfile.JobEntryZipFile the dialog would be
-   * org.apache.hop.ui.workflow.actions.zipfile.JobEntryZipFileDialog
-   * <p>
-   * If the dialog class for a action does not match this pattern it should override this method and return the
-   * appropriate class name
-   *
-   * @return full class name of the dialog
-   */
+￼   * This returns the expected name for the dialog that edits a action. The expected name is in the org.apache.hop.ui
+￼   * tree and has a class name that is the name of the action with 'Dialog' added to the end.
+￼   * <p>
+￼   * e.g. if the action is org.apache.hop.workflow.actions.zipfile.JobEntryZipFile the dialog would be
+￼   * org.apache.hop.ui.workflow.actions.zipfile.JobEntryZipFileDialog
+￼   * <p>
+￼   * If the dialog class for a action does not match this pattern it should override this method and return the
+￼   * appropriate class name
+￼   *
+￼   * @return full class name of the dialog
+￼   */
   public String getDialogClassName() {
     String className = getClass().getCanonicalName();
-    className = className.replaceFirst( "\\.hop\\.", ".hop.ui." );
+
     if ( className.endsWith( "Meta" ) ) {
       className = className.substring( 0, className.length() - 4 );
     }
+
     className += "Dialog";
+    try {
+      Class clazz = Class.forName(className.replaceFirst( "\\.hop\\.", ".hop.ui." ));
+      className = clazz.getName();
+    }catch (ClassNotFoundException e){
+      //do nothing and return plugin classname
+    }
+
     return className;
   }
+
 
   /**
    * Gets the parent transform meta.
@@ -639,7 +640,7 @@ public class BaseTransformMeta implements Cloneable {
    * "New target transform"
    */
   public List<IStream> getOptionalStreams() {
-    List<IStream> list = new ArrayList<IStream>();
+    List<IStream> list = new ArrayList<>();
     return list;
   }
 
@@ -697,7 +698,7 @@ public class BaseTransformMeta implements Cloneable {
     return null;
   }
 
-  public void loadXml( Node transformNode, IMetaStore metaStore ) throws HopXmlException {
+  public void loadXml( Node transformNode, IHopMetadataProvider metadataProvider ) throws HopXmlException {
     // provided for API (compile & runtime) compatibility with v4
   }
 
@@ -710,23 +711,23 @@ public class BaseTransformMeta implements Cloneable {
    * @param input
    * @param output
    * @param info
-   * @param metaStore
+   * @param metadataProvider
    */
   public void check( List<ICheckResult> remarks, PipelineMeta pipelineMeta, TransformMeta transformMeta,
                      IRowMeta prev, String[] input, String[] output, IRowMeta info, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
   }
 
   /**
    * Load the referenced object
    *
    * @param index     the referenced object index to load (in case there are multiple references)
-   * @param metaStore the MetaStore to use
-   * @param variables     the variable space to use
+   * @param metadataProvider the MetaStore to use
+   * @param variables     the variable variables to use
    * @return the referenced object once loaded
    * @throws HopException
    */
-  public IHasFilename loadReferencedObject( int index, IMetaStore metaStore, IVariables variables ) throws HopException {
+  public IHasFilename loadReferencedObject( int index, IHopMetadataProvider metadataProvider, IVariables variables ) throws HopException {
     return null;
   }
 

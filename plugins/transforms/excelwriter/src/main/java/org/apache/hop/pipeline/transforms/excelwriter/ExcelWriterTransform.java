@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.excelwriter;
 
@@ -68,7 +63,7 @@ import java.io.IOException;
 
 public class ExcelWriterTransform extends BaseTransform<ExcelWriterTransformMeta, ExcelWriterTransformData> implements ITransform<ExcelWriterTransformMeta, ExcelWriterTransformData> {
 
-  private static Class<?> PKG = ExcelWriterTransformMeta.class; // for i18n
+  private static final Class<?> PKG = ExcelWriterTransformMeta.class; // For Translator
 
   public static final String STREAMER_FORCE_RECALC_PROP_NAME = "HOP_EXCEL_WRITER_STREAMER_FORCE_RECALCULATE";
 
@@ -102,7 +97,7 @@ public class ExcelWriterTransform extends BaseTransform<ExcelWriterTransformMeta
           prepareNextOutputFile();
         } catch ( HopException e ) {
           logError( BaseMessages.getString( PKG, "ExcelWriterTransform.Exception.CouldNotPrepareFile",
-            environmentSubstitute( meta.getFileName() ) ) );
+            resolve( meta.getFileName() ) ) );
           setErrors( 1L );
           stopAll();
           return false;
@@ -581,7 +576,7 @@ public class ExcelWriterTransform extends BaseTransform<ExcelWriterTransformMeta
       // build new filename
       String buildFilename = buildFilename( data.splitnr );
 
-      data.file = HopVfs.getFileObject( buildFilename, getPipelineMeta() );
+      data.file = HopVfs.getFileObject( buildFilename );
 
       if ( log.isDebug() ) {
         logDebug( BaseMessages.getString( PKG, "ExcelWriterTransform.Log.OpeningFile", buildFilename ) );
@@ -602,7 +597,7 @@ public class ExcelWriterTransform extends BaseTransform<ExcelWriterTransformMeta
       if ( meta.isAddToResultFiles() ) {
         // Add this to the result file names...
         ResultFile resultFile = new ResultFile( ResultFile.FILE_TYPE_GENERAL, data.file, getPipelineMeta().getName(), getTransformName() );
-        resultFile.setComment( "This file was created with an Excel writer transform by Hop" );
+        resultFile.setComment( "This file was created with an Excel writer transform by Hop : The Hop Orchestration Platform" );
         addResultFile( resultFile );
       }
       boolean appendingToSheet = true;
@@ -621,7 +616,7 @@ public class ExcelWriterTransform extends BaseTransform<ExcelWriterTransformMeta
 
           if ( HopVfs.getFileObject( data.realTemplateFileName ).exists() ) {
             // if the template exists just copy the template in place
-            copyFile( HopVfs.getFileObject( data.realTemplateFileName, getPipelineMeta() ), data.file );
+            copyFile( HopVfs.getFileObject( data.realTemplateFileName ), data.file );
           } else {
             // template is missing, log it and get out
             if ( log.isBasic() ) {
@@ -803,12 +798,12 @@ public class ExcelWriterTransform extends BaseTransform<ExcelWriterTransformMeta
     if ( super.init() ) {
       data.splitnr = 0;
       data.datalines = 0;
-      data.realSheetname = environmentSubstitute( meta.getSheetname() );
-      data.realTemplateSheetName = environmentSubstitute( meta.getTemplateSheetName() );
-      data.realTemplateFileName = environmentSubstitute( meta.getTemplateFileName() );
-      data.realStartingCell = environmentSubstitute( meta.getStartingCell() );
+      data.realSheetname = resolve( meta.getSheetname() );
+      data.realTemplateSheetName = resolve( meta.getTemplateSheetName() );
+      data.realTemplateFileName = resolve( meta.getTemplateFileName() );
+      data.realStartingCell = resolve( meta.getStartingCell() );
       data.realPassword = Utils.resolvePassword( variables, meta.getPassword() );
-      data.realProtectedBy = environmentSubstitute( meta.getProtectedBy() );
+      data.realProtectedBy = resolve( meta.getProtectedBy() );
 
       data.shiftExistingCells = ExcelWriterTransformMeta.ROW_WRITE_PUSH_DOWN.equals( meta.getRowWritingMethod() );
       data.createNewSheet = ExcelWriterTransformMeta.IF_SHEET_EXISTS_CREATE_NEW.equals( meta.getIfSheetExists() );

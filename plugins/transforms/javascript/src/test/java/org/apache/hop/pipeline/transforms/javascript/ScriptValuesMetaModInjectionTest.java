@@ -1,25 +1,20 @@
 /*
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.javascript;
 
@@ -53,36 +48,12 @@ public class ScriptValuesMetaModInjectionTest extends BaseMetadataInjectionTest<
       }
     } );
 */
-    check( "OPTIMIZATION_LEVEL", new IStringGetter() {
-      public String get() {
-        return meta.getOptimizationLevel();
-      }
-    } );
-    check( "FIELD_NAME", new IStringGetter() {
-      public String get() {
-        return meta.getFieldname()[ 0 ];
-      }
-    } );
-    check( "FIELD_RENAME_TO", new IStringGetter() {
-      public String get() {
-        return meta.getRename()[ 0 ];
-      }
-    } );
-    check( "FIELD_REPLACE", new IBooleanGetter() {
-      public boolean get() {
-        return meta.getReplace()[ 0 ];
-      }
-    } );
-    check( "SCRIPT_NAME", new IStringGetter() {
-      public String get() {
-        return meta.getJSScripts()[ 0 ].getScriptName();
-      }
-    } );
-    check( "SCRIPT", new IStringGetter() {
-      public String get() {
-        return meta.getJSScripts()[ 0 ].getScript();
-      }
-    } );
+    check( "OPTIMIZATION_LEVEL", () -> meta.getOptimizationLevel() );
+    check( "FIELD_NAME", () -> meta.getFieldname()[ 0 ] );
+    check( "FIELD_RENAME_TO", () -> meta.getRename()[ 0 ] );
+    check( "FIELD_REPLACE", () -> meta.getReplace()[ 0 ] );
+    check( "SCRIPT_NAME", () -> meta.getJSScripts()[ 0 ].getScriptName() );
+    check( "SCRIPT", () -> meta.getJSScripts()[ 0 ].getScript() );
 
     // field type requires special handling, since it's stored as an array of ints, but injected as strings
     skipPropertyTest( "FIELD_TYPE" );

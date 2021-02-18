@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.edi2xml;
 
@@ -35,16 +30,14 @@ import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransform;
-import org.apache.hop.pipeline.transform.ITransformData;
 import org.apache.hop.pipeline.transform.ITransform;
-import org.apache.hop.pipeline.transform.ITransformMeta;
 import org.apache.hop.pipeline.transform.TransformMeta;
 import org.apache.hop.pipeline.transforms.edi2xml.grammar.FastSimpleGenericEdifactDirectXMLLexer;
 import org.apache.hop.pipeline.transforms.edi2xml.grammar.FastSimpleGenericEdifactDirectXMLParser;
 
 public class Edi2Xml extends BaseTransform<Edi2XmlMeta, Edi2XmlData> implements ITransform<Edi2XmlMeta, Edi2XmlData> {
 
-  private static Class<?> PKG = Edi2XmlMeta.class; // for i18n purposes
+  private static final Class<?> PKG = Edi2XmlMeta.class; // For Translator
 
   private FastSimpleGenericEdifactDirectXMLLexer lexer;
   private CommonTokenStream tokens;
@@ -71,10 +64,10 @@ public class Edi2Xml extends BaseTransform<Edi2XmlMeta, Edi2XmlData> implements 
       data.inputRowMeta = getInputRowMeta().clone();
       data.outputRowMeta = getInputRowMeta().clone();
 
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
-      String realInputField = environmentSubstitute( meta.getInputField() );
-      String realOutputField = environmentSubstitute( meta.getOutputField() );
+      String realInputField = resolve( meta.getInputField() );
+      String realOutputField = resolve( meta.getOutputField() );
 
       data.inputFieldIndex = getInputRowMeta().indexOfValue( realInputField );
 
@@ -145,7 +138,7 @@ public class Edi2Xml extends BaseTransform<Edi2XmlMeta, Edi2XmlData> implements 
 
       if ( getTransformMeta().isDoingErrorHandling() ) {
         putError(
-          getInputRowMeta(), r, 1L, errorMessage.toString(), environmentSubstitute( meta.getInputField() ),
+          getInputRowMeta(), r, 1L, errorMessage.toString(), resolve( meta.getInputField() ),
           "MALFORMED_EDI" );
       } else {
         logError( errorMessage.toString() );
@@ -169,7 +162,7 @@ public class Edi2Xml extends BaseTransform<Edi2XmlMeta, Edi2XmlData> implements 
 
       if ( getTransformMeta().isDoingErrorHandling() ) {
         putError(
-          getInputRowMeta(), r, 1L, errorMessage.toString(), environmentSubstitute( meta.getInputField() ),
+          getInputRowMeta(), r, 1L, errorMessage.toString(), resolve( meta.getInputField() ),
           "MALFORMED_EDI" );
       } else {
         logError( errorMessage.toString() );

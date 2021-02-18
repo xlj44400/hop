@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.terafast;
 
@@ -31,27 +26,32 @@ import org.apache.hop.core.exception.HopDatabaseException;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.exception.HopTransformException;
 import org.apache.hop.core.row.IRowMeta;
-import org.apache.hop.core.util.*;
+import org.apache.hop.core.util.AbstractTransformMeta;
+import org.apache.hop.core.util.BooleanPluginProperty;
+import org.apache.hop.core.util.GenericTransformData;
+import org.apache.hop.core.util.IntegerPluginProperty;
+import org.apache.hop.core.util.PluginMessages;
+import org.apache.hop.core.util.StringListPluginProperty;
+import org.apache.hop.core.util.StringPluginProperty;
 import org.apache.hop.core.variables.IVariables;
-import org.apache.hop.metastore.api.IMetaStore;
-import org.apache.hop.pipeline.PipelineMeta;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.pipeline.Pipeline;
+import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
-import org.apache.hop.pipeline.transform.ITransformData;
 import org.apache.hop.pipeline.transform.ITransform;
+import org.apache.hop.pipeline.transform.ITransformData;
 import org.apache.hop.pipeline.transform.ITransformMeta;
 import org.apache.hop.pipeline.transform.TransformMeta;
 
 import java.util.List;
 
 @Transform(
-		  id = "TeraFast",
-		  i18nPackageName = "org.apache.hop.pipeline.transforms.terafast",
-		  description = "TeraFast.Description",
-		  name = "TeraFast.Name",
-		  categoryDescription = "BaseTransform.Category.Bulk",
-		  image = "TeraFast.svg",
-		  documentationUrl = "http://wiki.pentaho.com/display/EAI/Teradata+Fastload+Bulk+Loader"
+  id = "TeraFast",
+  image = "TeraFast.svg",
+  description = "i18n::TeraFast.Description",
+  name = "i18n::TeraFast.Name",
+  categoryDescription = "i18n:org.apache.hop.pipeline.transform:BaseTransform.Category.Bulk",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/transforms/terafast.html"
 )
 public class TeraFastMeta extends AbstractTransformMeta implements ITransformMeta<ITransform, ITransformData> {
 
@@ -154,12 +154,12 @@ public class TeraFastMeta extends AbstractTransformMeta implements ITransformMet
     this.variableSubstitution = this.getPropertyFactory().createBoolean( VARIABLE_SUBSTITUTION );
   }
 
-  public void check( final List<ICheckResult> remarks, final PipelineMeta transmeta, final TransformMeta transformMeta,
+  public void check( final List<ICheckResult> remarks, final PipelineMeta pipelineMeta, final TransformMeta transformMeta,
                      final IRowMeta prev, final String[] input, final String[] output, final IRowMeta info,
-                     IVariables variables, IMetaStore metaStore ) {
+                     IVariables variables, IHopMetadataProvider metadataProvider ) {
     CheckResult checkResult;
     try {
-      IRowMeta tableFields = getRequiredFields( transmeta );
+      IRowMeta tableFields = getRequiredFields( variables );
       checkResult =
         new CheckResult( ICheckResult.TYPE_RESULT_OK, MESSAGES
           .getString( "TeraFastMeta.Message.ConnectionEstablished" ), transformMeta );
@@ -225,9 +225,9 @@ public class TeraFastMeta extends AbstractTransformMeta implements ITransformMet
    * @return the database.
    * @throws HopException if an error occurs.
    */
-  public Database connectToDatabase() throws HopException {
+  public Database connectToDatabase(IVariables variables) throws HopException {
     if ( this.getDbMeta() != null ) {
-      Database db = new Database( loggingObject, this.getDbMeta() );
+      Database db = new Database( loggingObject, variables, this.getDbMeta() );
       db.connect();
       return db;
     }
@@ -274,7 +274,7 @@ public class TeraFastMeta extends AbstractTransformMeta implements ITransformMet
 
   @Override
   public void getFields( final IRowMeta inputRowMeta, final String name, final IRowMeta[] info,
-                         final TransformMeta nextTransform, final IVariables variables, IMetaStore metaStore ) throws HopTransformException {
+                         final TransformMeta nextTransform, final IVariables variables, IHopMetadataProvider metadataProvider ) throws HopTransformException {
     // Default: nothing changes to rowMeta
   }
 
@@ -286,13 +286,11 @@ public class TeraFastMeta extends AbstractTransformMeta implements ITransformMet
   @Override
   public IRowMeta getRequiredFields( final IVariables variables ) throws HopException {
     if ( !this.useControlFile.getValue() ) {
-      final Database database = connectToDatabase();
-      database.shareVariablesWith( variables );
-
+      final Database database = connectToDatabase(variables);
       IRowMeta fields =
         database.getTableFieldsMeta(
           StringUtils.EMPTY,
-          variables.environmentSubstitute( this.targetTable.getValue() ) );
+          variables.resolve( this.targetTable.getValue() ) );
       database.disconnect();
       if ( fields == null ) {
         throw new HopException( MESSAGES.getString( "TeraFastMeta.Exception.TableNotFound" ) );

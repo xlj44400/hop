@@ -1,32 +1,27 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.filestoresult;
 
 import org.apache.hop.core.Const;
 import org.apache.hop.core.ResultFile;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
@@ -35,45 +30,23 @@ import org.apache.hop.ui.core.dialog.ErrorDialog;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CCombo;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.List;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
-@PluginDialog(
-        id = "FilesToResult",
-        image = "filestoresult.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = "http://www.project-hop.org/manual/latest/plugins/transforms/filestoresult.html"
-)
 public class FilesToResultDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = FilesToResultMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = FilesToResultMeta.class; // For Translator
 
-  private Label wlFilenameField;
   private CCombo wFilenameField;
-  private FormData fdlFilenameField, fdFilenameField;
 
-  private Label wlTypes;
   private List wTypes;
-  private FormData fdlTypes, fdTypes;
 
-  private FilesToResultMeta input;
+  private final FilesToResultMeta input;
 
-  public FilesToResultDialog( Shell parent, Object in, PipelineMeta tr, String sname ) {
-    super( parent, (BaseTransformMeta) in, tr, sname );
+  public FilesToResultDialog( Shell parent, IVariables variables, Object in, PipelineMeta tr, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, tr, sname );
     input = (FilesToResultMeta) in;
   }
 
@@ -85,11 +58,7 @@ public class FilesToResultDialog extends BaseTransformDialog implements ITransfo
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
     changed = input.hasChanged();
 
     FormLayout formLayout = new FormLayout();
@@ -125,42 +94,40 @@ public class FilesToResultDialog extends BaseTransformDialog implements ITransfo
     // The rest...
 
     // FilenameField line
-    wlFilenameField = new Label( shell, SWT.RIGHT );
+    Label wlFilenameField = new Label(shell, SWT.RIGHT);
     wlFilenameField.setText( BaseMessages.getString( PKG, "FilesToResultDialog.FilenameField.Label" ) );
-    props.setLook( wlFilenameField );
-    fdlFilenameField = new FormData();
+    props.setLook(wlFilenameField);
+    FormData fdlFilenameField = new FormData();
     fdlFilenameField.left = new FormAttachment( 0, 0 );
     fdlFilenameField.top = new FormAttachment( wTransformName, margin );
     fdlFilenameField.right = new FormAttachment( middle, -margin );
-    wlFilenameField.setLayoutData( fdlFilenameField );
+    wlFilenameField.setLayoutData(fdlFilenameField);
 
     wFilenameField = new CCombo( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wFilenameField.setToolTipText( BaseMessages.getString( PKG, "FilesToResultDialog.FilenameField.Tooltip" ) );
     props.setLook( wFilenameField );
     wFilenameField.addModifyListener( lsMod );
-    fdFilenameField = new FormData();
+    FormData fdFilenameField = new FormData();
     fdFilenameField.left = new FormAttachment( middle, 0 );
     fdFilenameField.top = new FormAttachment( wTransformName, margin );
     fdFilenameField.right = new FormAttachment( 100, 0 );
-    wFilenameField.setLayoutData( fdFilenameField );
+    wFilenameField.setLayoutData(fdFilenameField);
 
     /*
      * Get the field names from the previous transforms, in the background though
      */
-    Runnable runnable = new Runnable() {
-      public void run() {
-        try {
-          IRowMeta inputfields = pipelineMeta.getPrevTransformFields( transformName );
-          if ( inputfields != null ) {
-            for ( int i = 0; i < inputfields.size(); i++ ) {
-              wFilenameField.add( inputfields.getValueMeta( i ).getName() );
-            }
+    Runnable runnable = () -> {
+      try {
+        IRowMeta inputfields = pipelineMeta.getPrevTransformFields( variables, transformName );
+        if ( inputfields != null ) {
+          for ( int i = 0; i < inputfields.size(); i++ ) {
+            wFilenameField.add( inputfields.getValueMeta( i ).getName() );
           }
-        } catch ( Exception ke ) {
-          new ErrorDialog( shell,
-            BaseMessages.getString( PKG, "FilesToResultDialog.FailedToGetFields.DialogTitle" ),
-            BaseMessages.getString( PKG, "FilesToResultDialog.FailedToGetFields.DialogMessage" ), ke );
         }
+      } catch ( Exception ke ) {
+        new ErrorDialog( shell,
+          BaseMessages.getString( PKG, "FilesToResultDialog.FailedToGetFields.DialogTitle" ),
+          BaseMessages.getString( PKG, "FilesToResultDialog.FailedToGetFields.DialogMessage" ), ke );
       }
     };
     display.asyncExec( runnable );
@@ -174,38 +141,30 @@ public class FilesToResultDialog extends BaseTransformDialog implements ITransfo
     setButtonPositions( new Button[] { wOk, wCancel }, margin, null );
 
     // Include Files?
-    wlTypes = new Label( shell, SWT.RIGHT );
+    Label wlTypes = new Label(shell, SWT.RIGHT);
     wlTypes.setText( BaseMessages.getString( PKG, "FilesToResultDialog.TypeOfFile.Label" ) );
-    props.setLook( wlTypes );
-    fdlTypes = new FormData();
+    props.setLook(wlTypes);
+    FormData fdlTypes = new FormData();
     fdlTypes.left = new FormAttachment( 0, 0 );
     fdlTypes.top = new FormAttachment( wFilenameField, margin );
     fdlTypes.right = new FormAttachment( middle, -margin );
-    wlTypes.setLayoutData( fdlTypes );
+    wlTypes.setLayoutData(fdlTypes);
     wTypes = new List( shell, SWT.SINGLE | SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL );
     wTypes.setToolTipText( BaseMessages.getString( PKG, "FilesToResultDialog.TypeOfFile.Tooltip" ) );
     props.setLook( wTypes );
-    fdTypes = new FormData();
+    FormData fdTypes = new FormData();
     fdTypes.left = new FormAttachment( middle, 0 );
     fdTypes.top = new FormAttachment( wFilenameField, margin );
     fdTypes.bottom = new FormAttachment( wOk, -margin * 3 );
     fdTypes.right = new FormAttachment( 100, 0 );
-    wTypes.setLayoutData( fdTypes );
+    wTypes.setLayoutData(fdTypes);
     for ( int i = 0; i < ResultFile.getAllTypeDesc().length; i++ ) {
       wTypes.add( ResultFile.getAllTypeDesc()[ i ] );
     }
 
     // Add listeners
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
+    lsCancel = e -> cancel();
+    lsOk = e -> ok();
 
     wCancel.addListener( SWT.Selection, lsCancel );
     wOk.addListener( SWT.Selection, lsOk );

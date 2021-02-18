@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.logging;
 
@@ -68,9 +63,9 @@ public class LoggingObject implements ILoggingObject {
       // No carte object id specified on either side OR the same carte object id means: the same family.
       //
       boolean sameCarteFamily =
-        ( getContainerObjectId() == null && loggingObject.getContainerObjectId() == null )
-          || ( getContainerObjectId() != null && loggingObject.getContainerObjectId() != null && getContainerObjectId()
-          .equals( loggingObject.getContainerObjectId() ) );
+        ( getContainerId() == null && loggingObject.getContainerId() == null )
+          || ( getContainerId() != null && loggingObject.getContainerId() != null && getContainerId()
+          .equals( loggingObject.getContainerId() ) );
 
 
       // Check if objects have the same parent
@@ -134,14 +129,14 @@ public class LoggingObject implements ILoggingObject {
     filename = loggingObject.getFilename();
     objectCopy = loggingObject.getObjectCopy();
     logLevel = loggingObject.getLogLevel();
-    containerObjectId = loggingObject.getContainerObjectId();
+    containerObjectId = loggingObject.getContainerId();
     forcingSeparateLogging = loggingObject.isForcingSeparateLogging();
     gatheringMetrics = loggingObject.isGatheringMetrics();
 
     if ( loggingObject.getParent() != null ) {
       getParentLoggingObject( loggingObject.getParent() );
       // inherit the containerObjectId from parent
-      containerObjectId = loggingObject.getParent().getContainerObjectId();
+      containerObjectId = loggingObject.getParent().getContainerId();
     }
   }
 
@@ -295,7 +290,7 @@ public class LoggingObject implements ILoggingObject {
    * @return the serverObjectId
    */
   @Override
-  public String getContainerObjectId() {
+  public String getContainerId() {
     return containerObjectId;
   }
 

@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Pentaho Data Integration
- *
- * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.testing.xp;
 
@@ -29,14 +24,19 @@ import org.apache.hop.core.exception.HopTransformException;
 import org.apache.hop.core.extension.ExtensionPoint;
 import org.apache.hop.core.extension.IExtensionPoint;
 import org.apache.hop.core.logging.ILogChannel;
-import org.apache.hop.core.row.RowDataUtil;
-import org.apache.hop.core.row.RowMeta;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.IValueMeta;
+import org.apache.hop.core.row.RowDataUtil;
+import org.apache.hop.core.row.RowMeta;
 import org.apache.hop.core.util.StringUtil;
+import org.apache.hop.core.variables.IVariables;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
+import org.apache.hop.pipeline.PipelineMeta;
+import org.apache.hop.pipeline.RowProducer;
 import org.apache.hop.pipeline.engine.IEngineComponent;
 import org.apache.hop.pipeline.engine.IPipelineEngine;
 import org.apache.hop.pipeline.engines.local.LocalPipelineEngine;
+import org.apache.hop.pipeline.transform.RowAdapter;
 import org.apache.hop.pipeline.transform.TransformMeta;
 import org.apache.hop.pipeline.transform.TransformMetaDataCombi;
 import org.apache.hop.testing.DataSet;
@@ -44,11 +44,6 @@ import org.apache.hop.testing.PipelineUnitTest;
 import org.apache.hop.testing.PipelineUnitTestFieldMapping;
 import org.apache.hop.testing.PipelineUnitTestSetLocation;
 import org.apache.hop.testing.util.DataSetConst;
-import org.apache.hop.pipeline.RowProducer;
-import org.apache.hop.pipeline.PipelineMeta;
-import org.apache.hop.pipeline.transform.RowAdapter;
-import org.apache.hop.metastore.api.IMetaStore;
-import org.apache.hop.metastore.api.exceptions.MetaStoreException;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -66,14 +61,14 @@ import java.util.Map;
 public class InjectDataSetIntoTransformExtensionPoint implements IExtensionPoint<IPipelineEngine<PipelineMeta>> {
 
   @Override
-  public void callExtensionPoint( ILogChannel log, final IPipelineEngine<PipelineMeta> pipeline ) throws HopException {
+  public void callExtensionPoint( ILogChannel log, IVariables variables, final IPipelineEngine<PipelineMeta> pipeline ) throws HopException {
 
     if (!(pipeline instanceof LocalPipelineEngine)) {
       throw new HopPluginException( "Unit tests can only run using a local pipeline engine type" );
     }
 
     final PipelineMeta pipelineMeta = pipeline.getPipelineMeta();
-    boolean dataSetEnabled = "Y".equalsIgnoreCase( pipelineMeta.getVariable( DataSetConst.VAR_RUN_UNIT_TEST ) );
+    boolean dataSetEnabled = "Y".equalsIgnoreCase( pipeline.getVariable( DataSetConst.VAR_RUN_UNIT_TEST ) );
     if ( log.isDetailed() ) {
       log.logDetailed( "Data Set enabled? " + dataSetEnabled );
     }
@@ -86,21 +81,20 @@ public class InjectDataSetIntoTransformExtensionPoint implements IExtensionPoint
       log.logDetailed( "Unit test name: " + unitTestName );
     }
     try {
-      IMetaStore metaStore = pipelineMeta.getMetaStore();
+      IHopMetadataProvider metadataProvider = pipelineMeta.getMetadataProvider();
 
       // If the pipeline has a variable set with the unit test in it, we're dealing with a unit test situation.
       //
       if ( StringUtil.isEmpty( unitTestName ) ) {
         return;
       }
-      PipelineUnitTest unitTest = PipelineUnitTest.createFactory( metaStore ).loadElement( unitTestName );
+      PipelineUnitTest unitTest = metadataProvider.getSerializer( PipelineUnitTest.class).load( unitTestName );
       if ( unitTest == null ) {
         if ( log.isDetailed() ) {
           log.logDetailed( "Unit test '" + unitTestName + "' could not be found" );
         }
         return;
       }
-      unitTest.initializeVariablesFrom( pipelineMeta );
 
       // Replace all transforms with input data sets with Injector transforms.
       // Replace all transforms with a golden data set, attached to a unit test, with a Dummy
@@ -115,7 +109,7 @@ public class InjectDataSetIntoTransformExtensionPoint implements IExtensionPoint
 
           // We need to inject data from the data set with the specified name into the transform
           //
-          injectDataSetIntoTransform( (LocalPipelineEngine)pipeline, inputDataSetName, metaStore, transformMeta, inputLocation );
+          injectDataSetIntoTransform( (LocalPipelineEngine)pipeline, inputDataSetName, metadataProvider, transformMeta, inputLocation );
         }
 
         // How about capturing rows for golden data review?
@@ -165,14 +159,14 @@ public class InjectDataSetIntoTransformExtensionPoint implements IExtensionPoint
   }
 
   private void injectDataSetIntoTransform( final LocalPipelineEngine pipeline, final String dataSetName,
-                                           final IMetaStore metaStore, final TransformMeta transformMeta,
-                                           PipelineUnitTestSetLocation inputLocation ) throws MetaStoreException, HopException {
+                                           final IHopMetadataProvider metadataProvider, final TransformMeta transformMeta,
+                                           PipelineUnitTestSetLocation inputLocation ) throws HopException, HopException {
 
-    final DataSet dataSet = DataSet.createFactory( metaStore ).loadElement( dataSetName );
+    final DataSet dataSet = metadataProvider.getSerializer( DataSet.class).load( dataSetName );
     if (dataSet==null) {
       throw new HopException("Unable to find data set '"+dataSetName+"'");
     }
-    dataSet.initializeVariablesFrom( pipeline );
+
     final ILogChannel log = pipeline.getLogChannel();
     final RowProducer rowProducer = pipeline.addRowProducer( transformMeta.getName(), 0 );
 
@@ -190,7 +184,7 @@ public class InjectDataSetIntoTransformExtensionPoint implements IExtensionPoint
 
       // Get the rows of the mapped values in the mapped order sorted as asked
       //
-      final List<Object[]> dataSetRows = dataSet.getAllRows( log, inputLocation );
+      final List<Object[]> dataSetRows = dataSet.getAllRows( pipeline, log, inputLocation );
       IRowMeta dataSetRowMeta = dataSet.getMappedDataSetFieldsRowMeta( inputLocation );
 
       // The rows to inject are always driven by the dataset, NOT the transform it replaces (!) for simplicity

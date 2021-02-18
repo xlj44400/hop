@@ -1,31 +1,26 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.excelinput.poi;
 
 import org.apache.hop.core.spreadsheet.IKCell;
 import org.apache.hop.core.spreadsheet.KCellType;
-import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 
 import java.sql.Date;
@@ -40,39 +35,50 @@ public class PoiCell implements IKCell {
   }
 
   public KCellType getType() {
-    int type = cell.getCellType();
-    if ( type == Cell.CELL_TYPE_BOOLEAN ) {
-      return KCellType.BOOLEAN;
-    } else if ( type == Cell.CELL_TYPE_NUMERIC ) {
-      if ( HSSFDateUtil.isCellDateFormatted( cell ) ) {
-        return KCellType.DATE;
-      } else {
+    // For POI version 4.1.2
+    // switch ( cell.getCellType() ) {
+      
+    switch ( cell.getCellTypeEnum() ) {
+      case BOOLEAN:
+        return KCellType.BOOLEAN;
+        
+      case NUMERIC:
+        if ( DateUtil.isCellDateFormatted( cell ) ) {
+          return KCellType.DATE;
+        }
         return KCellType.NUMBER;
-      }
-    } else if ( type == Cell.CELL_TYPE_STRING ) {
-      return KCellType.LABEL;
-    } else if ( type == Cell.CELL_TYPE_BLANK || type == Cell.CELL_TYPE_ERROR ) {
-      return KCellType.EMPTY;
-    } else if ( type == Cell.CELL_TYPE_FORMULA ) {
-      switch ( cell.getCachedFormulaResultType() ) {
-        case Cell.CELL_TYPE_BLANK:
-        case Cell.CELL_TYPE_ERROR:
-          return KCellType.EMPTY;
-        case Cell.CELL_TYPE_BOOLEAN:
-          return KCellType.BOOLEAN_FORMULA;
-        case Cell.CELL_TYPE_STRING:
-          return KCellType.STRING_FORMULA;
-        case Cell.CELL_TYPE_NUMERIC:
-          if ( HSSFDateUtil.isCellDateFormatted( cell ) ) {
-            return KCellType.DATE_FORMULA;
-          } else {
-            return KCellType.NUMBER_FORMULA;
-          }
-        default:
-          break;
-      }
+              
+      case STRING:
+        return KCellType.LABEL;
+        
+      case BLANK:
+      case ERROR:
+        return KCellType.EMPTY;
+      
+      case FORMULA: 
+       // For POI version 4.1.2
+       // switch ( cell.getCachedFormulaResultType() ) {
+        switch ( cell.getCachedFormulaResultTypeEnum() ) {
+          case BLANK:
+          case ERROR:
+            return KCellType.EMPTY;
+          case BOOLEAN:
+            return KCellType.BOOLEAN_FORMULA;
+          case STRING:
+            return KCellType.STRING_FORMULA;
+          case NUMERIC:
+            if ( DateUtil.isCellDateFormatted( cell ) ) {
+              return KCellType.DATE_FORMULA;
+            } else {
+              return KCellType.NUMBER_FORMULA;
+            }
+          default:
+            break;
+        }
+      default:
+        return null;
     }
-    return null;
+        
   }
 
   public Object getValue() {

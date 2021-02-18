@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.terafast;
 
@@ -51,9 +46,7 @@ import java.util.List;
 
 public class TeraFast extends AbstractTransform<TeraFastMeta, GenericTransformData> implements ITransform<TeraFastMeta, GenericTransformData> {
 
-  private static final Class<?> PKG = TeraFastMeta.class; // for i18n purposes, needed by Translator!!
-
-  private TeraFastMeta meta;
+  private static final Class<?> PKG = TeraFastMeta.class; // For Translator
 
   private Process process;
 
@@ -87,7 +80,7 @@ public class TeraFast extends AbstractTransform<TeraFastMeta, GenericTransformDa
     final StringBuilder builder = new StringBuilder();
     try {
       final FileObject fileObject =
-        HopVfs.getFileObject( environmentSubstitute( this.meta.getFastloadPath().getValue() ) );
+        HopVfs.getFileObject( resolve( this.meta.getFastloadPath().getValue() ) );
       final String fastloadExec = HopVfs.getFilename( fileObject );
       builder.append( fastloadExec );
     } catch ( Exception e ) {
@@ -97,7 +90,7 @@ public class TeraFast extends AbstractTransform<TeraFastMeta, GenericTransformDa
     if ( StringUtils.isNotBlank( this.meta.getLogFile().getValue() ) ) {
       try {
         FileObject fileObject =
-          HopVfs.getFileObject( environmentSubstitute( this.meta.getLogFile().getValue() ) );
+          HopVfs.getFileObject( resolve( this.meta.getLogFile().getValue() ) );
         builder.append( " -e " );
         builder.append( "\"" + HopVfs.getFilename( fileObject ) + "\"" );
       } catch ( Exception e ) {
@@ -177,9 +170,9 @@ public class TeraFast extends AbstractTransform<TeraFastMeta, GenericTransformDa
       // determine column sort order according to field mapping
       // thus the columns in the generated datafile are always in the same order and have the same size as in the
       // targetTable
-      this.tableRowMeta = this.meta.getRequiredFields( this.getPipelineMeta() );
-      IRowMeta streamRowMeta = this.getPipelineMeta().getPrevTransformFields( this.getTransformMeta() );
-      this.columnSortOrder = new ArrayList<Integer>( this.tableRowMeta.size() );
+      this.tableRowMeta = this.meta.getRequiredFields( this );
+      IRowMeta streamRowMeta = this.getPipelineMeta().getPrevTransformFields( this, this.getTransformMeta() );
+      this.columnSortOrder = new ArrayList<>( this.tableRowMeta.size() );
       for ( int i = 0; i < this.tableRowMeta.size(); i++ ) {
         IValueMeta column = this.tableRowMeta.getValueMeta( i );
         int tableIndex = this.meta.getTableFieldList().getValue().indexOf( column.getName() );
@@ -275,7 +268,7 @@ public class TeraFast extends AbstractTransform<TeraFastMeta, GenericTransformDa
    */
   public void execute() throws HopException {
     if ( this.meta.getTruncateTable().getValue() ) {
-      Database db = new Database( this, this.meta.getDbMeta() );
+      Database db = new Database( this, this, this.meta.getDbMeta() );
       db.connect();
       db.truncateTable( this.meta.getTargetTable().getValue() );
       db.commit();
@@ -322,7 +315,7 @@ public class TeraFast extends AbstractTransform<TeraFastMeta, GenericTransformDa
     try {
       controlFile = new File( resolveFileName( this.meta.getControlFile().getValue() ) );
       control = FileUtils.openInputStream( controlFile );
-      controlContent = environmentSubstitute( FileUtils.readFileToString( controlFile ) );
+      controlContent = resolve( FileUtils.readFileToString( controlFile ) );
     } catch ( IOException e ) {
       throw new HopException( "Cannot open control file [path=" + controlFile + "]", e );
     }
@@ -351,7 +344,7 @@ public class TeraFast extends AbstractTransform<TeraFastMeta, GenericTransformDa
     builder.setRecordFormat( FastloadControlBuilder.RECORD_VARTEXT );
     try {
       builder.define(
-        this.meta.getRequiredFields( this.getPipelineMeta() ), meta.getTableFieldList(), resolveFileName( this.meta
+        this.meta.getRequiredFields( this ), meta.getTableFieldList(), resolveFileName( this.meta
           .getDataFile().getValue() ) );
     } catch ( Exception ex ) {
       throw new HopException( "Error defining data file!", ex );
@@ -359,7 +352,7 @@ public class TeraFast extends AbstractTransform<TeraFastMeta, GenericTransformDa
     builder.show();
     builder.beginLoading( this.meta.getDbMeta().getPreferredSchemaName(), this.meta.getTargetTable().getValue() );
 
-    builder.insert( this.meta.getRequiredFields( this.getPipelineMeta() ), meta.getTableFieldList(), this.meta
+    builder.insert( this.meta.getRequiredFields( this ), meta.getTableFieldList(), this.meta
       .getTargetTable().getValue() );
     builder.endLoading();
     builder.logoff();
@@ -409,7 +402,7 @@ public class TeraFast extends AbstractTransform<TeraFastMeta, GenericTransformDa
    * @throws IOException ...
    */
   private String resolveFileName( final String fileName ) throws HopException {
-    final FileObject fileObject = HopVfs.getFileObject( environmentSubstitute( fileName ) );
+    final FileObject fileObject = HopVfs.getFileObject( resolve( fileName ) );
     return HopVfs.getFilename( fileObject );
   }
 }

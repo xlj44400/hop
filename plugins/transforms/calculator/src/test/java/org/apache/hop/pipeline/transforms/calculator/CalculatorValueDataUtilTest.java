@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.calculator;
 
@@ -1130,12 +1125,7 @@ public class CalculatorValueDataUtilTest {
     metaB.setStorageType( IValueMeta.STORAGE_TYPE_BINARY_STRING );
     Object valueB = "2";
 
-    when( metaA.convertData( metaB, valueB ) ).thenAnswer( new Answer<Long>() {
-      @Override
-      public Long answer( InvocationOnMock invocation ) throws Throwable {
-        return new Long( 2 );
-      }
-    } );
+    when( metaA.convertData( metaB, valueB ) ).thenAnswer( (Answer<Long>) invocation -> new Long( 2 ) );
 
     Object returnValue = ValueDataUtil.sum( metaA, null, metaB, valueB );
     verify( metaA ).convertData( metaB, valueB );
@@ -1164,30 +1154,30 @@ public class CalculatorValueDataUtilTest {
     return calculate( string_dataA, string_dataB, null, valueMetaInterfaceType, calculatorMetaFunction );
   }
 
-  private Object createObject( String string_value, int valueMetaInterfaceType, IValueMeta parameterValueMeta ) throws HopValueException {
+  private Object createObject( String stringValue, int valueMetaInterfaceType, IValueMeta parameterValueMeta ) throws HopValueException {
     if ( valueMetaInterfaceType == IValueMeta.TYPE_NUMBER ) {
-      return ( !Utils.isEmpty( string_value ) ? Double.valueOf( string_value ) : null );
+      return ( !Utils.isEmpty( stringValue ) ? Double.valueOf( stringValue ) : null );
     } else if ( valueMetaInterfaceType == IValueMeta.TYPE_INTEGER ) {
-      return ( !Utils.isEmpty( string_value ) ? Long.valueOf( string_value ) : null );
+      return ( !Utils.isEmpty( stringValue ) ? Long.valueOf( stringValue ) : null );
     } else if ( valueMetaInterfaceType == IValueMeta.TYPE_DATE ) {
       SimpleDateFormat simpleDateFormat = new SimpleDateFormat( yyyy_MM_dd );
       try {
-        return ( !Utils.isEmpty( string_value ) ? simpleDateFormat.parse( string_value ) : null );
+        return ( !Utils.isEmpty( stringValue ) ? simpleDateFormat.parse( stringValue ) : null );
       } catch ( ParseException pe ) {
         fail( pe.getMessage() );
         return null;
       }
     } else if ( valueMetaInterfaceType == IValueMeta.TYPE_BIGNUMBER ) {
-      return ( !Utils.isEmpty( string_value ) ? BigDecimal.valueOf( Double.valueOf( string_value ) ) : null );
+      return ( !Utils.isEmpty( stringValue ) ? BigDecimal.valueOf( Double.valueOf( stringValue ) ) : null );
     } else if ( valueMetaInterfaceType == IValueMeta.TYPE_STRING ) {
-      return ( !Utils.isEmpty( string_value ) ? string_value : null );
+      return ( !Utils.isEmpty( stringValue ) ? stringValue : null );
     } else if ( valueMetaInterfaceType == IValueMeta.TYPE_BINARY ) {
       IValueMeta binaryValueMeta = new ValueMetaBinary( "binary_data" );
       return
-        ( !Utils.isEmpty( string_value ) ? binaryValueMeta.convertData( parameterValueMeta, string_value ) : null );
+        ( !Utils.isEmpty( stringValue ) ? binaryValueMeta.convertData( parameterValueMeta, stringValue ) : null );
     } else if ( valueMetaInterfaceType == IValueMeta.TYPE_BOOLEAN ) {
-      if ( !Utils.isEmpty( string_value ) ) {
-        return ( string_value.equalsIgnoreCase( "true" ) ? true : false );
+      if ( !Utils.isEmpty( stringValue ) ) {
+        return ( stringValue.equalsIgnoreCase( "true" ) ? true : false );
       } else {
         return null;
       }

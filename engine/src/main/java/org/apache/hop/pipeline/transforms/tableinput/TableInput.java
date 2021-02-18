@@ -1,45 +1,38 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.tableinput;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.RowMetaAndData;
 import org.apache.hop.core.IRowSet;
+import org.apache.hop.core.RowMetaAndData;
 import org.apache.hop.core.database.Database;
 import org.apache.hop.core.exception.HopDatabaseException;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.row.IRowMeta;
+import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.row.RowDataUtil;
 import org.apache.hop.core.row.RowMeta;
-import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransform;
-import org.apache.hop.pipeline.transform.ITransformData;
 import org.apache.hop.pipeline.transform.ITransform;
-import org.apache.hop.pipeline.transform.ITransformMeta;
 import org.apache.hop.pipeline.transform.TransformMeta;
 
 import java.sql.ResultSet;
@@ -53,7 +46,7 @@ import java.sql.SQLException;
  */
 public class TableInput extends BaseTransform<TableInputMeta, TableInputData> implements ITransform<TableInputMeta, TableInputData> {
 
-  private static Class<?> PKG = TableInputMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = TableInputMeta.class; // For Translator
 
   public TableInput( TransformMeta transformMeta, TableInputMeta meta, TableInputData data, int copyNr, PipelineMeta pipelineMeta,
                      Pipeline pipeline ) {
@@ -143,7 +136,7 @@ public class TableInput extends BaseTransform<TableInputMeta, TableInputData> im
       if ( data.thisrow != null ) { // We can expect more rows
 
         try {
-          data.nextrow = data.db.getRow( data.rs, meta.isLazyConversionActive() );
+          data.nextrow = data.db.getRow( data.rs, false );
         } catch ( HopDatabaseException e ) {
           if ( e.getCause() instanceof SQLException && isStopped() ) {
             //This exception indicates we tried reading a row after the statment for this transform was cancelled
@@ -222,7 +215,7 @@ public class TableInput extends BaseTransform<TableInputMeta, TableInputData> im
     // Open the query with the optional parameters received from the source transforms.
     String sql = null;
     if ( meta.isVariableReplacementActive() ) {
-      sql = environmentSubstitute( meta.getSql() );
+      sql = resolve( meta.getSql() );
     } else {
       sql = meta.getSql();
     }
@@ -231,11 +224,9 @@ public class TableInput extends BaseTransform<TableInputMeta, TableInputData> im
       logDetailed( "SQL query : " + sql );
     }
     if ( parametersMeta.isEmpty() ) {
-      data.rs = data.db.openQuery( sql, null, null, ResultSet.FETCH_FORWARD, meta.isLazyConversionActive() );
+      data.rs = data.db.openQuery( sql, null, null, ResultSet.FETCH_FORWARD, false );
     } else {
-      data.rs =
-        data.db.openQuery( sql, parametersMeta, parameters, ResultSet.FETCH_FORWARD, meta
-          .isLazyConversionActive() );
+      data.rs = data.db.openQuery( sql, parametersMeta, parameters, ResultSet.FETCH_FORWARD, false );
     }
     if ( data.rs == null ) {
       logError( "Couldn't open Query [" + sql + "]" );
@@ -326,10 +317,8 @@ public class TableInput extends BaseTransform<TableInputMeta, TableInputData> im
         logError( BaseMessages.getString( PKG, "TableInput.Init.ConnectionMissing", getTransformName() ) );
         return false;
       }
-      data.db = new Database( this, meta.getDatabaseMeta() );
-      data.db.shareVariablesWith( this );
-
-      data.db.setQueryLimit( Const.toInt( environmentSubstitute( meta.getRowLimit() ), 0 ) );
+      data.db = new Database( this, this, meta.getDatabaseMeta() );
+      data.db.setQueryLimit( Const.toInt( resolve( meta.getRowLimit() ), 0 ) );
 
       try {
         data.db.connect( getPartitionId() );

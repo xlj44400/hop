@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop;
 
@@ -30,7 +25,7 @@ import org.apache.hop.core.plugins.TransformPluginType;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.variables.Variables;
-import org.apache.hop.metastore.stores.memory.MemoryMetaStore;
+import org.apache.hop.metadata.serializer.memory.MemoryMetadataProvider;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.engines.local.LocalPipelineEngine;
@@ -163,14 +158,14 @@ public class TestUtilities {
   }
 
   /**
-   * Create an injector step.
+   * Create an injector transform.
    * 
    * @param name
    * @param pluginRegistry
    * @return TransformMeta
    */
   public static synchronized TransformMeta createInjectorTransform( String name, PluginRegistry pluginRegistry ) {
-    // create an injector step...
+    // create an injector transform...
     InjectorMeta injectorMeta = new InjectorMeta();
 
     // Set the information of the injector
@@ -261,7 +256,7 @@ public class TestUtilities {
   }
 
   /**
-   * Create and return a SortRows step.
+   * Create and return a SortRows transform.
    * 
    * @param name
    * @param sortFields
@@ -348,9 +343,9 @@ public class TestUtilities {
   }
 
   public static Pipeline loadAndRunPipeline( String path, Object... parameters ) throws Exception {
-    PipelineMeta transMeta = new PipelineMeta( path, new MemoryMetaStore(), true, Variables.getADefaultVariableSpace() );
+    PipelineMeta pipelineMeta = new PipelineMeta( path, new MemoryMetadataProvider(), true, Variables.getADefaultVariableSpace() );
 
-    Pipeline trans = new LocalPipelineEngine( transMeta );
+    Pipeline trans = new LocalPipelineEngine( pipelineMeta );
     if ( parameters != null ) {
       if ( parameters.length % 2 == 1 ) {
         throw new IllegalArgumentException( "Parameters should be an array of pairs 'parameter'-'value'-..." );

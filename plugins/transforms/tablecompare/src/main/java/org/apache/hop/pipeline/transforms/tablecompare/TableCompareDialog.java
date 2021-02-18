@@ -1,29 +1,23 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.tablecompare;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.database.DatabaseMeta;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.row.IRowMeta;
@@ -36,40 +30,19 @@ import org.apache.hop.ui.core.widget.LabelCombo;
 import org.apache.hop.ui.core.widget.LabelText;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
 import java.util.Arrays;
+import org.apache.hop.core.variables.IVariables;
 
-@PluginDialog(
-        id = "TableCompare",
-        image = "tablecompare.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = "http://www.project-hop.org/manual/latest/plugins/transforms/tablecompare.html"
-)
 public class TableCompareDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = TableCompare.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = TableCompare.class; // For Translator
 
-  private TableCompareMeta input;
-
-  private ModifyListener lsMod;
-  private int middle;
-  private int margin;
+  private final TableCompareMeta input;
 
   /**
    * all fields from the previous transforms
@@ -98,8 +71,8 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
   private LabelCombo wReferenceValue;
   private LabelCombo wCompareValue;
 
-  public TableCompareDialog( Shell parent, Object in, PipelineMeta tr, String sname ) {
-    super( parent, (BaseTransformMeta) in, tr, sname );
+  public TableCompareDialog( Shell parent, IVariables variables, Object in, PipelineMeta tr, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, tr, sname );
     input = (TableCompareMeta) in;
   }
 
@@ -111,18 +84,14 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( shell );
     setShellImage( shell, input );
 
-    lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
     changed = input.hasChanged();
     FormLayout formLayout = new FormLayout();
     formLayout.marginWidth = Const.FORM_MARGIN;
     formLayout.marginHeight = Const.FORM_MARGIN;
 
-    middle = props.getMiddlePct();
-    margin = props.getMargin();
+    int middle = props.getMiddlePct();
+    int margin = props.getMargin();
 
     shell.setLayout( formLayout );
     shell.setText( BaseMessages.getString( PKG, "TableCompareDialog.Shell.Title" ) );
@@ -133,16 +102,16 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( wlTransformName );
     fdlTransformName = new FormData();
     fdlTransformName.left = new FormAttachment( 0, 0 );
-    fdlTransformName.right = new FormAttachment( middle, -margin );
-    fdlTransformName.top = new FormAttachment( 0, margin );
+    fdlTransformName.right = new FormAttachment(middle, -margin);
+    fdlTransformName.top = new FormAttachment( 0, margin);
     wlTransformName.setLayoutData( fdlTransformName );
     wTransformName = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wTransformName.setText( transformName );
     props.setLook( wTransformName );
-    wTransformName.addModifyListener( lsMod );
+    wTransformName.addModifyListener(lsMod);
     fdTransformName = new FormData();
-    fdTransformName.left = new FormAttachment( middle, 0 );
-    fdTransformName.top = new FormAttachment( 0, margin );
+    fdTransformName.left = new FormAttachment(middle, 0 );
+    fdTransformName.top = new FormAttachment( 0, margin);
     fdTransformName.right = new FormAttachment( 100, 0 );
     wTransformName.setLayoutData( fdTransformName );
     Control lastControl = wTransformName;
@@ -155,7 +124,7 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( wReferenceDB );
     FormData fdReferenceDB = new FormData();
     fdReferenceDB.left = new FormAttachment( 0, 0 );
-    fdReferenceDB.top = new FormAttachment( lastControl, margin );
+    fdReferenceDB.top = new FormAttachment( lastControl, margin);
     fdReferenceDB.right = new FormAttachment( 100, 0 );
     wReferenceDB.setLayoutData( fdReferenceDB );
     lastControl = wReferenceDB;
@@ -166,7 +135,7 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( wReferenceSchema );
     FormData fdReferenceSchema = new FormData();
     fdReferenceSchema.left = new FormAttachment( 0, 0 );
-    fdReferenceSchema.top = new FormAttachment( lastControl, margin );
+    fdReferenceSchema.top = new FormAttachment( lastControl, margin);
     fdReferenceSchema.right = new FormAttachment( 100, 0 );
     wReferenceSchema.setLayoutData( fdReferenceSchema );
     lastControl = wReferenceSchema;
@@ -177,7 +146,7 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( wReferenceTable );
     FormData fdReferenceTable = new FormData();
     fdReferenceTable.left = new FormAttachment( 0, 0 );
-    fdReferenceTable.top = new FormAttachment( lastControl, margin );
+    fdReferenceTable.top = new FormAttachment( lastControl, margin);
     fdReferenceTable.right = new FormAttachment( 100, 0 );
     wReferenceTable.setLayoutData( fdReferenceTable );
     lastControl = wReferenceTable;
@@ -190,7 +159,7 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( wCompareDB );
     FormData fdCompareDB = new FormData();
     fdCompareDB.left = new FormAttachment( 0, 0 );
-    fdCompareDB.top = new FormAttachment( lastControl, margin );
+    fdCompareDB.top = new FormAttachment( lastControl, margin);
     fdCompareDB.right = new FormAttachment( 100, 0 );
     wCompareDB.setLayoutData( fdCompareDB );
     lastControl = wCompareDB;
@@ -201,7 +170,7 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( wCompareSchema );
     FormData fdCompareSchema = new FormData();
     fdCompareSchema.left = new FormAttachment( 0, 0 );
-    fdCompareSchema.top = new FormAttachment( lastControl, margin );
+    fdCompareSchema.top = new FormAttachment( lastControl, margin);
     fdCompareSchema.right = new FormAttachment( 100, 0 );
     wCompareSchema.setLayoutData( fdCompareSchema );
     lastControl = wCompareSchema;
@@ -212,7 +181,7 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( wCompareTable );
     FormData fdCompareTable = new FormData();
     fdCompareTable.left = new FormAttachment( 0, 0 );
-    fdCompareTable.top = new FormAttachment( lastControl, margin );
+    fdCompareTable.top = new FormAttachment( lastControl, margin);
     fdCompareTable.right = new FormAttachment( 100, 0 );
     wCompareTable.setLayoutData( fdCompareTable );
     lastControl = wCompareTable;
@@ -223,7 +192,7 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( wKeyFields );
     FormData fdKeyFields = new FormData();
     fdKeyFields.left = new FormAttachment( 0, 0 );
-    fdKeyFields.top = new FormAttachment( lastControl, margin );
+    fdKeyFields.top = new FormAttachment( lastControl, margin);
     fdKeyFields.right = new FormAttachment( 100, 0 );
     wKeyFields.setLayoutData( fdKeyFields );
     lastControl = wKeyFields;
@@ -234,7 +203,7 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( wExcludeFields );
     FormData fdExcludeFields = new FormData();
     fdExcludeFields.left = new FormAttachment( 0, 0 );
-    fdExcludeFields.top = new FormAttachment( lastControl, margin );
+    fdExcludeFields.top = new FormAttachment( lastControl, margin);
     fdExcludeFields.right = new FormAttachment( 100, 0 );
     wExcludeFields.setLayoutData( fdExcludeFields );
     lastControl = wExcludeFields;
@@ -260,7 +229,7 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( wNrRecordsReference );
     FormData fdNrRecordsReference = new FormData();
     fdNrRecordsReference.left = new FormAttachment( 0, 0 );
-    fdNrRecordsReference.top = new FormAttachment( lastControl, margin );
+    fdNrRecordsReference.top = new FormAttachment( lastControl, margin);
     fdNrRecordsReference.right = new FormAttachment( 100, 0 );
     wNrRecordsReference.setLayoutData( fdNrRecordsReference );
     lastControl = wNrRecordsReference;
@@ -273,7 +242,7 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( wNrRecordsCompare );
     FormData fdNrRecordsCompare = new FormData();
     fdNrRecordsCompare.left = new FormAttachment( 0, 0 );
-    fdNrRecordsCompare.top = new FormAttachment( lastControl, margin );
+    fdNrRecordsCompare.top = new FormAttachment( lastControl, margin);
     fdNrRecordsCompare.right = new FormAttachment( 100, 0 );
     wNrRecordsCompare.setLayoutData( fdNrRecordsCompare );
     lastControl = wNrRecordsCompare;
@@ -286,7 +255,7 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( wNrErrorsLeftJoin );
     FormData fdNrErrorsLeftJoin = new FormData();
     fdNrErrorsLeftJoin.left = new FormAttachment( 0, 0 );
-    fdNrErrorsLeftJoin.top = new FormAttachment( lastControl, margin );
+    fdNrErrorsLeftJoin.top = new FormAttachment( lastControl, margin);
     fdNrErrorsLeftJoin.right = new FormAttachment( 100, 0 );
     wNrErrorsLeftJoin.setLayoutData( fdNrErrorsLeftJoin );
     lastControl = wNrErrorsLeftJoin;
@@ -299,7 +268,7 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( wNrErrorsInnerJoin );
     FormData fdNrErrorsInnerJoin = new FormData();
     fdNrErrorsInnerJoin.left = new FormAttachment( 0, 0 );
-    fdNrErrorsInnerJoin.top = new FormAttachment( lastControl, margin );
+    fdNrErrorsInnerJoin.top = new FormAttachment( lastControl, margin);
     fdNrErrorsInnerJoin.right = new FormAttachment( 100, 0 );
     wNrErrorsInnerJoin.setLayoutData( fdNrErrorsInnerJoin );
     lastControl = wNrErrorsInnerJoin;
@@ -312,7 +281,7 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( wNrErrorsRightJoin );
     FormData fdNrErrorsRightJoin = new FormData();
     fdNrErrorsRightJoin.left = new FormAttachment( 0, 0 );
-    fdNrErrorsRightJoin.top = new FormAttachment( lastControl, margin );
+    fdNrErrorsRightJoin.top = new FormAttachment( lastControl, margin);
     fdNrErrorsRightJoin.right = new FormAttachment( 100, 0 );
     wNrErrorsRightJoin.setLayoutData( fdNrErrorsRightJoin );
     lastControl = wNrErrorsRightJoin;
@@ -334,7 +303,7 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( wReferenceValue );
     FormData fdReferenceValue = new FormData();
     fdReferenceValue.left = new FormAttachment( 0, 0 );
-    fdReferenceValue.top = new FormAttachment( lastControl, margin );
+    fdReferenceValue.top = new FormAttachment( lastControl, margin);
     fdReferenceValue.right = new FormAttachment( 100, 0 );
     wReferenceValue.setLayoutData( fdReferenceValue );
     lastControl = wReferenceValue;
@@ -345,7 +314,7 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     props.setLook( wCompareValue );
     FormData fdCompareValue = new FormData();
     fdCompareValue.left = new FormAttachment( 0, 0 );
-    fdCompareValue.top = new FormAttachment( lastControl, margin );
+    fdCompareValue.top = new FormAttachment( lastControl, margin);
     fdCompareValue.right = new FormAttachment( 100, 0 );
     wCompareValue.setLayoutData( fdCompareValue );
     lastControl = wCompareValue;
@@ -358,16 +327,8 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
     setButtonPositions( new Button[] { wOk, wCancel }, margin, lastControl );
 
     // Add listeners
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
+    lsCancel = e -> cancel();
+    lsOk = e -> ok();
 
     wCancel.addListener( SWT.Selection, lsCancel );
     wOk.addListener( SWT.Selection, lsOk );
@@ -416,7 +377,7 @@ public class TableCompareDialog extends BaseTransformDialog implements ITransfor
       public void run() {
 
         try {
-          prevFields = pipelineMeta.getPrevTransformFields( transformName );
+          prevFields = pipelineMeta.getPrevTransformFields( variables, transformName );
 
         } catch ( HopException e ) {
           String msg = BaseMessages.getString( PKG, "TableCompareDialog.DoMapping.UnableToFindInput" );

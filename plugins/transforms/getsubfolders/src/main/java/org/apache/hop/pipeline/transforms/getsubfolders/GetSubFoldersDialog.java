@@ -1,33 +1,26 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.getsubfolders;
 
 import org.apache.hop.core.Const;
 import org.apache.hop.core.Props;
-import org.apache.hop.core.annotations.PluginDialog;
-import org.apache.hop.core.extension.ExtensionPointHandler;
-import org.apache.hop.core.logging.LogChannel;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
@@ -42,55 +35,20 @@ import org.apache.hop.ui.core.widget.ColumnInfo;
 import org.apache.hop.ui.core.widget.ComboVar;
 import org.apache.hop.ui.core.widget.TableView;
 import org.apache.hop.ui.core.widget.TextVar;
-import org.apache.hop.ui.hopgui.HopGuiExtensionPoint;
-import org.apache.hop.ui.hopgui.delegates.HopGuiDirectoryDialogExtension;
 import org.apache.hop.ui.pipeline.dialog.PipelinePreviewProgressDialog;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
-import org.eclipse.swt.events.FocusListener;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.DirectoryDialog;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Group;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
-@PluginDialog(
-        id = "GetSubFolders",
-        image = "getsubfolders.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = "http://www.project-hop.org/manual/latest/plugins/transforms/getsubfolders.html"
-)
 public class GetSubFoldersDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = GetSubFoldersMeta.class; // for i18n purposes, needed by Translator!!
-
-  private CTabFolder wTabFolder;
-
-  private FormData fdTabFolder;
-
-  private CTabItem wFolderTab, wSettingsTab;
-
-  private Composite wFolderComp, wSettingsComp;
-
-  private FormData fdFolderComp, fdSettingsComp;
+  private static final Class<?> PKG = GetSubFoldersMeta.class; // For Translator
 
   private Label wlFoldername;
 
@@ -104,46 +62,27 @@ public class GetSubFoldersDialog extends BaseTransformDialog implements ITransfo
 
   private TextVar wFoldername;
 
-  private FormData fdlFoldername, fdbFoldername, fdbdFoldername, fdbeFoldername, fdbaFoldername, fdFoldername;
-
   private Label wlFoldernameList;
 
   private TableView wFoldernameList;
 
-  private FormData fdlFoldernameList, fdFoldernameList;
+  private final GetSubFoldersMeta input;
 
-  private GetSubFoldersMeta input;
-
-  private int middle, margin;
-
-  private ModifyListener lsMod;
-
-  private Group wOriginFolders;
-
-  private FormData fdOriginFolders, fdFoldernameField, fdlFoldernameField;
   private Button wFolderField;
 
-  private Label wlFileField, wlFilenameField;
+  private Label wlFilenameField;
   private ComboVar wFoldernameField;
-  private FormData fdlFileField, fdFileField;
-
-  private Group wAdditionalGroup;
-  private FormData fdAdditionalGroup;
 
   private Label wlLimit;
   private Text wLimit;
-  private FormData fdlLimit, fdLimit;
 
-  private Label wlInclRownum;
   private Button wInclRownum;
-  private FormData fdlInclRownum, fdRownum;
 
   private Label wlInclRownumField;
   private TextVar wInclRownumField;
-  private FormData fdlInclRownumField, fdInclRownumField;
 
-  public GetSubFoldersDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public GetSubFoldersDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (GetSubFoldersMeta) in;
   }
 
@@ -155,11 +94,7 @@ public class GetSubFoldersDialog extends BaseTransformDialog implements ITransfo
     props.setLook( shell );
     setShellImage( shell, input );
 
-    lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
     changed = input.hasChanged();
 
     FormLayout formLayout = new FormLayout();
@@ -169,8 +104,20 @@ public class GetSubFoldersDialog extends BaseTransformDialog implements ITransfo
     shell.setLayout( formLayout );
     shell.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.DialogTitle" ) );
 
-    middle = props.getMiddlePct();
-    margin = props.getMargin();
+    int middle = props.getMiddlePct();
+    int margin = props.getMargin();
+
+    // Buttons at the bottom
+    wOk = new Button( shell, SWT.PUSH );
+    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
+    wOk.addListener( SWT.Selection, e -> ok() );
+    wPreview = new Button( shell, SWT.PUSH );
+    wPreview.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.Preview.Button" ) );
+    wPreview.addListener( SWT.Selection, e -> preview() );
+    wCancel = new Button( shell, SWT.PUSH );
+    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
+    wCancel.addListener( SWT.Selection, e -> cancel() );
+    setButtonPositions( new Button[] { wOk, wPreview, wCancel }, margin, null);
 
     // TransformName line
     wlTransformName = new Label( shell, SWT.RIGHT );
@@ -178,30 +125,30 @@ public class GetSubFoldersDialog extends BaseTransformDialog implements ITransfo
     props.setLook( wlTransformName );
     fdlTransformName = new FormData();
     fdlTransformName.left = new FormAttachment( 0, 0 );
-    fdlTransformName.top = new FormAttachment( 0, margin );
-    fdlTransformName.right = new FormAttachment( middle, -margin );
+    fdlTransformName.top = new FormAttachment( 0, margin);
+    fdlTransformName.right = new FormAttachment(middle, -margin);
     wlTransformName.setLayoutData( fdlTransformName );
     wTransformName = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wTransformName.setText( transformName );
     props.setLook( wTransformName );
-    wTransformName.addModifyListener( lsMod );
+    wTransformName.addModifyListener(lsMod);
     fdTransformName = new FormData();
-    fdTransformName.left = new FormAttachment( middle, 0 );
-    fdTransformName.top = new FormAttachment( 0, margin );
+    fdTransformName.left = new FormAttachment(middle, 0 );
+    fdTransformName.top = new FormAttachment( 0, margin);
     fdTransformName.right = new FormAttachment( 100, 0 );
     wTransformName.setLayoutData( fdTransformName );
 
-    wTabFolder = new CTabFolder( shell, SWT.BORDER );
-    props.setLook( wTabFolder, Props.WIDGET_STYLE_TAB );
+    CTabFolder wTabFolder = new CTabFolder(shell, SWT.BORDER);
+    props.setLook(wTabFolder, Props.WIDGET_STYLE_TAB );
 
     // ////////////////////////
     // START OF FILE TAB ///
     // ////////////////////////
-    wFolderTab = new CTabItem( wTabFolder, SWT.NONE );
+    CTabItem wFolderTab = new CTabItem(wTabFolder, SWT.NONE);
     wFolderTab.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.FolderTab.TabTitle" ) );
 
-    wFolderComp = new Composite( wTabFolder, SWT.NONE );
-    props.setLook( wFolderComp );
+    Composite wFolderComp = new Composite(wTabFolder, SWT.NONE);
+    props.setLook(wFolderComp);
 
     FormLayout fileLayout = new FormLayout();
     fileLayout.marginWidth = 3;
@@ -212,65 +159,65 @@ public class GetSubFoldersDialog extends BaseTransformDialog implements ITransfo
     // START OF Origin files GROUP //
     // ///////////////////////////////
 
-    wOriginFolders = new Group( wFolderComp, SWT.SHADOW_NONE );
-    props.setLook( wOriginFolders );
+    Group wOriginFolders = new Group(wFolderComp, SWT.SHADOW_NONE);
+    props.setLook(wOriginFolders);
     wOriginFolders.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.wOriginFiles.Label" ) );
 
-    FormLayout OriginFilesgroupLayout = new FormLayout();
-    OriginFilesgroupLayout.marginWidth = 10;
-    OriginFilesgroupLayout.marginHeight = 10;
-    wOriginFolders.setLayout( OriginFilesgroupLayout );
+    FormLayout originFilesgroupLayout = new FormLayout();
+    originFilesgroupLayout.marginWidth = 10;
+    originFilesgroupLayout.marginHeight = 10;
+    wOriginFolders.setLayout( originFilesgroupLayout );
 
     // Is Filename defined in a Field
-    wlFileField = new Label( wOriginFolders, SWT.RIGHT );
+    Label wlFileField = new Label(wOriginFolders, SWT.RIGHT);
     wlFileField.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.FolderField.Label" ) );
-    props.setLook( wlFileField );
-    fdlFileField = new FormData();
-    fdlFileField.left = new FormAttachment( 0, -margin );
-    fdlFileField.top = new FormAttachment( 0, margin );
-    fdlFileField.right = new FormAttachment( middle, -2 * margin );
-    wlFileField.setLayoutData( fdlFileField );
+    props.setLook(wlFileField);
+    FormData fdlFileField = new FormData();
+    fdlFileField.left = new FormAttachment( 0, -margin);
+    fdlFileField.top = new FormAttachment( 0, margin);
+    fdlFileField.right = new FormAttachment(middle, -2 * margin);
+    wlFileField.setLayoutData(fdlFileField);
 
-    wFolderField = new Button( wOriginFolders, SWT.CHECK );
+    wFolderField = new Button(wOriginFolders, SWT.CHECK );
     props.setLook( wFolderField );
     wFolderField.setToolTipText( BaseMessages.getString( PKG, "GetSubFoldersDialog.FileField.Tooltip" ) );
-    fdFileField = new FormData();
-    fdFileField.left = new FormAttachment( middle, -margin );
-    fdFileField.top = new FormAttachment( 0, margin );
-    wFolderField.setLayoutData( fdFileField );
-    SelectionAdapter lfilefield = new SelectionAdapter() {
+    FormData fdFileField = new FormData();
+    fdFileField.left = new FormAttachment(middle, -margin);
+    fdFileField.top = new FormAttachment( wlFileField, 0, SWT.CENTER);
+    wFolderField.setLayoutData(fdFileField);
+    SelectionAdapter lsFileField = new SelectionAdapter() {
       public void widgetSelected( SelectionEvent arg0 ) {
-        ActiveFileField();
+        activateFileField();
         input.setChanged();
       }
     };
-    wFolderField.addSelectionListener( lfilefield );
+    wFolderField.addSelectionListener( lsFileField );
 
     // Filename field
-    wlFilenameField = new Label( wOriginFolders, SWT.RIGHT );
+    wlFilenameField = new Label(wOriginFolders, SWT.RIGHT );
     wlFilenameField.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.wlFilenameField.Label" ) );
     props.setLook( wlFilenameField );
-    fdlFoldernameField = new FormData();
-    fdlFoldernameField.left = new FormAttachment( 0, -margin );
-    fdlFoldernameField.top = new FormAttachment( wFolderField, margin );
-    fdlFoldernameField.right = new FormAttachment( middle, -2 * margin );
-    wlFilenameField.setLayoutData( fdlFoldernameField );
+    FormData fdlFoldernameField = new FormData();
+    fdlFoldernameField.left = new FormAttachment( 0, -margin);
+    fdlFoldernameField.top = new FormAttachment( wFolderField, margin);
+    fdlFoldernameField.right = new FormAttachment(middle, -2 * margin);
+    wlFilenameField.setLayoutData(fdlFoldernameField);
 
-    wFoldernameField = new ComboVar( pipelineMeta, wOriginFolders, SWT.BORDER | SWT.READ_ONLY );
+    wFoldernameField = new ComboVar( variables, wOriginFolders, SWT.BORDER | SWT.READ_ONLY );
     wFoldernameField.setEditable( true );
     props.setLook( wFoldernameField );
-    wFoldernameField.addModifyListener( lsMod );
-    fdFoldernameField = new FormData();
-    fdFoldernameField.left = new FormAttachment( middle, -margin );
-    fdFoldernameField.top = new FormAttachment( wFolderField, margin );
-    fdFoldernameField.right = new FormAttachment( 100, -margin );
-    wFoldernameField.setLayoutData( fdFoldernameField );
+    wFoldernameField.addModifyListener(lsMod);
+    FormData fdFoldernameField = new FormData();
+    fdFoldernameField.left = new FormAttachment(middle, -margin);
+    fdFoldernameField.top = new FormAttachment( wFolderField, margin);
+    fdFoldernameField.right = new FormAttachment( 100, -margin);
+    wFoldernameField.setLayoutData(fdFoldernameField);
     wFoldernameField.setEnabled( false );
     wFoldernameField.addFocusListener( new FocusListener() {
-      public void focusLost( org.eclipse.swt.events.FocusEvent e ) {
+      public void focusLost( FocusEvent e ) {
       }
 
-      public void focusGained( org.eclipse.swt.events.FocusEvent e ) {
+      public void focusGained( FocusEvent e ) {
         Cursor busy = new Cursor( shell.getDisplay(), SWT.CURSOR_WAIT );
         shell.setCursor( busy );
         BaseTransformDialog.getFieldsFromPrevious( wFoldernameField, pipelineMeta, transformMeta );
@@ -279,82 +226,82 @@ public class GetSubFoldersDialog extends BaseTransformDialog implements ITransfo
       }
     } );
 
-    fdOriginFolders = new FormData();
-    fdOriginFolders.left = new FormAttachment( 0, margin );
-    fdOriginFolders.top = new FormAttachment( wFoldernameList, margin );
-    fdOriginFolders.right = new FormAttachment( 100, -margin );
-    wOriginFolders.setLayoutData( fdOriginFolders );
+    FormData fdOriginFolders = new FormData();
+    fdOriginFolders.left = new FormAttachment( 0, margin);
+    fdOriginFolders.top = new FormAttachment( wFoldernameList, margin);
+    fdOriginFolders.right = new FormAttachment( 100, -margin);
+    wOriginFolders.setLayoutData(fdOriginFolders);
 
     // ///////////////////////////////////////////////////////////
     // / END OF Origin files GROUP
     // ///////////////////////////////////////////////////////////
 
     // Foldername line
-    wlFoldername = new Label( wFolderComp, SWT.RIGHT );
+    wlFoldername = new Label(wFolderComp, SWT.RIGHT );
     wlFoldername.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.Filename.Label" ) );
     props.setLook( wlFoldername );
-    fdlFoldername = new FormData();
+    FormData fdlFoldername = new FormData();
     fdlFoldername.left = new FormAttachment( 0, 0 );
-    fdlFoldername.top = new FormAttachment( wOriginFolders, margin );
-    fdlFoldername.right = new FormAttachment( middle, -margin );
-    wlFoldername.setLayoutData( fdlFoldername );
+    fdlFoldername.top = new FormAttachment(wOriginFolders, margin);
+    fdlFoldername.right = new FormAttachment(middle, -margin);
+    wlFoldername.setLayoutData(fdlFoldername);
 
-    wbbFoldername = new Button( wFolderComp, SWT.PUSH | SWT.CENTER );
+    wbbFoldername = new Button(wFolderComp, SWT.PUSH | SWT.CENTER );
     props.setLook( wbbFoldername );
     wbbFoldername.setText( BaseMessages.getString( PKG, "System.Button.Browse" ) );
     wbbFoldername.setToolTipText( BaseMessages.getString( PKG, "System.Tooltip.BrowseForFileOrDirAndAdd" ) );
-    fdbFoldername = new FormData();
+    FormData fdbFoldername = new FormData();
     fdbFoldername.right = new FormAttachment( 100, 0 );
-    fdbFoldername.top = new FormAttachment( wOriginFolders, margin );
-    wbbFoldername.setLayoutData( fdbFoldername );
+    fdbFoldername.top = new FormAttachment(wOriginFolders, margin);
+    wbbFoldername.setLayoutData(fdbFoldername);
 
-    wbaFoldername = new Button( wFolderComp, SWT.PUSH | SWT.CENTER );
+    wbaFoldername = new Button(wFolderComp, SWT.PUSH | SWT.CENTER );
     props.setLook( wbaFoldername );
     wbaFoldername.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.FoldernameAdd.Button" ) );
     wbaFoldername.setToolTipText( BaseMessages.getString( PKG, "GetSubFoldersDialog.FoldernameAdd.Tooltip" ) );
-    fdbaFoldername = new FormData();
-    fdbaFoldername.right = new FormAttachment( wbbFoldername, -margin );
-    fdbaFoldername.top = new FormAttachment( wOriginFolders, margin );
-    wbaFoldername.setLayoutData( fdbaFoldername );
+    FormData fdbaFoldername = new FormData();
+    fdbaFoldername.right = new FormAttachment( wbbFoldername, -margin);
+    fdbaFoldername.top = new FormAttachment(wOriginFolders, margin);
+    wbaFoldername.setLayoutData(fdbaFoldername);
 
-    wFoldername = new TextVar( pipelineMeta, wFolderComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wFoldername = new TextVar( variables, wFolderComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wFoldername );
-    wFoldername.addModifyListener( lsMod );
-    fdFoldername = new FormData();
-    fdFoldername.left = new FormAttachment( middle, 0 );
-    fdFoldername.right = new FormAttachment( wbaFoldername, -margin );
-    fdFoldername.top = new FormAttachment( wOriginFolders, margin );
-    wFoldername.setLayoutData( fdFoldername );
+    wFoldername.addModifyListener(lsMod);
+    FormData fdFoldername = new FormData();
+    fdFoldername.left = new FormAttachment(middle, 0 );
+    fdFoldername.right = new FormAttachment( wbaFoldername, -margin);
+    fdFoldername.top = new FormAttachment(wOriginFolders, margin);
+    wFoldername.setLayoutData(fdFoldername);
 
     // Filename list line
-    wlFoldernameList = new Label( wFolderComp, SWT.RIGHT );
+    wlFoldernameList = new Label(wFolderComp, SWT.RIGHT );
     wlFoldernameList.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.FoldernameList.Label" ) );
     props.setLook( wlFoldernameList );
-    fdlFoldernameList = new FormData();
+    FormData fdlFoldernameList = new FormData();
     fdlFoldernameList.left = new FormAttachment( 0, 0 );
-    fdlFoldernameList.top = new FormAttachment( wFoldername, margin );
-    fdlFoldernameList.right = new FormAttachment( middle, -margin );
-    wlFoldernameList.setLayoutData( fdlFoldernameList );
+    fdlFoldernameList.top = new FormAttachment( wFoldername, margin);
+    fdlFoldernameList.right = new FormAttachment(middle, -margin);
+    wlFoldernameList.setLayoutData(fdlFoldernameList);
 
     // Buttons to the right of the screen...
-    wbdFoldername = new Button( wFolderComp, SWT.PUSH | SWT.CENTER );
+    wbdFoldername = new Button(wFolderComp, SWT.PUSH | SWT.CENTER );
     props.setLook( wbdFoldername );
     wbdFoldername.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.FoldernameDelete.Button" ) );
     wbdFoldername.setToolTipText( BaseMessages.getString( PKG, "GetSubFoldersDialog.FoldernameDelete.Tooltip" ) );
-    fdbdFoldername = new FormData();
+    FormData fdbdFoldername = new FormData();
     fdbdFoldername.right = new FormAttachment( 100, 0 );
     fdbdFoldername.top = new FormAttachment( wFoldername, 40 );
-    wbdFoldername.setLayoutData( fdbdFoldername );
+    wbdFoldername.setLayoutData(fdbdFoldername);
 
-    wbeFoldername = new Button( wFolderComp, SWT.PUSH | SWT.CENTER );
+    wbeFoldername = new Button(wFolderComp, SWT.PUSH | SWT.CENTER );
     props.setLook( wbeFoldername );
     wbeFoldername.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.FilenameEdit.Button" ) );
     wbeFoldername.setToolTipText( BaseMessages.getString( PKG, "GetSubFoldersDialog.FilenameEdit.Tooltip" ) );
-    fdbeFoldername = new FormData();
+    FormData fdbeFoldername = new FormData();
     fdbeFoldername.right = new FormAttachment( 100, 0 );
     fdbeFoldername.left = new FormAttachment( wbdFoldername, 0, SWT.LEFT );
-    fdbeFoldername.top = new FormAttachment( wbdFoldername, margin );
-    wbeFoldername.setLayoutData( fdbeFoldername );
+    fdbeFoldername.top = new FormAttachment( wbdFoldername, margin);
+    wbeFoldername.setLayoutData(fdbeFoldername);
 
     ColumnInfo[] colinfo = new ColumnInfo[ 2 ];
     colinfo[ 0 ] =
@@ -370,45 +317,45 @@ public class GetSubFoldersDialog extends BaseTransformDialog implements ITransfo
 
     wFoldernameList =
       new TableView(
-        pipelineMeta, wFolderComp, SWT.FULL_SELECTION | SWT.SINGLE | SWT.BORDER, colinfo, colinfo.length, lsMod,
+        variables, wFolderComp, SWT.FULL_SELECTION | SWT.SINGLE | SWT.BORDER, colinfo, colinfo.length, lsMod,
         props );
     props.setLook( wFoldernameList );
-    fdFoldernameList = new FormData();
-    fdFoldernameList.left = new FormAttachment( middle, 0 );
-    fdFoldernameList.right = new FormAttachment( wbdFoldername, -margin );
-    fdFoldernameList.top = new FormAttachment( wFoldername, margin );
-    fdFoldernameList.bottom = new FormAttachment( 100, -margin );
-    wFoldernameList.setLayoutData( fdFoldernameList );
+    FormData fdFoldernameList = new FormData();
+    fdFoldernameList.left = new FormAttachment(middle, 0 );
+    fdFoldernameList.right = new FormAttachment( wbdFoldername, -margin);
+    fdFoldernameList.top = new FormAttachment( wFoldername, margin);
+    fdFoldernameList.bottom = new FormAttachment( 100, -margin);
+    wFoldernameList.setLayoutData(fdFoldernameList);
 
-    fdFolderComp = new FormData();
+    FormData fdFolderComp = new FormData();
     fdFolderComp.left = new FormAttachment( 0, 0 );
     fdFolderComp.top = new FormAttachment( 0, 0 );
     fdFolderComp.right = new FormAttachment( 100, 0 );
     fdFolderComp.bottom = new FormAttachment( 100, 0 );
-    wFolderComp.setLayoutData( fdFolderComp );
+    wFolderComp.setLayoutData(fdFolderComp);
 
     wFolderComp.layout();
-    wFolderTab.setControl( wFolderComp );
+    wFolderTab.setControl(wFolderComp);
 
     // ///////////////////////////////////////////////////////////
     // / END OF FILE TAB
     // ///////////////////////////////////////////////////////////
 
-    fdTabFolder = new FormData();
+    FormData fdTabFolder = new FormData();
     fdTabFolder.left = new FormAttachment( 0, 0 );
-    fdTabFolder.top = new FormAttachment( wTransformName, margin );
+    fdTabFolder.top = new FormAttachment( wTransformName, margin);
     fdTabFolder.right = new FormAttachment( 100, 0 );
-    fdTabFolder.bottom = new FormAttachment( 100, -50 );
-    wTabFolder.setLayoutData( fdTabFolder );
+    fdTabFolder.bottom = new FormAttachment( wOk, -2*margin );
+    wTabFolder.setLayoutData(fdTabFolder);
 
     // ////////////////////////
     // START OF Filter TAB ///
     // ////////////////////////
-    wSettingsTab = new CTabItem( wTabFolder, SWT.NONE );
+    CTabItem wSettingsTab = new CTabItem(wTabFolder, SWT.NONE);
     wSettingsTab.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.SettingsTab.TabTitle" ) );
 
-    wSettingsComp = new Composite( wTabFolder, SWT.NONE );
-    props.setLook( wSettingsComp );
+    Composite wSettingsComp = new Composite(wTabFolder, SWT.NONE);
+    props.setLook(wSettingsComp);
 
     FormLayout filesettingLayout = new FormLayout();
     filesettingLayout.marginWidth = 3;
@@ -419,8 +366,8 @@ public class GetSubFoldersDialog extends BaseTransformDialog implements ITransfo
     // START OF Additional Fields GROUP
     // /////////////////////////////////
 
-    wAdditionalGroup = new Group( wSettingsComp, SWT.SHADOW_NONE );
-    props.setLook( wAdditionalGroup );
+    Group wAdditionalGroup = new Group(wSettingsComp, SWT.SHADOW_NONE);
+    props.setLook(wAdditionalGroup);
     wAdditionalGroup.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.Group.AdditionalGroup.Label" ) );
 
     FormLayout additionalgroupLayout = new FormLayout();
@@ -428,21 +375,21 @@ public class GetSubFoldersDialog extends BaseTransformDialog implements ITransfo
     additionalgroupLayout.marginHeight = 10;
     wAdditionalGroup.setLayout( additionalgroupLayout );
 
-    wlInclRownum = new Label( wAdditionalGroup, SWT.RIGHT );
+    Label wlInclRownum = new Label(wAdditionalGroup, SWT.RIGHT);
     wlInclRownum.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.InclRownum.Label" ) );
-    props.setLook( wlInclRownum );
-    fdlInclRownum = new FormData();
+    props.setLook(wlInclRownum);
+    FormData fdlInclRownum = new FormData();
     fdlInclRownum.left = new FormAttachment( 0, 0 );
-    fdlInclRownum.top = new FormAttachment( 0, 2 * margin );
-    fdlInclRownum.right = new FormAttachment( middle, -margin );
-    wlInclRownum.setLayoutData( fdlInclRownum );
-    wInclRownum = new Button( wAdditionalGroup, SWT.CHECK );
+    fdlInclRownum.top = new FormAttachment( 0, 2 * margin);
+    fdlInclRownum.right = new FormAttachment(middle, -margin);
+    wlInclRownum.setLayoutData(fdlInclRownum);
+    wInclRownum = new Button(wAdditionalGroup, SWT.CHECK );
     props.setLook( wInclRownum );
     wInclRownum.setToolTipText( BaseMessages.getString( PKG, "GetSubFoldersDialog.InclRownum.Tooltip" ) );
-    fdRownum = new FormData();
-    fdRownum.left = new FormAttachment( middle, 0 );
-    fdRownum.top = new FormAttachment( 0, 2 * margin );
-    wInclRownum.setLayoutData( fdRownum );
+    FormData fdRownum = new FormData();
+    fdRownum.left = new FormAttachment(middle, 0 );
+    fdRownum.top = new FormAttachment( wlInclRownum, 0, SWT.CENTER);
+    wInclRownum.setLayoutData(fdRownum);
     SelectionAdapter linclRownum = new SelectionAdapter() {
       public void widgetSelected( SelectionEvent arg0 ) {
         ActiveIncludeRowNum();
@@ -451,94 +398,66 @@ public class GetSubFoldersDialog extends BaseTransformDialog implements ITransfo
     };
     wInclRownum.addSelectionListener( linclRownum );
 
-    wlInclRownumField = new Label( wAdditionalGroup, SWT.RIGHT );
+    wlInclRownumField = new Label(wAdditionalGroup, SWT.RIGHT );
     wlInclRownumField.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.InclRownumField.Label" ) );
     props.setLook( wlInclRownumField );
-    fdlInclRownumField = new FormData();
-    fdlInclRownumField.left = new FormAttachment( wInclRownum, margin );
-    fdlInclRownumField.top = new FormAttachment( 0, 2 * margin );
-    wlInclRownumField.setLayoutData( fdlInclRownumField );
-    wInclRownumField = new TextVar( pipelineMeta, wAdditionalGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    FormData fdlInclRownumField = new FormData();
+    fdlInclRownumField.left = new FormAttachment( wInclRownum, margin);
+    fdlInclRownumField.top = new FormAttachment( 0, 2 * margin);
+    wlInclRownumField.setLayoutData(fdlInclRownumField);
+    wInclRownumField = new TextVar( variables, wAdditionalGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wInclRownumField );
-    wInclRownumField.addModifyListener( lsMod );
-    fdInclRownumField = new FormData();
-    fdInclRownumField.left = new FormAttachment( wlInclRownumField, margin );
-    fdInclRownumField.top = new FormAttachment( 0, 2 * margin );
+    wInclRownumField.addModifyListener(lsMod);
+    FormData fdInclRownumField = new FormData();
+    fdInclRownumField.left = new FormAttachment( wlInclRownumField, margin);
+    fdInclRownumField.top = new FormAttachment( 0, 2 * margin);
     fdInclRownumField.right = new FormAttachment( 100, 0 );
-    wInclRownumField.setLayoutData( fdInclRownumField );
+    wInclRownumField.setLayoutData(fdInclRownumField);
 
-    fdAdditionalGroup = new FormData();
-    fdAdditionalGroup.left = new FormAttachment( 0, margin );
-    fdAdditionalGroup.top = new FormAttachment( 0, margin );
-    fdAdditionalGroup.right = new FormAttachment( 100, -margin );
-    wAdditionalGroup.setLayoutData( fdAdditionalGroup );
+    FormData fdAdditionalGroup = new FormData();
+    fdAdditionalGroup.left = new FormAttachment( 0, margin);
+    fdAdditionalGroup.top = new FormAttachment( 0, margin);
+    fdAdditionalGroup.right = new FormAttachment( 100, -margin);
+    wAdditionalGroup.setLayoutData(fdAdditionalGroup);
 
     // ///////////////////////////////////////////////////////////
     // / END OF DESTINATION ADDRESS GROUP
     // ///////////////////////////////////////////////////////////
 
-    wlLimit = new Label( wSettingsComp, SWT.RIGHT );
+    wlLimit = new Label(wSettingsComp, SWT.RIGHT );
     wlLimit.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.Limit.Label" ) );
     props.setLook( wlLimit );
-    fdlLimit = new FormData();
+    FormData fdlLimit = new FormData();
     fdlLimit.left = new FormAttachment( 0, 0 );
-    fdlLimit.top = new FormAttachment( wAdditionalGroup, 2 * margin );
-    fdlLimit.right = new FormAttachment( middle, -margin );
-    wlLimit.setLayoutData( fdlLimit );
-    wLimit = new Text( wSettingsComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    fdlLimit.top = new FormAttachment(wAdditionalGroup, 2 * margin);
+    fdlLimit.right = new FormAttachment(middle, -margin);
+    wlLimit.setLayoutData(fdlLimit);
+    wLimit = new Text(wSettingsComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wLimit );
-    wLimit.addModifyListener( lsMod );
-    fdLimit = new FormData();
-    fdLimit.left = new FormAttachment( middle, 0 );
-    fdLimit.top = new FormAttachment( wAdditionalGroup, 2 * margin );
+    wLimit.addModifyListener(lsMod);
+    FormData fdLimit = new FormData();
+    fdLimit.left = new FormAttachment(middle, 0 );
+    fdLimit.top = new FormAttachment(wAdditionalGroup, 2 * margin);
     fdLimit.right = new FormAttachment( 100, 0 );
-    wLimit.setLayoutData( fdLimit );
+    wLimit.setLayoutData(fdLimit);
 
-    fdSettingsComp = new FormData();
+    FormData fdSettingsComp = new FormData();
     fdSettingsComp.left = new FormAttachment( 0, 0 );
     fdSettingsComp.top = new FormAttachment( 0, 0 );
     fdSettingsComp.right = new FormAttachment( 100, 0 );
     fdSettingsComp.bottom = new FormAttachment( 100, 0 );
-    wSettingsComp.setLayoutData( fdSettingsComp );
+    wSettingsComp.setLayoutData(fdSettingsComp);
 
     wSettingsComp.layout();
-    wSettingsTab.setControl( wSettingsComp );
+    wSettingsTab.setControl(wSettingsComp);
 
     // ///////////////////////////////////////////////////////////
     // / END OF FILE Filter TAB
     // ///////////////////////////////////////////////////////////
 
-    wOk = new Button( shell, SWT.PUSH );
-    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
 
-    wPreview = new Button( shell, SWT.PUSH );
-    wPreview.setText( BaseMessages.getString( PKG, "GetSubFoldersDialog.Preview.Button" ) );
-
-    wCancel = new Button( shell, SWT.PUSH );
-    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
-
-    setButtonPositions( new Button[] { wOk, wPreview, wCancel }, margin, wTabFolder );
 
     // Add listeners
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
-    lsPreview = new Listener() {
-      public void handleEvent( Event e ) {
-        preview();
-      }
-    };
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-
-    wOk.addListener( SWT.Selection, lsOk );
-    wPreview.addListener( SWT.Selection, lsPreview );
-    wCancel.addListener( SWT.Selection, lsCancel );
 
     lsDef = new SelectionAdapter() {
       public void widgetDefaultSelected( SelectionEvent e ) {
@@ -581,7 +500,7 @@ public class GetSubFoldersDialog extends BaseTransformDialog implements ITransfo
         wFoldernameList.setRowNums();
       } );
 
-    wbbFoldername.addListener( SWT.Selection, e-> BaseDialog.presentDirectoryDialog( shell, wFoldername, pipelineMeta ) );
+    wbbFoldername.addListener( SWT.Selection, e-> BaseDialog.presentDirectoryDialog( shell, wFoldername, variables ) );
 
     // Detect X or ALT-F4 or something that kills this window...
     shell.addShellListener( new ShellAdapter() {
@@ -594,7 +513,7 @@ public class GetSubFoldersDialog extends BaseTransformDialog implements ITransfo
 
     // Set the shell size, based upon previous time...
     getData( input );
-    ActiveFileField();
+    activateFileField();
     ActiveIncludeRowNum();
     setSize();
 
@@ -612,7 +531,7 @@ public class GetSubFoldersDialog extends BaseTransformDialog implements ITransfo
     wInclRownumField.setEnabled( wInclRownum.getSelection() );
   }
 
-  private void ActiveFileField() {
+  private void activateFileField() {
     if ( wFolderField.getSelection() ) {
       wLimit.setText( "0" );
     }
@@ -706,7 +625,7 @@ public class GetSubFoldersDialog extends BaseTransformDialog implements ITransfo
     GetSubFoldersMeta oneMeta = new GetSubFoldersMeta();
     getInfo( oneMeta );
 
-    PipelineMeta previewMeta = PipelinePreviewFactory.generatePreviewPipeline( pipelineMeta, pipelineMeta.getMetaStore(),
+    PipelineMeta previewMeta = PipelinePreviewFactory.generatePreviewPipeline( variables, pipelineMeta.getMetadataProvider(),
       oneMeta, wTransformName.getText() );
 
     EnterNumberDialog numberDialog = new EnterNumberDialog( shell, props.getDefaultPreviewSize(),
@@ -716,7 +635,7 @@ public class GetSubFoldersDialog extends BaseTransformDialog implements ITransfo
     if ( previewSize > 0 ) {
       PipelinePreviewProgressDialog progressDialog =
         new PipelinePreviewProgressDialog(
-          shell, previewMeta, new String[] { wTransformName.getText() }, new int[] { previewSize } );
+          shell, variables, previewMeta, new String[] { wTransformName.getText() }, new int[] { previewSize } );
       progressDialog.open();
 
       if ( !progressDialog.isCancelled() ) {
@@ -733,7 +652,7 @@ public class GetSubFoldersDialog extends BaseTransformDialog implements ITransfo
 
         PreviewRowsDialog prd =
           new PreviewRowsDialog(
-            shell, pipelineMeta, SWT.NONE, wTransformName.getText(), progressDialog.getPreviewRowsMeta( wTransformName
+            shell, variables, SWT.NONE, wTransformName.getText(), progressDialog.getPreviewRowsMeta( wTransformName
             .getText() ), progressDialog.getPreviewRows( wTransformName.getText() ), loggingText );
         prd.open();
       }

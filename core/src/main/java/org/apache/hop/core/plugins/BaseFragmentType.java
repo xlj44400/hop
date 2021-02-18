@@ -1,39 +1,31 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.plugins;
-
-import org.apache.hop.core.exception.HopPluginException;
 
 import java.lang.annotation.Annotation;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Map;
 
-public abstract class BaseFragmentType extends BasePluginType {
+public abstract class BaseFragmentType<T extends Annotation> extends BasePluginType<T> {
 
-  BaseFragmentType( Class<? extends Annotation> pluginType, String id, String name, Class<? extends IPluginType> typeToTrack ) {
+  BaseFragmentType( Class<T> pluginType, String id, String name, Class<? extends IPluginType> typeToTrack ) {
     super( pluginType, id, name );
-    populateFolders( null );
     initListeners( this.getClass(), typeToTrack );
   }
 
@@ -78,36 +70,34 @@ public abstract class BaseFragmentType extends BasePluginType {
     return new HopURLClassLoader( new URL[] { jarFileUrl }, classLoader );
   }
 
-  @Override protected void registerNatives() throws HopPluginException {
-  }
-
   @Override
-  protected String extractName( Annotation annotation ) {
+  protected String extractName( T annotation ) {
     return null;
   }
 
   @Override
-  protected String extractDesc( Annotation annotation ) {
+  protected String extractDesc( T annotation ) {
     return null;
   }
 
   @Override
-  protected String extractCategory( Annotation annotation ) {
+  protected String extractCategory( T annotation ) {
     return null;
   }
 
   @Override
-  protected boolean extractSeparateClassLoader( Annotation annotation ) {
+  protected boolean extractSeparateClassLoader( T annotation ) {
     return false;
   }
 
   @Override
-  protected String extractI18nPackageName( Annotation annotation ) {
+  @Deprecated
+  protected String extractI18nPackageName( T annotation ) {
     return null;
   }
 
   @Override
-  protected void addExtraClasses( Map<Class<?>, String> classMap, Class<?> clazz, Annotation annotation ) {
+  protected void addExtraClasses( Map<Class<?>, String> classMap, Class<?> clazz, T annotation ) {
   }
 
   protected abstract class FragmentTypeListener implements IPluginTypeListener {

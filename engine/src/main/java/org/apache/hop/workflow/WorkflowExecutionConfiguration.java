@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow;
 
@@ -27,12 +22,9 @@ import org.apache.hop.IExecutionConfiguration;
 import org.apache.hop.core.Const;
 import org.apache.hop.core.Result;
 import org.apache.hop.core.exception.HopException;
-import org.apache.hop.core.logging.ILogChannel;
-import org.apache.hop.core.logging.LogChannel;
 import org.apache.hop.core.logging.LogLevel;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.variables.IVariables;
-import org.apache.hop.core.variables.Variables;
 import org.apache.hop.core.xml.XmlHandler;
 import org.w3c.dom.Node;
 
@@ -47,8 +39,6 @@ import java.util.Properties;
 public class WorkflowExecutionConfiguration implements IExecutionConfiguration {
   public static final String XML_TAG = "workflow_execution_configuration";
 
-  private final ILogChannel log = LogChannel.GENERAL;
-
   private Map<String, String> parametersMap;
 
   private Map<String, String> variablesMap;
@@ -61,9 +51,7 @@ public class WorkflowExecutionConfiguration implements IExecutionConfiguration {
 
   private boolean passingExport;
 
-  private String startCopyName;
-
-  private int startCopyNr;
+  private String startActionName;
 
   private boolean gatheringMetrics;
 
@@ -136,21 +124,24 @@ public class WorkflowExecutionConfiguration implements IExecutionConfiguration {
   public void setVariablesMap( IVariables variablesMap ) {
     this.variablesMap = new HashMap<>();
 
-    for ( String name : variablesMap.listVariables() ) {
+    for ( String name : variablesMap.getVariableNames() ) {
       String value = variablesMap.getVariable( name );
       this.variablesMap.put( name, value );
     }
   }
 
-  public void getUsedVariables( WorkflowMeta workflowMeta ) {
-    Properties sp = new Properties();
-    IVariables variables = new Variables();
-    variables.initializeVariablesFrom( workflowMeta );
+  /**
+   * Extracts used variables and their values.
+   * @param workflowMeta The metadata to search for variables
+   * @param variables The place to look up the values in
+   */
+  public void getUsedVariables( WorkflowMeta workflowMeta, IVariables variables ) {
+    Properties properties = new Properties();
 
-    String[] keys = variables.listVariables();
+    String[] keys = variables.getVariableNames();
     for ( int i = 0; i < keys.length; i++ ) {
-      if ( StringUtils.isNotEmpty(keys[i])) {
-        sp.put( keys[ i ], Const.NVL( variables.getVariable( keys[ i ] ), "" ) );
+      if ( StringUtils.isNotEmpty( keys[ i ] ) ) {
+        properties.put( keys[ i ], Const.NVL( variables.getVariable( keys[ i ] ), "" ) );
       }
     }
 
@@ -162,7 +153,7 @@ public class WorkflowExecutionConfiguration implements IExecutionConfiguration {
         String varname = vars.get( i );
         if ( !varname.startsWith( Const.INTERNAL_VARIABLE_PREFIX ) ) {
           // add all new non-internal variables to newVariablesMap
-          newVariables.put( varname, Const.NVL( variablesMap.get( varname ), sp.getProperty( varname, "" ) ) );
+          newVariables.put( varname, Const.NVL( variablesMap.get( varname ), properties.getProperty( varname, "" ) ) );
         }
       }
       // variables.clear();
@@ -172,7 +163,7 @@ public class WorkflowExecutionConfiguration implements IExecutionConfiguration {
     // Also add the internal workflow variables if these are set...
     //
     for ( String variableName : Const.INTERNAL_WORKFLOW_VARIABLES ) {
-      String value = workflowMeta.getVariable( variableName );
+      String value = variables.getVariable( variableName );
       if ( !Utils.isEmpty( value ) ) {
         variablesMap.put( variableName, value );
       }
@@ -239,8 +230,7 @@ public class WorkflowExecutionConfiguration implements IExecutionConfiguration {
     xml.append( "    " ).append( XmlHandler.addTagValue( "log_level", logLevel.getCode() ) );
     xml.append( "    " ).append( XmlHandler.addTagValue( "clear_log", clearingLog ) );
 
-    xml.append( "    " ).append( XmlHandler.addTagValue( "start_copy_name", startCopyName ) );
-    xml.append( "    " ).append( XmlHandler.addTagValue( "start_copy_nr", startCopyNr ) );
+    xml.append( "    " ).append( XmlHandler.addTagValue( "start_copy_name", startActionName ) );
 
     xml.append( "    " ).append( XmlHandler.addTagValue( "gather_metrics", gatheringMetrics ) );
     xml.append( "    " ).append( XmlHandler.addTagValue( "expand_remote_workflow", expandingRemoteWorkflow ) );
@@ -291,12 +281,11 @@ public class WorkflowExecutionConfiguration implements IExecutionConfiguration {
     logLevel = LogLevel.getLogLevelForCode( XmlHandler.getTagValue( configNode, "log_level" ) );
     clearingLog = "Y".equalsIgnoreCase( XmlHandler.getTagValue( configNode, "clear_log" ) );
 
-    startCopyName = XmlHandler.getTagValue( configNode, "start_copy_name" );
-    startCopyNr = Const.toInt( XmlHandler.getTagValue( configNode, "start_copy_nr" ), 0 );
+    startActionName = XmlHandler.getTagValue( configNode, "start_copy_name" );
 
     gatheringMetrics = "Y".equalsIgnoreCase( XmlHandler.getTagValue( configNode, "gather_metrics" ) );
 
-    runConfiguration = XmlHandler.getTagValue( configNode, "run_configuration");
+    runConfiguration = XmlHandler.getTagValue( configNode, "run_configuration" );
 
     Node resultNode = XmlHandler.getSubNode( configNode, Result.XML_TAG );
     if ( resultNode != null ) {
@@ -352,31 +341,17 @@ public class WorkflowExecutionConfiguration implements IExecutionConfiguration {
   }
 
   /**
-   * @return the startCopyName
+   * @return the start action name
    */
-  public String getStartCopyName() {
-    return startCopyName;
+  public String getStartActionName() {
+    return startActionName;
   }
 
   /**
-   * @param startCopyName the startCopyName to set
+   * @param name the name to set
    */
-  public void setStartCopyName( String startCopyName ) {
-    this.startCopyName = startCopyName;
-  }
-
-  /**
-   * @return the startCopyNr
-   */
-  public int getStartCopyNr() {
-    return startCopyNr;
-  }
-
-  /**
-   * @param startCopyNr the startCopyNr to set
-   */
-  public void setStartCopyNr( int startCopyNr ) {
-    this.startCopyNr = startCopyNr;
+  public void setStartActionName( String name ) {
+    this.startActionName = name;
   }
 
   /**
@@ -400,5 +375,20 @@ public class WorkflowExecutionConfiguration implements IExecutionConfiguration {
   public void setExtensionOptions( Map<String, String> extensionOptions ) {
     this.extensionOptions = extensionOptions;
   }
-  
+
+  /**
+   * Gets expandingRemoteWorkflow
+   *
+   * @return value of expandingRemoteWorkflow
+   */
+  public boolean isExpandingRemoteWorkflow() {
+    return expandingRemoteWorkflow;
+  }
+
+  /**
+   * @param expandingRemoteWorkflow The expandingRemoteWorkflow to set
+   */
+  public void setExpandingRemoteWorkflow( boolean expandingRemoteWorkflow ) {
+    this.expandingRemoteWorkflow = expandingRemoteWorkflow;
+  }
 }

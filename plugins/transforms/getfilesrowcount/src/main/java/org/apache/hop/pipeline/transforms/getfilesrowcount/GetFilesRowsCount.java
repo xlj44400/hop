@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.getfilesrowcount;
 
@@ -47,7 +42,7 @@ public class GetFilesRowsCount
   extends BaseTransform<GetFilesRowsCountMeta, GetFilesRowsCountData>
   implements ITransform<GetFilesRowsCountMeta, GetFilesRowsCountData> {
 
-  private static Class<?> PKG = GetFilesRowsCountMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = GetFilesRowsCountMeta.class; // For Translator
 
   // private static final int BUFFER_SIZE_INPUT_STREAM = 500;
 
@@ -218,7 +213,7 @@ public class GetFilesRowsCount
 
           data.inputRowMeta = getInputRowMeta();
           data.outputRowMeta = data.inputRowMeta.clone();
-          meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+          meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
           // Get total previous fields
           data.totalpreviousfields = data.inputRowMeta.size();
@@ -249,7 +244,7 @@ public class GetFilesRowsCount
             .setOutputFilenameField(), filename ) );
         }
 
-        data.file = HopVfs.getFileObject( filename, getPipelineMeta() );
+        data.file = HopVfs.getFileObject( filename );
 
         // Init Row number
         if ( meta.isFileField() ) {
@@ -327,7 +322,7 @@ public class GetFilesRowsCount
           }
         } else {
 
-          data.separator = environmentSubstitute( meta.getRowSeparator() ).charAt( 0 );
+          data.separator = resolve( meta.getRowSeparator() ).charAt( 0 );
 
           if ( isDetailed() ) {
             logDetailed( BaseMessages.getString( PKG, "GetFilesRowsCount.Log.Separator.Title" ), BaseMessages
@@ -346,7 +341,7 @@ public class GetFilesRowsCount
         try {
           // Create the output row meta-data
           data.outputRowMeta = new RowMeta();
-          meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore ); // get the
+          meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider ); // get the
           // metadata
           // populated
 

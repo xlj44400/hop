@@ -1,29 +1,23 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.streamlookup;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.value.ValueMetaFactory;
@@ -40,76 +34,41 @@ import org.apache.hop.ui.core.widget.TableView;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CCombo;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.MessageBox;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import org.apache.hop.core.variables.IVariables;
 
-@PluginDialog(
-        id = "StreamLookup",
-        image = "streamlookup.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = "http://www.project-hop.org/manual/latest/plugins/transforms/streamlookup.html"
-)
 public class StreamLookupDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = StreamLookupMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = StreamLookupMeta.class; // For Translator
 
-  private Label wlTransform;
   private CCombo wTransform;
-  private FormData fdlTransform, fdTransform;
 
-  private Label wlKey;
   private TableView wKey;
-  private FormData fdlKey, fdKey;
 
-  private Label wlReturn;
   private TableView wReturn;
-  private FormData fdlReturn, fdReturn;
 
-  private Label wlPreserveMemory;
   private Button wPreserveMemory;
-  private FormData fdlPreserveMemory, fdPreserveMemory;
 
-  private Label wlSortedList;
   private Button wSortedList;
-  private FormData fdlSortedList, fdSortedList;
 
-  private Label wlIntegerPair;
   private Button wIntegerPair;
-  private FormData fdlIntegerPair, fdIntegerPair;
 
-  private StreamLookupMeta input;
+  private final StreamLookupMeta input;
 
-  private Button wGetLU;
   private Listener lsGetLU;
 
   private ColumnInfo[] ciKey;
 
   private ColumnInfo[] ciReturn;
 
-  public StreamLookupDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public StreamLookupDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (StreamLookupMeta) in;
   }
 
@@ -121,11 +80,7 @@ public class StreamLookupDialog extends BaseTransformDialog implements ITransfor
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
     SelectionListener lsSelection = new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
         input.setChanged();
@@ -143,6 +98,25 @@ public class StreamLookupDialog extends BaseTransformDialog implements ITransfor
 
     int middle = props.getMiddlePct();
     int margin = props.getMargin();
+
+    // THE BUTTONS at the bottom
+    //
+    wOk = new Button( shell, SWT.PUSH );
+    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
+    wOk.addListener( SWT.Selection, e->ok() );
+    wGet = new Button( shell, SWT.PUSH );
+    wGet.setText( BaseMessages.getString( PKG, "StreamLookupDialog.GetFields.Button" ) );
+    wGet.addListener( SWT.Selection, e->get() );
+    Button wGetLU = new Button(shell, SWT.PUSH);
+    wGetLU.setText( BaseMessages.getString( PKG, "StreamLookupDialog.GetLookupFields.Button" ) );
+    wGetLU.addListener( SWT.Selection, e->getlookup() );
+    wCancel = new Button( shell, SWT.PUSH );
+    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
+    wCancel.addListener( SWT.Selection, e->cancel() );
+
+    setButtonPositions( new Button[] { wOk, wCancel, wGet, wGetLU}, margin, null );
+
+
 
     // TransformName line
     wlTransformName = new Label( shell, SWT.RIGHT );
@@ -164,14 +138,14 @@ public class StreamLookupDialog extends BaseTransformDialog implements ITransfor
     wTransformName.setLayoutData( fdTransformName );
 
     // Lookup transform line...
-    wlTransform = new Label( shell, SWT.RIGHT );
+    Label wlTransform = new Label(shell, SWT.RIGHT);
     wlTransform.setText( BaseMessages.getString( PKG, "StreamLookupDialog.LookupTransform.Label" ) );
-    props.setLook( wlTransform );
-    fdlTransform = new FormData();
+    props.setLook(wlTransform);
+    FormData fdlTransform = new FormData();
     fdlTransform.left = new FormAttachment( 0, 0 );
     fdlTransform.right = new FormAttachment( middle, -margin );
     fdlTransform.top = new FormAttachment( wTransformName, margin * 2 );
-    wlTransform.setLayoutData( fdlTransform );
+    wlTransform.setLayoutData(fdlTransform);
     wTransform = new CCombo( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( wTransform );
 
@@ -184,19 +158,19 @@ public class StreamLookupDialog extends BaseTransformDialog implements ITransfor
     wTransform.addModifyListener( lsMod );
     wTransform.addSelectionListener( lsSelection );
 
-    fdTransform = new FormData();
+    FormData fdTransform = new FormData();
     fdTransform.left = new FormAttachment( middle, 0 );
     fdTransform.top = new FormAttachment( wTransformName, margin * 2 );
     fdTransform.right = new FormAttachment( 100, 0 );
-    wTransform.setLayoutData( fdTransform );
+    wTransform.setLayoutData(fdTransform);
 
-    wlKey = new Label( shell, SWT.NONE );
+    Label wlKey = new Label(shell, SWT.NONE);
     wlKey.setText( BaseMessages.getString( PKG, "StreamLookupDialog.Key.Label" ) );
-    props.setLook( wlKey );
-    fdlKey = new FormData();
+    props.setLook(wlKey);
+    FormData fdlKey = new FormData();
     fdlKey.left = new FormAttachment( 0, 0 );
     fdlKey.top = new FormAttachment( wTransform, margin );
-    wlKey.setLayoutData( fdlKey );
+    wlKey.setLayoutData(fdlKey);
 
     int nrKeyCols = 2;
     int nrKeyRows = ( input.getKeystream() != null ? input.getKeystream().length : 1 );
@@ -211,26 +185,97 @@ public class StreamLookupDialog extends BaseTransformDialog implements ITransfor
         BaseMessages.getString( PKG, "StreamLookupDialog.ColumnInfo.LookupField" ),
         ColumnInfo.COLUMN_TYPE_CCOMBO, new String[] { "" }, false );
 
-    wKey =
-      new TableView(
-        pipelineMeta, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL, ciKey,
+    wKey = new TableView( variables, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL, ciKey,
         nrKeyRows, lsMod, props );
 
-    fdKey = new FormData();
+    FormData fdKey = new FormData();
     fdKey.left = new FormAttachment( 0, 0 );
-    fdKey.top = new FormAttachment( wlKey, margin );
+    fdKey.top = new FormAttachment(wlKey, margin );
     fdKey.right = new FormAttachment( 100, 0 );
-    fdKey.bottom = new FormAttachment( wlKey, 180 );
-    wKey.setLayoutData( fdKey );
+    fdKey.bottom = new FormAttachment(wlKey, (int)(props.getZoomFactor()*120) );
+    wKey.setLayoutData(fdKey);
+
+
+    Label wlSortedList = new Label(shell, SWT.RIGHT);
+    wlSortedList.setText( BaseMessages.getString( PKG, "StreamLookupDialog.SortedList.Label" ) );
+    props.setLook(wlSortedList);
+    FormData fdlSortedList = new FormData();
+    fdlSortedList.left = new FormAttachment( 0, 0 );
+    fdlSortedList.bottom = new FormAttachment( wOk, -2*margin );
+    fdlSortedList.right = new FormAttachment( middle, -margin );
+    wlSortedList.setLayoutData(fdlSortedList);
+    wSortedList = new Button( shell, SWT.RADIO );
+    wSortedList.setEnabled( false );
+    props.setLook( wSortedList );
+    FormData fdSortedList = new FormData();
+    fdSortedList.left = new FormAttachment( middle, 0 );
+    fdSortedList.top = new FormAttachment(wlSortedList, 0, SWT.CENTER );
+    fdSortedList.right = new FormAttachment( 100, 0 );
+    wSortedList.setLayoutData(fdSortedList);
+    wSortedList.addSelectionListener( new SelectionAdapter() {
+      public void widgetSelected( SelectionEvent e ) {
+        input.setChanged();
+      }
+    } );
+
+
+    Label wlIntegerPair = new Label(shell, SWT.RIGHT);
+    wlIntegerPair.setText( BaseMessages.getString( PKG, "StreamLookupDialog.IntegerPair.Label" ) );
+    props.setLook(wlIntegerPair);
+    FormData fdlIntegerPair = new FormData();
+    fdlIntegerPair.left = new FormAttachment( 0, 0 );
+    fdlIntegerPair.bottom = new FormAttachment( wSortedList, -margin );
+    fdlIntegerPair.right = new FormAttachment( middle, -margin );
+    wlIntegerPair.setLayoutData(fdlIntegerPair);
+    wIntegerPair = new Button( shell, SWT.RADIO );
+    wIntegerPair.setEnabled( false );
+    props.setLook( wIntegerPair );
+    FormData fdIntegerPair = new FormData();
+    fdIntegerPair.left = new FormAttachment( middle, 0 );
+    fdIntegerPair.top = new FormAttachment(wlIntegerPair, 0, SWT.CENTER );
+    fdIntegerPair.right = new FormAttachment( 100, 0 );
+    wIntegerPair.setLayoutData(fdIntegerPair);
+    wIntegerPair.addSelectionListener( new SelectionAdapter() {
+      public void widgetSelected( SelectionEvent e ) {
+        input.setChanged();
+      }
+    } );
+
+    Label wlPreserveMemory = new Label(shell, SWT.RIGHT);
+    wlPreserveMemory.setText( BaseMessages.getString( PKG, "StreamLookupDialog.PreserveMemory.Label" ) );
+    props.setLook(wlPreserveMemory);
+    FormData fdlPreserveMemory = new FormData();
+    fdlPreserveMemory.left = new FormAttachment( 0, 0 );
+    fdlPreserveMemory.bottom = new FormAttachment(wlIntegerPair, -margin );
+    fdlPreserveMemory.right = new FormAttachment( middle, -margin );
+    wlPreserveMemory.setLayoutData(fdlPreserveMemory);
+    wPreserveMemory = new Button( shell, SWT.CHECK );
+    props.setLook( wPreserveMemory );
+    FormData fdPreserveMemory = new FormData();
+    fdPreserveMemory.left = new FormAttachment( middle, 0 );
+    fdPreserveMemory.top = new FormAttachment(wlPreserveMemory, 0, SWT.CENTER );
+    fdPreserveMemory.right = new FormAttachment( 100, 0 );
+    wPreserveMemory.setLayoutData(fdPreserveMemory);
+    wPreserveMemory.addSelectionListener( new SelectionAdapter() {
+      public void widgetSelected( SelectionEvent e ) {
+        input.setChanged();
+      }
+    } );
+    // PDI-2107 preserve memory should be enabled to have this options on.
+    wPreserveMemory.addListener( SWT.Selection, event -> {
+      boolean selection = wPreserveMemory.getSelection();
+      wSortedList.setEnabled( selection );
+      wIntegerPair.setEnabled( selection );
+    } );
 
     // THE UPDATE/INSERT TABLE
-    wlReturn = new Label( shell, SWT.NONE );
+    Label wlReturn = new Label(shell, SWT.NONE);
     wlReturn.setText( BaseMessages.getString( PKG, "StreamLookupDialog.ReturnFields.Label" ) );
-    props.setLook( wlReturn );
-    fdlReturn = new FormData();
+    props.setLook(wlReturn);
+    FormData fdlReturn = new FormData();
     fdlReturn.left = new FormAttachment( 0, 0 );
     fdlReturn.top = new FormAttachment( wKey, margin );
-    wlReturn.setLayoutData( fdlReturn );
+    wlReturn.setLayoutData(fdlReturn);
 
     int UpInsCols = 4;
     int UpInsRows = ( input.getValue() != null ? input.getValue().length : 1 );
@@ -255,132 +300,17 @@ public class StreamLookupDialog extends BaseTransformDialog implements ITransfor
 
     wReturn =
       new TableView(
-        pipelineMeta, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL, ciReturn,
+        variables, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL, ciReturn,
         UpInsRows, lsMod, props );
 
-    // START MEMORY PRESERVE GROUP
-
-    fdReturn = new FormData();
+    FormData fdReturn = new FormData();
     fdReturn.left = new FormAttachment( 0, 0 );
-    fdReturn.top = new FormAttachment( wlReturn, margin );
+    fdReturn.top = new FormAttachment(wlReturn, margin );
     fdReturn.right = new FormAttachment( 100, 0 );
-    fdReturn.bottom = new FormAttachment( 100, -125 );
-    wReturn.setLayoutData( fdReturn );
+    fdReturn.bottom = new FormAttachment(wlPreserveMemory, -2*margin );
+    wReturn.setLayoutData(fdReturn);
 
-    wlPreserveMemory = new Label( shell, SWT.RIGHT );
-    wlPreserveMemory.setText( BaseMessages.getString( PKG, "StreamLookupDialog.PreserveMemory.Label" ) );
-    props.setLook( wlPreserveMemory );
-    fdlPreserveMemory = new FormData();
-    fdlPreserveMemory.left = new FormAttachment( 0, 0 );
-    fdlPreserveMemory.top = new FormAttachment( wReturn, margin );
-    fdlPreserveMemory.right = new FormAttachment( middle, -margin );
-    wlPreserveMemory.setLayoutData( fdlPreserveMemory );
-    wPreserveMemory = new Button( shell, SWT.CHECK );
-    props.setLook( wPreserveMemory );
-    fdPreserveMemory = new FormData();
-    fdPreserveMemory.left = new FormAttachment( middle, 0 );
-    fdPreserveMemory.top = new FormAttachment( wReturn, margin );
-    fdPreserveMemory.right = new FormAttachment( 100, 0 );
-    wPreserveMemory.setLayoutData( fdPreserveMemory );
-    wPreserveMemory.addSelectionListener( new SelectionAdapter() {
-      public void widgetSelected( SelectionEvent e ) {
-        input.setChanged();
-      }
-    } );
 
-    wlIntegerPair = new Label( shell, SWT.RIGHT );
-    wlIntegerPair.setText( BaseMessages.getString( PKG, "StreamLookupDialog.IntegerPair.Label" ) );
-    props.setLook( wlIntegerPair );
-    fdlIntegerPair = new FormData();
-    fdlIntegerPair.left = new FormAttachment( 0, 0 );
-    fdlIntegerPair.top = new FormAttachment( wPreserveMemory, margin );
-    fdlIntegerPair.right = new FormAttachment( middle, -margin );
-    wlIntegerPair.setLayoutData( fdlIntegerPair );
-    wIntegerPair = new Button( shell, SWT.RADIO );
-    wIntegerPair.setEnabled( false );
-    props.setLook( wIntegerPair );
-    fdIntegerPair = new FormData();
-    fdIntegerPair.left = new FormAttachment( middle, 0 );
-    fdIntegerPair.top = new FormAttachment( wPreserveMemory, margin );
-    fdIntegerPair.right = new FormAttachment( 100, 0 );
-    wIntegerPair.setLayoutData( fdIntegerPair );
-    wIntegerPair.addSelectionListener( new SelectionAdapter() {
-      public void widgetSelected( SelectionEvent e ) {
-        input.setChanged();
-      }
-    } );
-
-    wlSortedList = new Label( shell, SWT.RIGHT );
-    wlSortedList.setText( BaseMessages.getString( PKG, "StreamLookupDialog.SortedList.Label" ) );
-    props.setLook( wlSortedList );
-    fdlSortedList = new FormData();
-    fdlSortedList.left = new FormAttachment( 0, 0 );
-    fdlSortedList.top = new FormAttachment( wIntegerPair, margin );
-    fdlSortedList.right = new FormAttachment( middle, -margin );
-    wlSortedList.setLayoutData( fdlSortedList );
-    wSortedList = new Button( shell, SWT.RADIO );
-    wSortedList.setEnabled( false );
-    props.setLook( wSortedList );
-    fdSortedList = new FormData();
-    fdSortedList.left = new FormAttachment( middle, 0 );
-    fdSortedList.top = new FormAttachment( wIntegerPair, margin );
-    fdSortedList.right = new FormAttachment( 100, 0 );
-    wSortedList.setLayoutData( fdSortedList );
-    wSortedList.addSelectionListener( new SelectionAdapter() {
-      public void widgetSelected( SelectionEvent e ) {
-        input.setChanged();
-      }
-    } );
-    // PDI-2107 preserve memory should be enabled to have this options on.
-    wPreserveMemory.addListener( SWT.Selection, new Listener() {
-      @Override
-      public void handleEvent( Event event ) {
-        boolean selection = wPreserveMemory.getSelection();
-        wSortedList.setEnabled( selection );
-        wIntegerPair.setEnabled( selection );
-      }
-    } );
-
-    // END MEMORY PRESERVE
-
-    // THE BUTTONS
-    wOk = new Button( shell, SWT.PUSH );
-    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
-    wGet = new Button( shell, SWT.PUSH );
-    wGet.setText( BaseMessages.getString( PKG, "StreamLookupDialog.GetFields.Button" ) );
-    wGetLU = new Button( shell, SWT.PUSH );
-    wGetLU.setText( BaseMessages.getString( PKG, "StreamLookupDialog.GetLookupFields.Button" ) );
-    wCancel = new Button( shell, SWT.PUSH );
-    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
-
-    setButtonPositions( new Button[] { wOk, wCancel, wGet, wGetLU }, margin, null );
-
-    // Add listeners
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
-    lsGet = new Listener() {
-      public void handleEvent( Event e ) {
-        get();
-      }
-    };
-    lsGetLU = new Listener() {
-      public void handleEvent( Event e ) {
-        getlookup();
-      }
-    };
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-
-    wOk.addListener( SWT.Selection, lsOk );
-    wGet.addListener( SWT.Selection, lsGet );
-    wGetLU.addListener( SWT.Selection, lsGetLU );
-    wCancel.addListener( SWT.Selection, lsCancel );
 
     lsDef = new SelectionAdapter() {
       public void widgetDefaultSelected( SelectionEvent e ) {
@@ -420,35 +350,33 @@ public class StreamLookupDialog extends BaseTransformDialog implements ITransfor
     // Search the fields in the background
     //
 
-    final Runnable runnable = new Runnable() {
-      public void run() {
-        TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
-        if ( transformMeta != null ) {
-          try {
-            IRowMeta row = pipelineMeta.getPrevTransformFields( transformMeta );
-            Map<String, Integer> prevFields = new HashMap<String, Integer>();
-            // Remember these fields...
-            for ( int i = 0; i < row.size(); i++ ) {
-              prevFields.put( row.getValueMeta( i ).getName(), Integer.valueOf( i ) );
-            }
-
-            // Something was changed in the row.
-            //
-            final Map<String, Integer> fields = new HashMap<String, Integer>();
-
-            // Add the currentMeta fields...
-            fields.putAll( prevFields );
-
-            Set<String> keySet = fields.keySet();
-            List<String> entries = new ArrayList<>( keySet );
-
-            String[] fieldNames = entries.toArray( new String[ entries.size() ] );
-            Const.sortStrings( fieldNames );
-            // return fields
-            ciKey[ 0 ].setComboValues( fieldNames );
-          } catch ( HopException e ) {
-            logError( BaseMessages.getString( PKG, "System.Dialog.GetFieldsFailed.Message" ) );
+    final Runnable runnable = () -> {
+      TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
+      if ( transformMeta != null ) {
+        try {
+          IRowMeta row = pipelineMeta.getPrevTransformFields( variables, transformMeta );
+          Map<String, Integer> prevFields = new HashMap<>();
+          // Remember these fields...
+          for ( int i = 0; i < row.size(); i++ ) {
+            prevFields.put( row.getValueMeta( i ).getName(), i);
           }
+
+          // Something was changed in the row.
+          //
+          final Map<String, Integer> fields = new HashMap<>();
+
+          // Add the currentMeta fields...
+          fields.putAll( prevFields );
+
+          Set<String> keySet = fields.keySet();
+          List<String> entries = new ArrayList<>( keySet );
+
+          String[] fieldNames = entries.toArray( new String[ entries.size() ] );
+          Const.sortStrings( fieldNames );
+          // return fields
+          ciKey[ 0 ].setComboValues( fieldNames );
+        } catch ( HopException e ) {
+          logError( BaseMessages.getString( PKG, "System.Dialog.GetFieldsFailed.Message" ) );
         }
       }
     };
@@ -457,36 +385,34 @@ public class StreamLookupDialog extends BaseTransformDialog implements ITransfor
   }
 
   protected void setComboBoxesLookup() {
-    Runnable fieldLoader = new Runnable() {
-      public void run() {
-        TransformMeta lookupTransformMeta = pipelineMeta.findTransform( wTransform.getText() );
-        if ( lookupTransformMeta != null ) {
-          try {
-            IRowMeta row = pipelineMeta.getTransformFields( lookupTransformMeta );
-            Map<String, Integer> lookupFields = new HashMap<String, Integer>();
-            // Remember these fields...
-            for ( int i = 0; i < row.size(); i++ ) {
-              lookupFields.put( row.getValueMeta( i ).getName(), Integer.valueOf( i ) );
-            }
-
-            // Something was changed in the row.
-            //
-            final Map<String, Integer> fields = new HashMap<String, Integer>();
-
-            // Add the currentMeta fields...
-            fields.putAll( lookupFields );
-
-            Set<String> keySet = fields.keySet();
-            List<String> entries = new ArrayList<>( keySet );
-
-            String[] fieldNames = entries.toArray( new String[ entries.size() ] );
-            Const.sortStrings( fieldNames );
-            // return fields
-            ciReturn[ 0 ].setComboValues( fieldNames );
-            ciKey[ 1 ].setComboValues( fieldNames );
-          } catch ( HopException e ) {
-            logError( "It was not possible to retrieve the list of fields for transform [" + wTransform.getText() + "]!" );
+    Runnable fieldLoader = () -> {
+      TransformMeta lookupTransformMeta = pipelineMeta.findTransform( wTransform.getText() );
+      if ( lookupTransformMeta != null ) {
+        try {
+          IRowMeta row = pipelineMeta.getTransformFields( variables, lookupTransformMeta );
+          Map<String, Integer> lookupFields = new HashMap<>();
+          // Remember these fields...
+          for ( int i = 0; i < row.size(); i++ ) {
+            lookupFields.put( row.getValueMeta( i ).getName(), i);
           }
+
+          // Something was changed in the row.
+          //
+          final Map<String, Integer> fields = new HashMap<>();
+
+          // Add the currentMeta fields...
+          fields.putAll( lookupFields );
+
+          Set<String> keySet = fields.keySet();
+          List<String> entries = new ArrayList<>( keySet );
+
+          String[] fieldNames = entries.toArray( new String[ entries.size() ] );
+          Const.sortStrings( fieldNames );
+          // return fields
+          ciReturn[ 0 ].setComboValues( fieldNames );
+          ciKey[ 1 ].setComboValues( fieldNames );
+        } catch ( HopException e ) {
+          logError( "It was not possible to retrieve the list of fields for transform [" + wTransform.getText() + "]!" );
         }
       }
     };
@@ -629,13 +555,13 @@ public class StreamLookupDialog extends BaseTransformDialog implements ITransfor
     }
 
     try {
-      IRowMeta r = pipelineMeta.getPrevTransformFields( transformName );
+      IRowMeta r = pipelineMeta.getPrevTransformFields( variables, transformName );
       if ( r != null && !r.isEmpty() ) {
         BaseTransformDialog.getFieldsFromPrevious( r, wKey, 1, new int[] { 1, 2 }, new int[] {}, -1, -1, null );
       } else {
         String transformFrom = wTransform.getText();
         if ( !Utils.isEmpty( transformFrom ) ) {
-          r = pipelineMeta.getTransformFields( transformFrom );
+          r = pipelineMeta.getTransformFields( variables, transformFrom );
           if ( r != null ) {
             BaseTransformDialog.getFieldsFromPrevious( r, wKey, 2, new int[] { 1, 2 }, new int[] {}, -1, -1, null );
           } else {
@@ -662,7 +588,7 @@ public class StreamLookupDialog extends BaseTransformDialog implements ITransfor
     try {
       String transformFrom = wTransform.getText();
       if ( !Utils.isEmpty( transformFrom ) ) {
-        IRowMeta r = pipelineMeta.getTransformFields( transformFrom );
+        IRowMeta r = pipelineMeta.getTransformFields( variables, transformFrom );
         if ( r != null && !r.isEmpty() ) {
           BaseTransformDialog.getFieldsFromPrevious( r, wReturn, 1, new int[] { 1 }, new int[] { 4 }, -1, -1, null );
         } else {

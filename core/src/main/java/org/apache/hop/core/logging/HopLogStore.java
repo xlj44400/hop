@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.logging;
 
@@ -115,18 +110,6 @@ public class HopLogStore {
     }
   }
 
-  /**
-   * Initialize the central log store with optional limitation to the size
-   *
-   * @param maxSize              the maximum size
-   * @param maxLogTimeoutMinutes The maximum time that a log line times out in hours.
-   */
-  public static void init( int maxSize, int maxLogTimeoutMinutes ) {
-    init( maxSize, maxLogTimeoutMinutes, EnvUtil
-      .getSystemProperty( Const.HOP_REDIRECT_STDOUT, "N" ).equalsIgnoreCase( "Y" ), EnvUtil
-      .getSystemProperty( Const.HOP_REDIRECT_STDERR, "N" ).equalsIgnoreCase( "Y" ) );
-  }
-
   public static void init() {
     init( EnvUtil.getSystemProperty( Const.HOP_REDIRECT_STDOUT, "N" ).equalsIgnoreCase( "Y" ), EnvUtil
       .getSystemProperty( Const.HOP_REDIRECT_STDERR, "N" ).equalsIgnoreCase( "Y" ) );
@@ -139,9 +122,9 @@ public class HopLogStore {
    * @param redirectStdErr a boolean indicating whether to redirect stderr to the logging framework
    */
   public static void init( boolean redirectStdOut, boolean redirectStdErr ) {
-    int maxSize = Const.toInt( EnvUtil.getSystemProperty( Const.HOP_MAX_LOG_SIZE_IN_LINES ), 5000 );
+    int maxSize = Const.toInt( EnvUtil.getSystemProperty( Const.HOP_MAX_LOG_SIZE_IN_LINES ), Const.MAX_NR_LOG_LINES );
     int maxLogTimeoutMinutes =
-      Const.toInt( EnvUtil.getSystemProperty( Const.HOP_MAX_LOG_TIMEOUT_IN_MINUTES ), 1440 );
+      Const.toInt( EnvUtil.getSystemProperty( Const.HOP_MAX_LOG_TIMEOUT_IN_MINUTES ), Const.MAX_LOG_LINE_TIMEOUT_MINUTES );
     init0( maxSize, maxLogTimeoutMinutes, redirectStdOut, redirectStdErr );
   }
 

@@ -1,34 +1,26 @@
-/*******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.compress;
 
-import org.apache.hop.core.Const;
 import org.apache.hop.core.plugins.BasePluginType;
 import org.apache.hop.core.plugins.PluginAnnotationType;
 import org.apache.hop.core.plugins.PluginMainClassType;
-import org.apache.hop.core.plugins.IPluginType;
 
-import java.lang.annotation.Annotation;
 import java.util.Map;
 
 /**
@@ -36,12 +28,11 @@ import java.util.Map;
  */
 @PluginMainClassType( ICompressionProvider.class )
 @PluginAnnotationType( CompressionPlugin.class )
-public class CompressionPluginType extends BasePluginType implements IPluginType {
+public class CompressionPluginType extends BasePluginType<CompressionPlugin> {
   protected static CompressionPluginType pluginType;
 
   private CompressionPluginType() {
     super( CompressionPlugin.class, "COMPRESSION", "Compression" );
-    populateFolders( "compress" );
   }
 
   public static CompressionPluginType getInstance() {
@@ -50,92 +41,72 @@ public class CompressionPluginType extends BasePluginType implements IPluginType
     }
     return pluginType;
   }
-
-  @Override
-  protected String getXmlPluginFile() {
-    return Const.XML_FILE_HOP_COMPRESSION_PROVIDERS;
-  }
-
-  @Override
-  protected String getMainTag() {
-    return "compression-providers";
-  }
-
-  @Override
-  protected String getSubTag() {
-    return "compression-provider";
-  }
-
-  @Override
-  protected String getPath() {
-    return "./";
-  }
-
+  
   public String[] getNaturalCategoriesOrder() {
     return new String[ 0 ];
   }
 
   @Override
-  protected String extractCategory( Annotation annotation ) {
+  protected String extractCategory( CompressionPlugin annotation ) {
     return "";
   }
 
   @Override
-  protected String extractDesc( Annotation annotation ) {
+  protected String extractDesc( CompressionPlugin annotation ) {
     return ( (CompressionPlugin) annotation ).description();
   }
 
   @Override
-  protected String extractID( Annotation annotation ) {
+  protected String extractID( CompressionPlugin annotation ) {
     return ( (CompressionPlugin) annotation ).id();
   }
 
   @Override
-  protected String extractName( Annotation annotation ) {
+  protected String extractName( CompressionPlugin annotation ) {
     return ( (CompressionPlugin) annotation ).name();
   }
 
   @Override
-  protected boolean extractSeparateClassLoader( Annotation annotation ) {
+  protected boolean extractSeparateClassLoader( CompressionPlugin annotation ) {
     return ( (CompressionPlugin) annotation ).isSeparateClassLoaderNeeded();
   }
 
   @Override
-  protected String extractI18nPackageName( Annotation annotation ) {
+  protected String extractI18nPackageName( CompressionPlugin annotation ) {
     return ( (CompressionPlugin) annotation ).i18nPackageName();
   }
 
   @Override
-  protected void addExtraClasses( Map<Class<?>, String> classMap, Class<?> clazz, Annotation annotation ) {
+  protected void addExtraClasses( Map<Class<?>, String> classMap, Class<?> clazz, CompressionPlugin annotation ) {
   }
 
   @Override
-  protected String extractDocumentationUrl( Annotation annotation ) {
+  protected String extractDocumentationUrl( CompressionPlugin annotation ) {
     return ( (CompressionPlugin) annotation ).documentationUrl();
   }
 
   @Override
-  protected String extractCasesUrl( Annotation annotation ) {
+  protected String extractCasesUrl( CompressionPlugin annotation ) {
     return ( (CompressionPlugin) annotation ).casesUrl();
   }
 
   @Override
-  protected String extractForumUrl( Annotation annotation ) {
+  protected String extractForumUrl( CompressionPlugin annotation ) {
     return ( (CompressionPlugin) annotation ).forumUrl();
   }
 
   @Override
-  protected String extractImageFile( Annotation annotation ) {
+  protected String extractImageFile( CompressionPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected String extractSuggestion( Annotation annotation ) {
+  protected String extractSuggestion( CompressionPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected String extractClassLoaderGroup( Annotation annotation ) {
+  protected String extractClassLoaderGroup( CompressionPlugin annotation ) {
     return ( (CompressionPlugin) annotation ).classLoaderGroup();
   }
 }

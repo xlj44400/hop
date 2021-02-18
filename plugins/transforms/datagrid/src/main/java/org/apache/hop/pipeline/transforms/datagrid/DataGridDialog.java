@@ -1,33 +1,29 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.datagrid;
 
-import org.apache.commons.collections.CollectionUtils;
+
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.hop.core.Const;
 import org.apache.hop.core.Props;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.row.value.ValueMetaFactory;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
@@ -55,28 +51,21 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-@PluginDialog(
-        id = "DataGrid",
-        image = "datagrid.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = "http://www.project-hop.org/manual/latest/plugins/transforms/datagrid.html"
-)
 public class DataGridDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = DataGridMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = DataGridMeta.class; // For Translator
 
   private CTabFolder wTabFolder;
-  private CTabItem wMetaTab, wDataTab;
-  private Composite wMetaComp, wDataComp;
+  private Composite wDataComp;
 
   private TableView wFields;
   private TableView wData;
 
-  private DataGridMeta input;
-  private DataGridMeta dataGridMeta;
+  private final DataGridMeta input;
+  private final DataGridMeta dataGridMeta;
   private ModifyListener lsMod;
 
-  public DataGridDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public DataGridDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (DataGridMeta) in;
 
     dataGridMeta = (DataGridMeta) input.clone();
@@ -91,12 +80,7 @@ public class DataGridDialog extends BaseTransformDialog implements ITransformDia
     props.setLook( shell );
     setShellImage( shell, input );
 
-    lsMod = new ModifyListener() {
-      @Override
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    lsMod = e -> input.setChanged();
     changed = input.hasChanged();
 
     FormLayout formLayout = new FormLayout();
@@ -128,6 +112,18 @@ public class DataGridDialog extends BaseTransformDialog implements ITransformDia
     fdTransformName.right = new FormAttachment( 100, 0 );
     wTransformName.setLayoutData( fdTransformName );
 
+
+    wOk = new Button( shell, SWT.PUSH );
+    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
+    wOk.addListener( SWT.Selection, e -> ok() );
+    wPreview = new Button( shell, SWT.PUSH );
+    wPreview.setText( BaseMessages.getString( PKG, "System.Button.Preview" ) );
+    wPreview.addListener( SWT.Selection, e -> preview() );
+    wCancel = new Button( shell, SWT.PUSH );
+    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
+    wCancel.addListener( SWT.Selection, e -> cancel() );
+    setButtonPositions( new Button[] { wOk, wPreview, wCancel }, margin, null ); // At the very bottom
+
     wTabFolder = new CTabFolder( shell, SWT.BORDER );
     props.setLook( wTabFolder, Props.WIDGET_STYLE_TAB );
 
@@ -135,11 +131,11 @@ public class DataGridDialog extends BaseTransformDialog implements ITransformDia
     // START OF META TAB ///
     // //////////////////////
 
-    wMetaTab = new CTabItem( wTabFolder, SWT.NONE );
+    CTabItem wMetaTab = new CTabItem(wTabFolder, SWT.NONE);
     wMetaTab.setText( BaseMessages.getString( PKG, "DataGridDialog.Meta.Label" ) );
 
-    wMetaComp = new Composite( wTabFolder, SWT.NONE );
-    props.setLook( wMetaComp );
+    Composite wMetaComp = new Composite(wTabFolder, SWT.NONE);
+    props.setLook(wMetaComp);
 
     FormLayout fileLayout = new FormLayout();
     fileLayout.marginWidth = 3;
@@ -178,10 +174,7 @@ public class DataGridDialog extends BaseTransformDialog implements ITransformDia
 
       };
 
-    wFields =
-      new TableView(
-        pipelineMeta, wMetaComp, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
-
+    wFields = new TableView( variables, wMetaComp, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
     FormData fdFields = new FormData();
     fdFields.left = new FormAttachment( 0, 0 );
     fdFields.top = new FormAttachment( 0, 0 );
@@ -190,13 +183,13 @@ public class DataGridDialog extends BaseTransformDialog implements ITransformDia
     wFields.setLayoutData( fdFields );
 
     wMetaComp.layout();
-    wMetaTab.setControl( wMetaComp );
+    wMetaTab.setControl(wMetaComp);
 
     // //////////////////////
     // START OF DATA TAB ///
     // //////////////////////
 
-    wDataTab = new CTabItem( wTabFolder, SWT.NONE );
+    CTabItem wDataTab = new CTabItem(wTabFolder, SWT.NONE);
     wDataTab.setText( BaseMessages.getString( PKG, "DataGridDialog.Data.Label" ) );
 
     wDataComp = new Composite( wTabFolder, SWT.NONE );
@@ -223,41 +216,9 @@ public class DataGridDialog extends BaseTransformDialog implements ITransformDia
     fdTabFolder.left = new FormAttachment( 0, 0 );
     fdTabFolder.top = new FormAttachment( wTransformName, margin );
     fdTabFolder.right = new FormAttachment( 100, 0 );
-    fdTabFolder.bottom = new FormAttachment( 100, -50 );
+    fdTabFolder.bottom = new FormAttachment( wOk, -2*margin );
     wTabFolder.setLayoutData( fdTabFolder );
 
-    wOk = new Button( shell, SWT.PUSH );
-    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
-    wPreview = new Button( shell, SWT.PUSH );
-    wPreview.setText( BaseMessages.getString( PKG, "System.Button.Preview" ) );
-    wCancel = new Button( shell, SWT.PUSH );
-    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
-
-    setButtonPositions( new Button[] { wOk, wPreview, wCancel }, margin, wTabFolder );
-
-    // Add listeners
-    lsOk = new Listener() {
-      @Override
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
-    lsPreview = new Listener() {
-      @Override
-      public void handleEvent( Event e ) {
-        preview();
-      }
-    };
-    lsCancel = new Listener() {
-      @Override
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-
-    wOk.addListener( SWT.Selection, lsOk );
-    wPreview.addListener( SWT.Selection, lsPreview );
-    wCancel.addListener( SWT.Selection, lsCancel );
 
     lsDef = new SelectionAdapter() {
       @Override
@@ -276,14 +237,11 @@ public class DataGridDialog extends BaseTransformDialog implements ITransformDia
       }
     } );
 
-    lsResize = new Listener() {
-      @Override
-      public void handleEvent( Event event ) {
-        Point size = shell.getSize();
-        wFields.setSize( size.x - 10, size.y - 50 );
-        wFields.table.setSize( size.x - 10, size.y - 50 );
-        wFields.redraw();
-      }
+    lsResize = event -> {
+      Point size = shell.getSize();
+      wFields.setSize( size.x - 10, size.y - 50 );
+      wFields.table.setSize( size.x - 10, size.y - 50 );
+      wFields.redraw();
     };
     shell.addListener( SWT.Resize, lsResize );
 
@@ -336,7 +294,7 @@ public class DataGridDialog extends BaseTransformDialog implements ITransformDia
       columns[ i ] = new ColumnInfo( dataGridMeta.getFieldName()[ i ], ColumnInfo.COLUMN_TYPE_TEXT, false, false );
     }
     List<List<String>> lines = dataGridMeta.getDataLines();
-    wData = new TableView( pipelineMeta, wDataComp, SWT.NONE, columns, lines.size(), lsMod, props );
+    wData = new TableView( variables, wDataComp, SWT.NONE, columns, lines.size(), lsMod, props );
     wData.setSortable( false );
 
     for ( int i = 0; i < lines.size(); i++ ) {
@@ -568,7 +526,7 @@ public class DataGridDialog extends BaseTransformDialog implements ITransformDia
   }
 
   private void getDataInfo( DataGridMeta meta ) {
-    List<List<String>> data = new ArrayList<List<String>>();
+    List<List<String>> data = new ArrayList<>();
 
     int nrLines = wData.table.getItemCount();
     int nrFields = meta.getFieldName().length;
@@ -593,7 +551,7 @@ public class DataGridDialog extends BaseTransformDialog implements ITransformDia
     DataGridMeta oneMeta = new DataGridMeta();
     getInfo( oneMeta );
 
-    PipelineMeta previewMeta = PipelinePreviewFactory.generatePreviewPipeline( pipelineMeta, pipelineMeta.getMetaStore(),
+    PipelineMeta previewMeta = PipelinePreviewFactory.generatePreviewPipeline( variables, pipelineMeta.getMetadataProvider(),
       oneMeta, wTransformName.getText() );
 
     EnterNumberDialog numberDialog =
@@ -604,7 +562,7 @@ public class DataGridDialog extends BaseTransformDialog implements ITransformDia
     if ( previewSize > 0 ) {
       PipelinePreviewProgressDialog progressDialog =
         new PipelinePreviewProgressDialog(
-          shell, previewMeta, new String[] { wTransformName.getText() }, new int[] { previewSize } );
+          shell, variables, previewMeta, new String[] { wTransformName.getText() }, new int[] { previewSize } );
       progressDialog.open();
 
       Pipeline pipeline = progressDialog.getPipeline();
@@ -623,7 +581,7 @@ public class DataGridDialog extends BaseTransformDialog implements ITransformDia
 
       PreviewRowsDialog prd =
         new PreviewRowsDialog(
-          shell, pipelineMeta, SWT.NONE, wTransformName.getText(), progressDialog.getPreviewRowsMeta( wTransformName
+          shell, variables, SWT.NONE, wTransformName.getText(), progressDialog.getPreviewRowsMeta( wTransformName
           .getText() ), progressDialog.getPreviewRows( wTransformName.getText() ), loggingText );
       prd.open();
     }

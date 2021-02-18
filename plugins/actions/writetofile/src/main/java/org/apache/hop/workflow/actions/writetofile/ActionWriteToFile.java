@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.writetofile;
 
@@ -38,7 +33,7 @@ import org.apache.hop.workflow.action.ActionBase;
 import org.apache.hop.workflow.action.IAction;
 import org.apache.hop.workflow.action.validator.AndValidator;
 import org.apache.hop.workflow.action.validator.ActionValidatorUtils;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.resource.ResourceEntry;
 import org.apache.hop.resource.ResourceEntry.ResourceType;
 import org.apache.hop.resource.ResourceReference;
@@ -58,14 +53,14 @@ import java.util.List;
 
 @Action(
   id = "WRITE_TO_FILE",
-  i18nPackageName = "org.apache.hop.workflow.actions.writetofile",
-  name = "ActionWriteToFile.Name",
-  description = "ActionWriteToFile.Description",
+  name = "i18n::ActionWriteToFile.Name",
+  description = "i18n::ActionWriteToFile.Description",
   image = "WriteToFile.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.FileManagement"
+  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.FileManagement",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/writetofile.html"
 )
 public class ActionWriteToFile extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionWriteToFile.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionWriteToFile.class; // For Translator
 
   private String filename;
   private boolean createParentFolder;
@@ -105,7 +100,7 @@ public class ActionWriteToFile extends ActionBase implements Cloneable, IAction 
   }
 
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
       filename = XmlHandler.getTagValue( entrynode, "filename" );
@@ -143,7 +138,7 @@ public class ActionWriteToFile extends ActionBase implements Cloneable, IAction 
   }
 
   public String getRealFilename() {
-    return environmentSubstitute( getFilename() );
+    return resolve( getFilename() );
   }
 
   public Result execute( Result previousResult, int nr ) {
@@ -154,8 +149,8 @@ public class ActionWriteToFile extends ActionBase implements Cloneable, IAction 
     String realFilename = getRealFilename();
     if ( !Utils.isEmpty( realFilename ) ) {
 
-      String content = environmentSubstitute( getContent() );
-      String encoding = environmentSubstitute( getEncoding() );
+      String content = resolve( getContent() );
+      String encoding = resolve( getEncoding() );
 
       OutputStreamWriter osw = null;
       OutputStream os = null;
@@ -165,7 +160,7 @@ public class ActionWriteToFile extends ActionBase implements Cloneable, IAction 
         createParentFolder( realFilename );
 
         // Create / open file for writing
-        os = HopVfs.getOutputStream( realFilename, this, isAppendFile() );
+        os = HopVfs.getOutputStream( realFilename, isAppendFile() );
 
         if ( Utils.isEmpty( encoding ) ) {
           if ( isDebug() ) {
@@ -212,7 +207,7 @@ public class ActionWriteToFile extends ActionBase implements Cloneable, IAction 
   private void createParentFolder( String realFilename ) throws HopException {
     FileObject parent = null;
     try {
-      parent = HopVfs.getFileObject( realFilename, this ).getParent();
+      parent = HopVfs.getFileObject( realFilename ).getParent();
       if ( !parent.exists() ) {
         if ( isCreateParentFolder() ) {
           if ( isDetailed() ) {
@@ -242,7 +237,7 @@ public class ActionWriteToFile extends ActionBase implements Cloneable, IAction 
     }
   }
 
-  public boolean evaluates() {
+  @Override public boolean isEvaluation() {
     return true;
   }
 
@@ -262,10 +257,10 @@ public class ActionWriteToFile extends ActionBase implements Cloneable, IAction 
     this.createParentFolder = createParentFolder;
   }
 
-  public List<ResourceReference> getResourceDependencies( WorkflowMeta workflowMeta ) {
-    List<ResourceReference> references = super.getResourceDependencies( workflowMeta );
+  public List<ResourceReference> getResourceDependencies( IVariables variables, WorkflowMeta workflowMeta ) {
+    List<ResourceReference> references = super.getResourceDependencies( variables, workflowMeta );
     if ( !Utils.isEmpty( getFilename() ) ) {
-      String realFileName = workflowMeta.environmentSubstitute( getFilename() );
+      String realFileName = resolve( getFilename() );
       ResourceReference reference = new ResourceReference( this );
       reference.getEntries().add( new ResourceEntry( realFileName, ResourceType.FILE ) );
       references.add( reference );
@@ -275,7 +270,7 @@ public class ActionWriteToFile extends ActionBase implements Cloneable, IAction 
 
   @Override
   public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     ActionValidatorUtils.andValidator().validate( this, "filename", remarks,
       AndValidator.putValidators( ActionValidatorUtils.notBlankValidator() ) );
   }

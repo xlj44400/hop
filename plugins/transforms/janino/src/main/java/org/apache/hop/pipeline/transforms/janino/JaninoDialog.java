@@ -1,98 +1,66 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.janino;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.value.ValueMetaFactory;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
 import org.apache.hop.pipeline.transform.ITransformDialog;
 import org.apache.hop.pipeline.transform.TransformMeta;
-import org.apache.hop.pipeline.transforms.janino.JaninoMeta;
-import org.apache.hop.pipeline.transforms.janino.JaninoMetaFunction;
 import org.apache.hop.ui.core.widget.ColumnInfo;
 import org.apache.hop.ui.core.widget.TableView;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-@PluginDialog(
-        id = "Janino",
-        image = "janino.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = ""
-)
 public class JaninoDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = JaninoMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = JaninoMeta.class; // For Translator
 
-  private Label wlTransformName;
   private Text wTransformName;
-  private FormData fdlTransformName, fdTransformName;
 
-  private Label wlFields;
   private TableView wFields;
-  private FormData fdlFields, fdFields;
 
-  private JaninoMeta currentMeta;
-  private JaninoMeta originalMeta;
+  private final JaninoMeta currentMeta;
+  private final JaninoMeta originalMeta;
 
-  private Map<String, Integer> inputFields;
+  private final Map<String, Integer> inputFields;
   private ColumnInfo[] colinf;
 
-  public JaninoDialog( Shell parent, Object in, PipelineMeta tr, String sname ) {
-    super( parent, (BaseTransformMeta) in, tr, sname );
+  public JaninoDialog( Shell parent, IVariables variables, Object in, PipelineMeta tr, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, tr, sname );
 
     // The order here is important... currentMeta is looked at for changes
     currentMeta = (JaninoMeta) in;
     originalMeta = (JaninoMeta) currentMeta.clone();
-    inputFields = new HashMap<String, Integer>();
+    inputFields = new HashMap<>();
   }
 
   public String open() {
@@ -103,11 +71,7 @@ public class JaninoDialog extends BaseTransformDialog implements ITransformDialo
     props.setLook( shell );
     setShellImage( shell, currentMeta );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        currentMeta.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> currentMeta.setChanged();
     changed = currentMeta.hasChanged();
 
     FormLayout formLayout = new FormLayout();
@@ -120,32 +84,41 @@ public class JaninoDialog extends BaseTransformDialog implements ITransformDialo
     int middle = props.getMiddlePct();
     int margin = props.getMargin();
 
+    // Some buttons at the bottom
+    wOk = new Button( shell, SWT.PUSH );
+    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
+    wOk.addListener( SWT.Selection, e -> ok() );
+    wCancel = new Button( shell, SWT.PUSH );
+    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
+    wCancel.addListener( SWT.Selection, e -> cancel() );
+    setButtonPositions( new Button[] { wOk, wCancel }, margin, null );
+
     // TransformName line
-    wlTransformName = new Label( shell, SWT.RIGHT );
+    Label wlTransformName = new Label(shell, SWT.RIGHT);
     wlTransformName.setText( BaseMessages.getString( PKG, "System.Label.TransformName" ) );
-    props.setLook( wlTransformName );
-    fdlTransformName = new FormData();
+    props.setLook(wlTransformName);
+    FormData fdlTransformName = new FormData();
     fdlTransformName.left = new FormAttachment( 0, 0 );
     fdlTransformName.right = new FormAttachment( middle, -margin );
     fdlTransformName.top = new FormAttachment( 0, margin );
-    wlTransformName.setLayoutData( fdlTransformName );
+    wlTransformName.setLayoutData(fdlTransformName);
     wTransformName = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wTransformName.setText( transformName );
     props.setLook( wTransformName );
     wTransformName.addModifyListener( lsMod );
-    fdTransformName = new FormData();
+    FormData fdTransformName = new FormData();
     fdTransformName.left = new FormAttachment( middle, 0 );
     fdTransformName.top = new FormAttachment( 0, margin );
     fdTransformName.right = new FormAttachment( 100, 0 );
-    wTransformName.setLayoutData( fdTransformName );
+    wTransformName.setLayoutData(fdTransformName);
 
-    wlFields = new Label( shell, SWT.NONE );
+    Label wlFields = new Label(shell, SWT.NONE);
     wlFields.setText( BaseMessages.getString( PKG, "JaninoDialog.Fields.Label" ) );
-    props.setLook( wlFields );
-    fdlFields = new FormData();
+    props.setLook(wlFields);
+    FormData fdlFields = new FormData();
     fdlFields.left = new FormAttachment( 0, 0 );
     fdlFields.top = new FormAttachment( wTransformName, margin );
-    wlFields.setLayoutData( fdlFields );
+    wlFields.setLayoutData(fdlFields);
 
     final int FieldsRows = currentMeta.getFormula() != null ? currentMeta.getFormula().length : 1;
 
@@ -168,74 +141,44 @@ public class JaninoDialog extends BaseTransformDialog implements ITransformDialo
 
     wFields =
       new TableView(
-        pipelineMeta, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
+        variables, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
 
-    fdFields = new FormData();
+    FormData fdFields = new FormData();
     fdFields.left = new FormAttachment( 0, 0 );
-    fdFields.top = new FormAttachment( wlFields, margin );
+    fdFields.top = new FormAttachment(wlFields, margin );
     fdFields.right = new FormAttachment( 100, 0 );
-    fdFields.bottom = new FormAttachment( 100, -50 );
-    wFields.setLayoutData( fdFields );
+    fdFields.bottom = new FormAttachment( wOk, -2*margin );
+    wFields.setLayoutData(fdFields);
 
     //
     // Search the fields in the background
     //
-    final Runnable runnable = new Runnable() {
-      public void run() {
-        TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
-        if ( transformMeta != null ) {
-          try {
-            IRowMeta row = pipelineMeta.getPrevTransformFields( transformMeta );
+    final Runnable runnable = () -> {
+      TransformMeta transformMeta = pipelineMeta.findTransform( transformName );
+      if ( transformMeta != null ) {
+        try {
+          IRowMeta row = pipelineMeta.getPrevTransformFields( variables, transformMeta );
 
-            // Remember these fields...
-            for ( int i = 0; i < row.size(); i++ ) {
-              inputFields.put( row.getValueMeta( i ).getName(), new Integer( i ) );
-            }
-
-            setComboBoxes();
-          } catch ( HopException e ) {
-            logError( BaseMessages.getString( PKG, "JaninoDialog.Log.UnableToFindInput" ) );
+          // Remember these fields...
+          for ( int i = 0; i < row.size(); i++ ) {
+            inputFields.put( row.getValueMeta( i ).getName(), i);
           }
+
+          setComboBoxes();
+        } catch ( HopException e ) {
+          logError( BaseMessages.getString( PKG, "JaninoDialog.Log.UnableToFindInput" ) );
         }
       }
     };
     new Thread( runnable ).start();
 
-    wFields.addModifyListener( new ModifyListener() {
-      public void modifyText( ModifyEvent arg0 ) {
-        // Now set the combo's
-        shell.getDisplay().asyncExec( new Runnable() {
-          public void run() {
-            setComboBoxes();
-          }
+    wFields.addModifyListener( arg0 -> {
+      // Now set the combo's
+      shell.getDisplay().asyncExec( () -> setComboBoxes() );
 
-        } );
-
-      }
     } );
 
-    // Some buttons
-    wOk = new Button( shell, SWT.PUSH );
-    wOk.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
-    wCancel = new Button( shell, SWT.PUSH );
-    wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
-
-    setButtonPositions( new Button[] { wOk, wCancel }, margin, null );
-
     // Add listeners
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
-
-    wCancel.addListener( SWT.Selection, lsCancel );
-    wOk.addListener( SWT.Selection, lsOk );
 
     lsDef = new SelectionAdapter() {
       public void widgetDefaultSelected( SelectionEvent e ) {
@@ -270,30 +213,28 @@ public class JaninoDialog extends BaseTransformDialog implements ITransformDialo
   protected void setComboBoxes() {
     // Something was changed in the row.
     //
-    final Map<String, Integer> fields = new HashMap<String, Integer>();
+    final Map<String, Integer> fields = new HashMap<>();
 
     // Add the currentMeta fields...
     fields.putAll( inputFields );
 
-    shell.getDisplay().syncExec( new Runnable() {
-      public void run() {
-        // Add the newly create fields.
-        //
-        /*
-         * int nrNonEmptyFields = wFields.nrNonEmpty(); for (int i=0;i<nrNonEmptyFields;i++) { TableItem item =
-         * wFields.getNonEmpty(i); fields.put(item.getText(1), new Integer(1000000+i)); // The number is just to debug
-         * the origin of the fieldname }
-         */
+    shell.getDisplay().syncExec( () -> {
+      // Add the newly create fields.
+      //
+      /*
+       * int nrNonEmptyFields = wFields.nrNonEmpty(); for (int i=0;i<nrNonEmptyFields;i++) { TableItem item =
+       * wFields.getNonEmpty(i); fields.put(item.getText(1), new Integer(1000000+i)); // The number is just to debug
+       * the origin of the fieldname }
+       */
 
-        Set<String> keySet = fields.keySet();
-        List<String> entries = new ArrayList<>( keySet );
+      Set<String> keySet = fields.keySet();
+      List<String> entries = new ArrayList<>( keySet );
 
-        String[] fieldNames = entries.toArray( new String[ entries.size() ] );
+      String[] fieldNames = entries.toArray( new String[ entries.size() ] );
 
-        Const.sortStrings( fieldNames );
+      Const.sortStrings( fieldNames );
 
-        colinf[ 5 ].setComboValues( fieldNames );
-      }
+      colinf[ 5 ].setComboValues( fieldNames );
     } );
 
   }

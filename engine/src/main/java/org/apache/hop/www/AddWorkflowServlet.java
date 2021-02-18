@@ -1,37 +1,33 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.www;
 
 import org.apache.hop.core.Const;
+import org.apache.hop.core.annotations.HopServerServlet;
 import org.apache.hop.core.logging.LoggingObjectType;
 import org.apache.hop.core.logging.SimpleLoggingObject;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.xml.XmlHandler;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.workflow.WorkflowConfiguration;
 import org.apache.hop.workflow.WorkflowExecutionConfiguration;
 import org.apache.hop.workflow.WorkflowMeta;
-import org.apache.hop.workflow.action.ActionCopy;
+import org.apache.hop.workflow.action.ActionMeta;
 import org.apache.hop.workflow.engine.IWorkflowEngine;
 import org.apache.hop.workflow.engine.WorkflowEngineFactory;
 
@@ -45,6 +41,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
+@HopServerServlet(id="addWorkflow", name = "Add a workflow to the server")
 public class AddWorkflowServlet extends BaseHttpServlet implements IHopServerPlugin {
   private static final long serialVersionUID = -6850701762586992604L;
 
@@ -88,7 +85,7 @@ public class AddWorkflowServlet extends BaseHttpServlet implements IHopServerPlu
     response.setStatus( HttpServletResponse.SC_OK );
 
     try {
-      // First read the complete transformation in memory from the request
+      // First read the complete pipeline in memory from the request
       int c;
       StringBuilder xml = new StringBuilder();
       while ( ( c = in.read() ) != -1 ) {
@@ -97,34 +94,32 @@ public class AddWorkflowServlet extends BaseHttpServlet implements IHopServerPlu
 
       // Parse the XML, create a workflow configuration
       //
-      WorkflowConfiguration workflowConfiguration = WorkflowConfiguration.fromXML( xml.toString() );
+      WorkflowConfiguration workflowConfiguration = WorkflowConfiguration.fromXml( xml.toString(), variables);
+      IHopMetadataProvider metadataProvider = workflowConfiguration.getMetadataProvider();
       WorkflowMeta workflowMeta = workflowConfiguration.getWorkflowMeta();
       WorkflowExecutionConfiguration workflowExecutionConfiguration = workflowConfiguration.getWorkflowExecutionConfiguration();
       workflowMeta.setLogLevel( workflowExecutionConfiguration.getLogLevel() );
-      workflowMeta.injectVariables( workflowExecutionConfiguration.getVariablesMap() );
 
       String serverObjectId = UUID.randomUUID().toString();
-      SimpleLoggingObject servletLoggingObject =
-        new SimpleLoggingObject( CONTEXT_PATH, LoggingObjectType.HOP_SERVER, null );
+      SimpleLoggingObject servletLoggingObject = new SimpleLoggingObject( CONTEXT_PATH, LoggingObjectType.HOP_SERVER, null );
       servletLoggingObject.setContainerObjectId( serverObjectId );
       servletLoggingObject.setLogLevel( workflowExecutionConfiguration.getLogLevel() );
 
-      // Create the transformation and store in the list...
+      // Create the workflow and store in the list...
       //
       String runConfigurationName = workflowExecutionConfiguration.getRunConfiguration();
-      IMetaStore metaStore = HopServerSingleton.getInstance().getWorkflowMap().getSlaveServerConfig().getMetaStore();
-      final IWorkflowEngine<WorkflowMeta> workflow = WorkflowEngineFactory.createWorkflowEngine( runConfigurationName, metaStore, workflowMeta );
+      final IWorkflowEngine<WorkflowMeta> workflow = WorkflowEngineFactory.createWorkflowEngine( variables, runConfigurationName, metadataProvider, workflowMeta, servletLoggingObject );
 
       // Setting variables
       //
-      workflow.initializeVariablesFrom( null );
+      workflow.initializeFrom( null );
       workflow.getWorkflowMeta().setInternalHopVariables( workflow );
-      workflow.injectVariables( workflowConfiguration.getWorkflowExecutionConfiguration().getVariablesMap() );
+      workflow.setVariables( workflowConfiguration.getWorkflowExecutionConfiguration().getVariablesMap() );
 
       // Also copy the parameters over...
       //
-      workflow.copyParametersFrom( workflowMeta );
-      workflow.clearParameters();
+      workflow.copyParametersFromDefinitions( workflowMeta );
+      workflow.clearParameterValues();
       String[] parameterNames = workflow.listParameters();
       for ( int idx = 0; idx < parameterNames.length; idx++ ) {
         // Grab the parameter value set in the action
@@ -133,16 +128,16 @@ public class AddWorkflowServlet extends BaseHttpServlet implements IHopServerPlu
         if ( !Utils.isEmpty( thisValue ) ) {
           // Set the value as specified by the user in the action
           //
-          workflowMeta.setParameterValue( parameterNames[ idx ], thisValue );
+          workflow.setParameterValue( parameterNames[ idx ], thisValue );
         }
       }
-      workflowMeta.activateParameters();
+      workflow.activateParameters(workflow);
+
       // Check if there is a starting point specified.
-      String startCopyName = workflowExecutionConfiguration.getStartCopyName();
-      if ( startCopyName != null && !startCopyName.isEmpty() ) {
-        int startCopyNr = workflowExecutionConfiguration.getStartCopyNr();
-        ActionCopy startActionCopy = workflowMeta.findAction( startCopyName, startCopyNr );
-        workflow.setStartActionCopy( startActionCopy );
+      String startActionName = workflowExecutionConfiguration.getStartActionName();
+      if ( startActionName != null && !startActionName.isEmpty() ) {        
+        ActionMeta startActionMeta = workflowMeta.findAction( startActionName );
+        workflow.setStartActionMeta( startActionMeta );
       }
 
       getWorkflowMap().addWorkflow( workflow.getWorkflowName(), serverObjectId, workflow, workflowConfiguration );

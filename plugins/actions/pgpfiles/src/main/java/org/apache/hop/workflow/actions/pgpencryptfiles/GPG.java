@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.pgpencryptfiles;
 
@@ -48,7 +43,7 @@ import java.io.OutputStreamWriter;
 
 public class GPG {
 
-  private static Class<?> PKG = ActionPGPEncryptFiles.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionPGPEncryptFiles.class; // For Translator
 
   private ILogChannel log;
 
@@ -190,10 +185,10 @@ public class GPG {
       throw new HopException( BaseMessages.getString( PKG, "GPG.IOException" ), io );
     }
 
-    ProcessStreamReader psr_stdout = new ProcessStreamReader( p.getInputStream() );
-    ProcessStreamReader psr_stderr = new ProcessStreamReader( p.getErrorStream() );
-    psr_stdout.start();
-    psr_stderr.start();
+    ProcessStreamReader psrStdOut = new ProcessStreamReader( p.getInputStream() );
+    ProcessStreamReader psrStdErr = new ProcessStreamReader( p.getErrorStream() );
+    psrStdOut.start();
+    psrStdErr.start();
     if ( inputStr != null ) {
       BufferedWriter out = new BufferedWriter( new OutputStreamWriter( p.getOutputStream() ) );
       try {
@@ -214,15 +209,15 @@ public class GPG {
     try {
       p.waitFor();
 
-      psr_stdout.join();
-      psr_stderr.join();
+      psrStdOut.join();
+      psrStdErr.join();
     } catch ( InterruptedException i ) {
       throw new HopException( BaseMessages.getString( PKG, "GPG.ExceptionWait" ), i );
     }
 
     try {
       if ( p.exitValue() != 0 ) {
-        throw new HopException( BaseMessages.getString( PKG, "GPG.Exception.ExistStatus", psr_stderr
+        throw new HopException( BaseMessages.getString( PKG, "GPG.Exception.ExistStatus", psrStdErr
           .getString() ) );
       }
     } catch ( IllegalThreadStateException itse ) {
@@ -231,7 +226,7 @@ public class GPG {
       p.destroy();
     }
 
-    retval = psr_stdout.getString();
+    retval = psrStdOut.getString();
 
     return retval;
 

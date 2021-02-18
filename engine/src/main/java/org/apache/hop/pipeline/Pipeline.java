@@ -1,25 +1,20 @@
 //CHECKSTYLE:FileLength:OFF
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline;
 
@@ -57,8 +52,9 @@ import org.apache.hop.core.logging.LoggingObjectType;
 import org.apache.hop.core.logging.LoggingRegistry;
 import org.apache.hop.core.logging.Metrics;
 import org.apache.hop.core.parameters.DuplicateParamException;
-import org.apache.hop.core.parameters.INamedParams;
-import org.apache.hop.core.parameters.NamedParamsDefault;
+import org.apache.hop.core.parameters.INamedParameterDefinitions;
+import org.apache.hop.core.parameters.INamedParameters;
+import org.apache.hop.core.parameters.NamedParameters;
 import org.apache.hop.core.parameters.UnknownParamException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.RowBuffer;
@@ -69,7 +65,7 @@ import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.variables.Variables;
 import org.apache.hop.core.vfs.HopVfs;
 import org.apache.hop.i18n.BaseMessages;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.partition.PartitionSchema;
 import org.apache.hop.pipeline.config.IPipelineEngineRunConfiguration;
 import org.apache.hop.pipeline.config.PipelineRunConfiguration;
@@ -133,7 +129,7 @@ import static org.apache.hop.pipeline.Pipeline.BitMaskStatus.STOPPED;
  * @since 07-04-2003
  */
 
-public abstract class Pipeline implements IVariables, INamedParams, IHasLogChannel, ILoggingObject,
+public abstract class Pipeline implements IVariables, INamedParameters, IHasLogChannel, ILoggingObject,
   IExecutor, IExtensionData, IPipelineEngine<PipelineMeta> {
 
   public static final String METRIC_NAME_INPUT = "input";
@@ -145,11 +141,13 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
   public static final String METRIC_NAME_REJECTED = "rejected";
   public static final String METRIC_NAME_BUFFER_IN = "buffer_in";
   public static final String METRIC_NAME_BUFFER_OUT = "buffer_out";
+  public static final String METRIC_NAME_FLUSH_BUFFER = "flush_buffer";
+  public static final String METRIC_NAME_INIT = "init";
 
   /**
    * The package name, used for internationalization of messages.
    */
-  private static Class<?> PKG = Pipeline.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = Pipeline.class; // For Translator
 
   protected String pluginId;
   protected PipelineRunConfiguration pipelineRunConfiguration;
@@ -182,7 +180,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
   /**
    * The MetaStore to use
    */
-  protected IMetaStore metaStore;
+  protected IHopMetadataProvider metadataProvider;
 
   /**
    * The workflow that's launching this pipeline. This gives us access to the whole chain, including the parent
@@ -396,7 +394,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
   /**
    * The named parameters.
    */
-  private INamedParams namedParams = new NamedParamsDefault();
+  private INamedParameters namedParams = new NamedParameters();
 
   /**
    * The pipeline log table database connection.
@@ -517,7 +515,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    * @param pipelineMeta the pipeline meta-data to use.
    */
   public Pipeline( PipelineMeta pipelineMeta ) {
-    this( pipelineMeta, null );
+    this( pipelineMeta, new Variables(), null );
   }
 
   /**
@@ -525,20 +523,19 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    * channel interface (workflow or pipeline) for logging lineage purposes.
    *
    * @param pipelineMeta the pipeline meta-data to use.
+   * @param variables The variables to inherit from
    * @param parent       the parent workflow that is executing this pipeline
    */
-  public Pipeline( PipelineMeta pipelineMeta, ILoggingObject parent ) {
+  public Pipeline( PipelineMeta pipelineMeta, IVariables variables, ILoggingObject parent ) {
     this();
 
     this.pipelineMeta = pipelineMeta;
-    this.containerObjectId = pipelineMeta.getContainerObjectId();
-    this.metaStore = pipelineMeta.getMetaStore();
+    this.containerObjectId = pipelineMeta.getContainerId();
+    this.metadataProvider = pipelineMeta.getMetadataProvider();
 
     setParent( parent );
 
-    initializeVariablesFrom( pipelineMeta );
-    copyParametersFrom( pipelineMeta );
-    pipelineMeta.activateParameters();
+    initializeFrom( variables );
   }
 
   /**
@@ -554,7 +551,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    * Sets the default log commit size.
    */
   private void setDefaultLogCommitSize() {
-    String propLogCommitSize = this.getVariable( "pentaho.log.commit.size" );
+    String propLogCommitSize = this.getVariable( "hop.log.commit.size" );
     if ( propLogCommitSize != null ) {
       // override the logCommit variable
       try {
@@ -603,28 +600,25 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    * Instantiates a new pipeline using any of the provided parameters including the variable bindings, a name
    * and a filename. This contstructor loads the specified pipeline from a file.
    *
-   * @param parent    the parent variable space and named params
+   * @param parent    the parent variable variables and named params
    * @param name      the name of the pipeline
    * @param filename  the filename containing the pipeline definition
-   * @param metaStore The MetaStore to use when referencing metadata objects
+   * @param metadataProvider The MetaStore to use when referencing metadata objects
    * @throws HopException if any error occurs during loading, parsing, or creation of the pipeline
    */
-  public <Parent extends IVariables & INamedParams> Pipeline( Parent parent, String name, String filename, IMetaStore metaStore ) throws HopException {
+  public <Parent extends IVariables & INamedParameters> Pipeline( Parent parent, String name, String filename, IHopMetadataProvider metadataProvider ) throws HopException {
     this();
 
-    this.metaStore = metaStore;
+    this.metadataProvider = metadataProvider;
 
     try {
-      pipelineMeta = new PipelineMeta( filename, metaStore, false, this );
+      pipelineMeta = new PipelineMeta( filename, metadataProvider, false, this );
 
       this.log = new LogChannel( pipelineMeta );
 
-      pipelineMeta.initializeVariablesFrom( parent );
-      initializeVariablesFrom( parent );
-      // PDI-3064 do not erase parameters from meta!
-      // instead of this - copy parameters to actual pipeline
-      this.copyParametersFrom( parent );
-      this.activateParameters();
+      initializeFrom( parent );
+
+      this.activateParameters(this);
 
       this.setDefaultLogCommitSize();
     } catch ( HopException e ) {
@@ -674,10 +668,9 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
 
     log.logBasic("Executing this pipeline using the Local Pipeline Engine with run configuration '"+pipelineRunConfiguration.getName()+"'");
 
-    ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.PipelinePrepareExecution.id, this );
+    ExtensionPointHandler.callExtensionPoint( log, this, HopExtensionPoint.PipelinePrepareExecution.id, this );
 
-    activateParameters();
-    pipelineMeta.activateParameters();
+    activateParameters(this);
 
     if ( pipelineMeta.getName() == null ) {
       if ( pipelineMeta.getFilename() != null ) {
@@ -741,15 +734,14 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
       List<TransformMeta> nextTransforms = pipelineMeta.findNextTransforms( thisTransform );
       int nrTargets = nextTransforms.size();
 
-      for ( int n = 0; n < nrTargets; n++ ) {
+      for ( TransformMeta nextTransform : nextTransforms ) {
         // What's the next transform?
-        TransformMeta nextTransform = nextTransforms.get( n );
         if ( nextTransform.isMapping() ) {
           continue; // handled and allocated by the mapping transform itself.
         }
 
         // How many times do we start the source transform?
-        int thisCopies = thisTransform.getCopies();
+        int thisCopies = thisTransform.getCopies( this );
 
         if ( thisCopies < 0 ) {
           // This can only happen if a variable is used that didn't resolve to a positive integer value
@@ -759,7 +751,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
         }
 
         // How many times do we start the target transform?
-        int nextCopies = nextTransform.getCopies();
+        int nextCopies = nextTransform.getCopies( this );
 
         // Are we re-partitioning?
         boolean repartitioning;
@@ -873,8 +865,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
 
     // Allocate the transforms & the data...
     //
-    for ( int i = 0; i < hopTransforms.size(); i++ ) {
-      TransformMeta transformMeta = hopTransforms.get( i );
+    for ( TransformMeta transformMeta : hopTransforms ) {
       String transformid = transformMeta.getTransformPluginId();
 
       if ( log.isDetailed() ) {
@@ -883,7 +874,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
       }
 
       // How many copies are launched of this transform?
-      int nrCopies = transformMeta.getCopies();
+      int nrCopies = transformMeta.getCopies( this );
 
       if ( log.isDebug() ) {
         log.logDebug( BaseMessages.getString( PKG, "Pipeline.Log.TransformHasNumberRowCopies", String.valueOf( nrCopies ) ) );
@@ -912,16 +903,16 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
           // Copy the variables of the pipeline to the transform...
           // don't share. Each copy of the transform has its own variables.
           //
-          transform.initializeVariablesFrom( this );
+          transform.initializeFrom( this );
 
-          // Pass the metaStore to the transforms runtime
+          // Pass the metadataProvider to the transforms runtime
           //
-          transform.setMetaStore( metaStore );
+          transform.setMetadataProvider( metadataProvider );
 
           // If the transform is partitioned, set the partitioning ID and some other
           // things as well...
           if ( transformMeta.isPartitioned() ) {
-            List<String> partitionIDs = transformMeta.getTransformPartitioningMeta().getPartitionSchema().calculatePartitionIds();
+            List<String> partitionIDs = transformMeta.getTransformPartitioningMeta().getPartitionSchema().calculatePartitionIds( this );
             if ( partitionIDs != null && partitionIDs.size() > 0 ) {
               transform.setPartitionId( partitionIDs.get( c ) ); // Pass the partition ID
               // to the transform
@@ -959,8 +950,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
     // rows.
     // Metadata wise we need to do the same trick in PipelineMeta
     //
-    for ( int s = 0; s < transforms.size(); s++ ) {
-      TransformMetaDataCombi combi = transforms.get( s );
+    for ( TransformMetaDataCombi combi : transforms ) {
       if ( combi.transformMeta.isDoingErrorHandling() ) {
         combi.transform.identifyErrorOutput();
 
@@ -984,9 +974,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
 
     // Set the partition-to-rowset mapping
     //
-    for ( int i = 0; i < transforms.size(); i++ ) {
-      TransformMetaDataCombi sid = transforms.get( i );
-
+    for ( TransformMetaDataCombi sid : transforms ) {
       TransformMeta transformMeta = sid.transformMeta;
       ITransform baseTransform = sid.transform;
 
@@ -1014,8 +1002,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
 
       List<TransformMeta> nextTransforms = pipelineMeta.findNextTransforms( transformMeta );
       int nrNext = nextTransforms.size();
-      for ( int p = 0; p < nrNext; p++ ) {
-        TransformMeta nextTransform = nextTransforms.get( p );
+      for ( TransformMeta nextTransform : nextTransforms ) {
         if ( nextTransform.isPartitioned() ) {
           isNextPartitioned = true;
           nextTransformPartitioningMeta = nextTransform.getTransformPartitioningMeta();
@@ -1074,7 +1061,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
       threads[ i ] = new Thread( initThreads[ i ] );
       threads[ i ].setName( "init of " + sid.transformName + "." + sid.copy + " (" + threads[ i ].getName() + ")" );
 
-      ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.TransformBeforeInitialize.id, initThreads[ i ] );
+      ExtensionPointHandler.callExtensionPoint( log, this, HopExtensionPoint.TransformBeforeInitialize.id, initThreads[ i ] );
 
       threads[ i ].start();
     }
@@ -1082,7 +1069,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
     for ( int i = 0; i < threads.length; i++ ) {
       try {
         threads[ i ].join();
-        ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.TransformAfterInitialize.id, initThreads[ i ] );
+        ExtensionPointHandler.callExtensionPoint( log, this, HopExtensionPoint.TransformAfterInitialize.id, initThreads[ i ] );
       } catch ( Exception ex ) {
         log.logError( "Error with init thread: " + ex.getMessage(), ex.getMessage() );
         log.logError( Const.getStackTracker( ex ) );
@@ -1095,9 +1082,9 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
     // All transform are initialized now: see if there was one that didn't do it
     // correctly!
     //
-    for ( int i = 0; i < initThreads.length; i++ ) {
-      TransformMetaDataCombi combi = initThreads[ i ].getCombi();
-      if ( !initThreads[ i ].isOk() ) {
+    for ( TransformInitThread thread : initThreads ) {
+      TransformMetaDataCombi combi = thread.getCombi();
+      if ( !thread.isOk() ) {
         log.logError( BaseMessages.getString( PKG, "Pipeline.Log.TransformFailedToInit", combi.transformName + "." + combi.copy ) );
         combi.data.setStatus( ComponentExecutionStatus.STATUS_STOPPED );
         ok = false;
@@ -1116,14 +1103,14 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
       // Also explicitly call dispose() to clean up resources opened during
       // init();
       //
-      for ( int i = 0; i < initThreads.length; i++ ) {
-        TransformMetaDataCombi combi = initThreads[ i ].getCombi();
+      for ( TransformInitThread initThread : initThreads ) {
+        TransformMetaDataCombi combi = initThread.getCombi();
 
         // Dispose will overwrite the status, but we set it back right after
         // this.
         combi.transform.dispose();
 
-        if ( initThreads[ i ].isOk() ) {
+        if ( initThread.isOk() ) {
           combi.data.setStatus( ComponentExecutionStatus.STATUS_HALTED );
         } else {
           combi.data.setStatus( ComponentExecutionStatus.STATUS_STOPPED );
@@ -1170,7 +1157,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
     //
     nrOfFinishedTransforms = 0;
 
-    ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.PipelineStartThreads.id, this );
+    ExtensionPointHandler.callExtensionPoint( log, this, HopExtensionPoint.PipelineStartThreads.id, this );
 
     firePipelineExecutionStartedListeners();
 
@@ -1236,7 +1223,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
 
       // Calculate the maximum number of snapshots to be kept in memory
       //
-      String limitString = environmentSubstitute( pipelineMeta.getTransformPerformanceCapturingSizeLimit() );
+      String limitString = resolve( pipelineMeta.getTransformPerformanceCapturingSizeLimit() );
       if ( Utils.isEmpty( limitString ) ) {
         limitString = EnvUtil.getSystemProperty( Const.HOP_TRANSFORM_PERFORMANCE_SNAPSHOT_LIMIT );
       }
@@ -1269,7 +1256,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
     IExecutionFinishedListener<IPipelineEngine<PipelineMeta>> executionListener = pipeline -> {
 
       try {
-        ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.PipelineFinish.id, pipeline );
+        ExtensionPointHandler.callExtensionPoint( log, this, HopExtensionPoint.PipelineFinish.id, pipeline );
       } catch ( HopException e ) {
         throw new RuntimeException( "Error calling extension point at end of pipeline", e );
       }
@@ -1301,17 +1288,16 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
 
         // Now start all the threads...
         //
-        for ( int i = 0; i < transforms.size(); i++ ) {
-          final TransformMetaDataCombi combi = transforms.get( i );
+        for ( final TransformMetaDataCombi combi : transforms ) {
           RunThread runThread = new RunThread( combi );
           Thread thread = new Thread( runThread );
           thread.setName( getName() + " - " + combi.transformName );
-          ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.TransformBeforeStart.id, combi );
+          ExtensionPointHandler.callExtensionPoint( log, this, HopExtensionPoint.TransformBeforeStart.id, combi );
           // Call an extension point at the end of the transform
           //
           combi.transform.addTransformFinishedListener( ( pipeline, transformMeta, transform ) -> {
             try {
-              ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.TransformFinished.id, combi );
+              ExtensionPointHandler.callExtensionPoint( log, this, HopExtensionPoint.TransformFinished.id, combi );
             } catch ( HopException e ) {
               throw new RuntimeException( "Unexpected error in calling extension point upon transform finish", e );
             }
@@ -1331,7 +1317,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
 
     }
 
-    ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.PipelineStart.id, this );
+    ExtensionPointHandler.callExtensionPoint( log, this, HopExtensionPoint.PipelineStart.id, this );
 
     // If there are no transforms we don't catch the number of active transforms dropping to zero
     // So we fire the execution finished listeners here.
@@ -1406,9 +1392,9 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
       // get the statistics from the transforms and keep them...
       //
       int seqNr = transformPerformanceSnapshotSeqNr.incrementAndGet();
-      for ( int i = 0; i < transforms.size(); i++ ) {
-        TransformMeta transformMeta = transforms.get( i ).transformMeta;
-        ITransform transform = transforms.get( i ).transform;
+      for ( TransformMetaDataCombi<ITransform, ITransformMeta, ITransformData> iTransformITransformMetaITransformDataTransformMetaDataCombi : transforms ) {
+        TransformMeta transformMeta = iTransformITransformMetaITransformDataTransformMetaDataCombi.transformMeta;
+        ITransform transform = iTransformITransformMetaITransformDataTransformMetaDataCombi.transform;
 
         PerformanceSnapShot snapShot = new PerformanceSnapShot( seqNr, new Date(), getName(), transformMeta.getName(), transform.getCopy(),
           transform.getLinesRead(), transform.getLinesWritten(), transform.getLinesInput(), transform.getLinesOutput(), transform
@@ -1489,8 +1475,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
       return nrErrors;
     }
 
-    for ( int i = 0; i < transforms.size(); i++ ) {
-      TransformMetaDataCombi sid = transforms.get( i );
+    for ( TransformMetaDataCombi sid : transforms ) {
       if ( sid.transform.getErrors() != 0L ) {
         nrErrors += sid.transform.getErrors();
       }
@@ -1529,8 +1514,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
       return;
     }
 
-    for ( int i = 0; i < transforms.size(); i++ ) {
-      TransformMetaDataCombi sid = transforms.get( i );
+    for ( TransformMetaDataCombi sid : transforms ) {
       ITransform transform = sid.transform;
 
       if ( log.isDebug() ) {
@@ -1552,8 +1536,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    */
   public IRowSet findRowSet( String from, int fromcopy, String to, int tocopy ) {
     // Start with the pipeline.
-    for ( int i = 0; i < rowsets.size(); i++ ) {
-      IRowSet rs = rowsets.get( i );
+    for ( IRowSet rs : rowsets ) {
       if ( rs.getOriginTransformName().equalsIgnoreCase( from ) && rs.getDestinationTransformName().equalsIgnoreCase( to ) && rs
         .getOriginTransformCopy() == fromcopy && rs.getDestinationTransformCopy() == tocopy ) {
         return rs;
@@ -1573,8 +1556,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
   public boolean hasTransformStarted( String sname, int copy ) {
     // log.logDetailed("DIS: Checking wether of not ["+sname+"]."+cnr+" has started!");
     // log.logDetailed("DIS: hasTransformStarted() looking in "+threads.size()+" threads");
-    for ( int i = 0; i < transforms.size(); i++ ) {
-      TransformMetaDataCombi sid = transforms.get( i );
+    for ( TransformMetaDataCombi sid : transforms ) {
       boolean started = ( sid.transformName != null && sid.transformName.equalsIgnoreCase( sname ) ) && sid.copy == copy;
       if ( started ) {
         return true;
@@ -1721,8 +1703,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
       return null;
     }
 
-    for ( int i = 0; i < transforms.size(); i++ ) {
-      TransformMetaDataCombi sid = transforms.get( i );
+    for ( TransformMetaDataCombi sid : transforms ) {
       ITransform transform = sid.transform;
       if ( transform.getTransformName().equalsIgnoreCase( name ) && transform.getCopy() == copy ) {
         return transform;
@@ -1751,20 +1732,6 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
     // TODO: inform the active audit manager that the pipeline started processing
   }
 
-  protected Database createDataBase( DatabaseMeta meta ) {
-    return new Database( this, meta );
-  }
-
-  private void disconnectDb( Database db ) throws HopDatabaseException {
-    if ( db == null ) {
-      return;
-    }
-    if ( !db.isAutoCommit() ) {
-      db.commit( true );
-    }
-    db.disconnect();
-  }
-
   /**
    * Gets the result of the pipeline. The Result object contains such measures as the number of errors, number of
    * lines read/written/input/output/updated/rejected, etc.
@@ -1780,8 +1747,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
     result.setNrErrors( errors.longValue() );
     result.setResult( errors.longValue() == 0 );
 
-    for ( int i = 0; i < transforms.size(); i++ ) {
-      TransformMetaDataCombi sid = transforms.get( i );
+    for ( TransformMetaDataCombi sid : transforms ) {
       ITransform transform = sid.transform;
 
       result.setNrErrors( result.getNrErrors() + sid.transform.getErrors() );
@@ -1799,7 +1765,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
 
     result.setRows( resultRows );
     if ( !Utils.isEmpty( resultFiles ) ) {
-      result.setResultFiles( new HashMap<String, ResultFile>() );
+      result.setResultFiles( new HashMap<>() );
       for ( ResultFile resultFile : resultFiles ) {
         result.getResultFiles().put( resultFile.toString(), resultFile );
       }
@@ -1821,8 +1787,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
       return null;
     }
 
-    for ( int i = 0; i < transforms.size(); i++ ) {
-      TransformMetaDataCombi sid = transforms.get( i );
+    for ( TransformMetaDataCombi sid : transforms ) {
       ITransform transform = sid.transform;
       if ( transform.getTransformName().equalsIgnoreCase( transformName ) ) {
         return transform;
@@ -1844,8 +1809,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
       return baseTransforms;
     }
 
-    for ( int i = 0; i < transforms.size(); i++ ) {
-      TransformMetaDataCombi sid = transforms.get( i );
+    for ( TransformMetaDataCombi sid : transforms ) {
       ITransform iTransform = sid.transform;
       if ( iTransform.getTransformName().equalsIgnoreCase( transformName ) ) {
         baseTransforms.add( iTransform );
@@ -1866,8 +1830,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
       return null;
     }
 
-    for ( int i = 0; i < transforms.size(); i++ ) {
-      TransformMetaDataCombi sid = transforms.get( i );
+    for ( TransformMetaDataCombi sid : transforms ) {
       ITransform iTransform = sid.transform;
       if ( iTransform.getTransformName().equalsIgnoreCase( transformName ) && sid.copy == copyNr ) {
         return iTransform;
@@ -1889,8 +1852,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
 
     List<ITransform> list = new ArrayList<>();
 
-    for ( int i = 0; i < transforms.size(); i++ ) {
-      TransformMetaDataCombi sid = transforms.get( i );
+    for ( TransformMetaDataCombi sid : transforms ) {
       ITransform iTransform = sid.transform;
       if ( iTransform.getTransformName().equalsIgnoreCase( transformName ) ) {
         list.add( iTransform );
@@ -1910,8 +1872,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
       return null;
     }
 
-    for ( int i = 0; i < transforms.size(); i++ ) {
-      TransformMetaDataCombi sid = transforms.get( i );
+    for ( TransformMetaDataCombi sid : transforms ) {
       ITransform rt = sid.transform;
       if ( rt.getTransformName().equalsIgnoreCase( name ) ) {
         return sid.data;
@@ -1983,7 +1944,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    * Gets a string representation of the pipeline.
    *
    * @return the string representation of the pipeline
-   * @see java.lang.Object#toString()
+   * @see Object#toString()
    */
   @Override
   public String toString() {
@@ -2065,8 +2026,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
     }
 
     // Now start all the threads...
-    for ( int i = 0; i < transforms.size(); i++ ) {
-      TransformMetaDataCombi sid = transforms.get( i );
+    for ( TransformMetaDataCombi sid : transforms ) {
       if ( sid.transformName.equalsIgnoreCase( transformName ) && sid.copy == copy ) {
         return sid.transform;
       }
@@ -2159,8 +2119,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
       return null;
     }
 
-    for ( int i = 0; i < transforms.size(); i++ ) {
-      TransformMetaDataCombi sid = transforms.get( i );
+    for ( TransformMetaDataCombi sid : transforms ) {
       if ( sid.transformName.equals( transformName ) && sid.copy == transformcopy ) {
         return sid.data;
       }
@@ -2180,8 +2139,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
       return false;
     }
 
-    for ( int i = 0; i < transforms.size(); i++ ) {
-      TransformMetaDataCombi sid = transforms.get( i );
+    for ( TransformMetaDataCombi sid : transforms ) {
       if ( sid.data.getStatus() == ComponentExecutionStatus.STATUS_HALTED ) {
         return true;
       }
@@ -2306,7 +2264,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
     boolean hasFilename = pipelineMeta != null && !Utils.isEmpty( pipelineMeta.getFilename() );
     if ( hasFilename ) { // we have a filename that's defined.
       try {
-        FileObject fileObject = HopVfs.getFileObject( pipelineMeta.getFilename(), var );
+        FileObject fileObject = HopVfs.getFileObject( pipelineMeta.getFilename() );
         FileName fileName = fileObject.getName();
 
         // The filename of the pipeline
@@ -2336,22 +2294,22 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
   }
 
   protected void setInternalEntryCurrentDirectory( boolean hasFilename ) {
-    variables.setVariable( Const.INTERNAL_VARIABLE_ENTRY_CURRENT_DIRECTORY, variables.getVariable(
+    variables.setVariable( Const.INTERNAL_VARIABLE_ENTRY_CURRENT_FOLDER, variables.getVariable(
       hasFilename
         ? Const.INTERNAL_VARIABLE_PIPELINE_FILENAME_DIRECTORY
-        : Const.INTERNAL_VARIABLE_ENTRY_CURRENT_DIRECTORY ) );
+        : Const.INTERNAL_VARIABLE_ENTRY_CURRENT_FOLDER ) );
   }
 
 
   /**
-   * Copies variables from a given variable space to this pipeline.
+   * Copies variables from a given variable variables to this pipeline.
    *
-   * @param variables the variable space
-   * @see IVariables#copyVariablesFrom(IVariables)
+   * @param variables the variable variables
+   * @see IVariables#copyFrom(IVariables)
    */
   @Override
-  public void copyVariablesFrom( IVariables variables ) {
-    this.variables.copyVariablesFrom( variables );
+  public void copyFrom( IVariables variables ) {
+    this.variables.copyFrom( variables );
   }
 
   /**
@@ -2359,11 +2317,11 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    *
    * @param aString the string to resolve against environment variables
    * @return the string after variables have been resolved/susbstituted
-   * @see IVariables#environmentSubstitute(java.lang.String)
+   * @see IVariables#resolve(String)
    */
   @Override
-  public String environmentSubstitute( String aString ) {
-    return variables.environmentSubstitute( aString );
+  public String resolve( String aString ) {
+    return variables.resolve( aString );
   }
 
   /**
@@ -2372,40 +2330,40 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    *
    * @param aString an array of strings to resolve against environment variables
    * @return the array of strings after variables have been resolved/susbstituted
-   * @see IVariables#environmentSubstitute(java.lang.String[])
+   * @see IVariables#resolve(String[])
    */
   @Override
-  public String[] environmentSubstitute( String[] aString ) {
-    return variables.environmentSubstitute( aString );
+  public String[] resolve( String[] aString ) {
+    return variables.resolve( aString );
   }
 
   @Override
-  public String fieldSubstitute( String aString, IRowMeta rowMeta, Object[] rowData )
+  public String resolve( String aString, IRowMeta rowMeta, Object[] rowData )
     throws HopValueException {
-    return variables.fieldSubstitute( aString, rowMeta, rowData );
+    return variables.resolve( aString, rowMeta, rowData );
   }
 
   /**
-   * Gets the parent variable space.
+   * Gets the parent variable variables.
    *
-   * @return the parent variable space
-   * @see IVariables#getParentVariableSpace()
+   * @return the parent variable variables
+   * @see IVariables#getParentVariables()
    */
   @Override
-  public IVariables getParentVariableSpace() {
-    return variables.getParentVariableSpace();
+  public IVariables getParentVariables() {
+    return variables.getParentVariables();
   }
 
   /**
-   * Sets the parent variable space.
+   * Sets the parent variable variables.
    *
-   * @param parent the new parent variable space
-   * @see IVariables#setParentVariableSpace(
+   * @param parent the new parent variable variables
+   * @see IVariables#setParentVariables(
    *IVariables)
    */
   @Override
-  public void setParentVariableSpace( IVariables parent ) {
-    variables.setParentVariableSpace( parent );
+  public void setParentVariables( IVariables parent ) {
+    variables.setParentVariables( parent );
   }
 
   /**
@@ -2414,7 +2372,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    * @param variableName the variable name
    * @param defaultValue the default value
    * @return the value of the specified variable, or returns a default value if no such variable exists
-   * @see IVariables#getVariable(java.lang.String, java.lang.String)
+   * @see IVariables#getVariable(String, String)
    */
   @Override
   public String getVariable( String variableName, String defaultValue ) {
@@ -2426,7 +2384,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    *
    * @param variableName the variable name
    * @return the value of the specified variable, or returns a default value if no such variable exists
-   * @see IVariables#getVariable(java.lang.String)
+   * @see IVariables#getVariable(String)
    */
   @Override
   public String getVariable( String variableName ) {
@@ -2440,12 +2398,12 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    * @param variableName the variable name
    * @param defaultValue the default value
    * @return a boolean representation of the specified variable after performing any necessary substitution
-   * @see IVariables#getBooleanValueOfVariable(java.lang.String, boolean)
+   * @see IVariables#getVariableBoolean(String, boolean)
    */
   @Override
-  public boolean getBooleanValueOfVariable( String variableName, boolean defaultValue ) {
+  public boolean getVariableBoolean( String variableName, boolean defaultValue ) {
     if ( !Utils.isEmpty( variableName ) ) {
-      String value = environmentSubstitute( variableName );
+      String value = resolve( variableName );
       if ( !Utils.isEmpty( value ) ) {
         return ValueMetaString.convertStringToBoolean( value );
       }
@@ -2457,23 +2415,23 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    * Sets the values of the pipeline's variables to the values from the parent variables.
    *
    * @param parent the parent
-   * @see IVariables#initializeVariablesFrom(
+   * @see IVariables#initializeFrom(
    *IVariables)
    */
   @Override
-  public void initializeVariablesFrom( IVariables parent ) {
-    variables.initializeVariablesFrom( parent );
+  public void initializeFrom( IVariables parent ) {
+    variables.initializeFrom( parent );
   }
 
   /**
    * Gets a list of variable names for the pipeline.
    *
    * @return a list of variable names
-   * @see IVariables#listVariables()
+   * @see IVariables#getVariableNames()
    */
   @Override
-  public String[] listVariables() {
-    return variables.listVariables();
+  public String[] getVariableNames() {
+    return variables.getVariableNames();
   }
 
   /**
@@ -2481,7 +2439,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    *
    * @param variableName  the variable name
    * @param variableValue the variable value
-   * @see IVariables#setVariable(java.lang.String, java.lang.String)
+   * @see IVariables#setVariable(String, String)
    */
   @Override
   public void setVariable( String variableName, String variableValue ) {
@@ -2489,28 +2447,28 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
   }
 
   /**
-   * Shares a variable space from another variable space. This means that the object should take over the space used as
+   * Shares a variable variables from another variable variables. This means that the object should take over the variables used as
    * argument.
    *
-   * @param variables the variable space
-   * @see IVariables#shareVariablesWith(IVariables)
+   * @param variables the variable variables
+   * @see IVariables#shareWith(IVariables)
    */
   @Override
-  public void shareVariablesWith( IVariables variables ) {
+  public void shareWith( IVariables variables ) {
     this.variables = variables;
   }
 
   /**
    * Injects variables using the given Map. The behavior should be that the properties object will be stored and at the
-   * time the IVariables is initialized (or upon calling this method if the space is already initialized). After
+   * time the IVariables is initialized (or upon calling this method if the variables is already initialized). After
    * injecting the link of the properties object should be removed.
    *
-   * @param prop the property map
-   * @see IVariables#injectVariables(java.util.Map)
+   * @param map the property map
+   * @see IVariables#setVariables(Map)
    */
   @Override
-  public void injectVariables( Map<String, String> prop ) {
-    variables.injectVariables( prop );
+  public void setVariables( Map<String, String> map ) {
+    variables.setVariables( map );
   }
 
   /**
@@ -2666,8 +2624,8 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    * @param defValue    the default value for the parameter
    * @param description the description of the parameter
    * @throws DuplicateParamException the duplicate param exception
-   * @see INamedParams#addParameterDefinition(java.lang.String, java.lang.String,
-   * java.lang.String)
+   * @see INamedParameters#addParameterDefinition(String, String,
+   * String)
    */
   @Override
   public void addParameterDefinition( String key, String defValue, String description ) throws DuplicateParamException {
@@ -2680,7 +2638,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    * @param key the name of the parameter
    * @return the default value of the parameter
    * @throws UnknownParamException if the parameter does not exist
-   * @see INamedParams#getParameterDefault(java.lang.String)
+   * @see INamedParameters#getParameterDefault(String)
    */
   @Override
   public String getParameterDefault( String key ) throws UnknownParamException {
@@ -2693,7 +2651,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    * @param key the name of the parameter
    * @return the parameter description
    * @throws UnknownParamException if the parameter does not exist
-   * @see INamedParams#getParameterDescription(java.lang.String)
+   * @see INamedParameters#getParameterDescription(String)
    */
   @Override
   public String getParameterDescription( String key ) throws UnknownParamException {
@@ -2706,7 +2664,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    * @param key the name of the parameter
    * @return the parameter value
    * @throws UnknownParamException if the parameter does not exist
-   * @see INamedParams#getParameterValue(java.lang.String)
+   * @see INamedParameters#getParameterValue(String)
    */
   @Override
   public String getParameterValue( String key ) throws UnknownParamException {
@@ -2717,7 +2675,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    * Gets a list of the parameters for the pipeline.
    *
    * @return an array of strings containing the names of all parameters for the pipeline
-   * @see INamedParams#listParameters()
+   * @see INamedParameters#listParameters()
    */
   @Override
   public String[] listParameters() {
@@ -2730,7 +2688,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    * @param key   the name of the parameter
    * @param value the name of the value
    * @throws UnknownParamException if the parameter does not exist
-   * @see INamedParams#setParameterValue(java.lang.String, java.lang.String)
+   * @see INamedParameters#setParameterValue(String, String)
    */
   @Override
   public void setParameterValue( String key, String value ) throws UnknownParamException {
@@ -2740,77 +2698,36 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
   /**
    * Remove all parameters.
    *
-   * @see INamedParams#eraseParameters()
+   * @see INamedParameters#removeAllParameters()
    */
   @Override
-  public void eraseParameters() {
-    namedParams.eraseParameters();
+  public void removeAllParameters() {
+    namedParams.removeAllParameters();
   }
 
   /**
    * Clear the values of all parameters.
    *
-   * @see INamedParams#clearParameters()
+   * @see INamedParameters#clearParameterValues()
    */
   @Override
-  public void clearParameters() {
-    namedParams.clearParameters();
+  public void clearParameterValues() {
+    namedParams.clearParameterValues();
   }
 
   /**
    * Activates all parameters by setting their values. If no values already exist, the method will attempt to set the
    * parameter to the default value. If no default value exists, the method will set the value of the parameter to the
    * empty string ("").
-   *
-   * @see INamedParams#activateParameters()
+
    */
   @Override
-  public void activateParameters() {
-    String[] keys = listParameters();
-
-    for ( String key : keys ) {
-      String value;
-      try {
-        value = getParameterValue( key );
-      } catch ( UnknownParamException e ) {
-        value = "";
-      }
-
-      String defValue;
-      try {
-        defValue = getParameterDefault( key );
-      } catch ( UnknownParamException e ) {
-        defValue = "";
-      }
-
-      if ( Utils.isEmpty( value ) ) {
-        setVariable( key, Const.NVL( defValue, "" ) );
-      } else {
-        setVariable( key, Const.NVL( value, "" ) );
-      }
-    }
+  public void activateParameters(IVariables variables) {
+    namedParams.activateParameters( variables );
   }
 
-  /**
-   * Copy parameters from a INamedParams object.
-   *
-   * @param params the INamedParams object from which to copy the parameters
-   * @see INamedParams#copyParametersFrom(INamedParams)
-   */
-  @Override
-  public void copyParametersFrom( INamedParams params ) {
-    namedParams.copyParametersFrom( params );
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.hop.core.parameters.INamedParams#mergeParametersWith(org.apache.hop.core.parameters.INamedParams,
-   * boolean replace)
-   */
-  @Override
-  public void mergeParametersWith( INamedParams params, boolean replace ) {
-    namedParams.mergeParametersWith( params, replace );
+  @Override public void copyParametersFromDefinitions( INamedParameterDefinitions definitions ) {
+    namedParams.copyParametersFromDefinitions( definitions );
   }
 
   /**
@@ -2919,6 +2836,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    */
   public void setLogLevel( LogLevel logLevel ) {
     this.logLevel = logLevel;
+    log.setLogLevel( logLevel );
   }
 
   /**
@@ -2971,7 +2889,7 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    * @return the HopServer object ID
    */
   @Override
-  public String getContainerObjectId() {
+  public String getContainerId() {
     return containerObjectId;
   }
 
@@ -3120,14 +3038,14 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
     }
   }
 
-  public IMetaStore getMetaStore() {
-    return metaStore;
+  public IHopMetadataProvider getMetadataProvider() {
+    return metadataProvider;
   }
 
-  public void setMetaStore( IMetaStore metaStore ) {
-    this.metaStore = metaStore;
+  public void setMetadataProvider( IHopMetadataProvider metadataProvider ) {
+    this.metadataProvider = metadataProvider;
     if ( pipelineMeta != null ) {
-      pipelineMeta.setMetaStore( metaStore );
+      pipelineMeta.setMetadataProvider( metadataProvider );
     }
   }
 
@@ -3346,14 +3264,17 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
 
   // TODO: i18n
   public static final IEngineMetric METRIC_INPUT = new EngineMetric( METRIC_NAME_INPUT, "Input", "The number of rows read from physical I/O", "010", true );
-  public static final IEngineMetric METRIC_OUTPUT = new EngineMetric( METRIC_NAME_OUTPUT, "Output", "The number of rows written to physical I/O", "020", true );
-  public static final IEngineMetric METRIC_READ = new EngineMetric( METRIC_NAME_READ, "Read", "The number of rows read from other transforms", "030", true );
-  public static final IEngineMetric METRIC_WRITTEN = new EngineMetric( METRIC_NAME_WRITTEN, "Written", "The number of rows written to other transforms", "040", true );
+  public static final IEngineMetric METRIC_READ = new EngineMetric( METRIC_NAME_READ, "Read", "The number of rows read from other transforms", "020", true );
+  public static final IEngineMetric METRIC_WRITTEN = new EngineMetric( METRIC_NAME_WRITTEN, "Written", "The number of rows written to other transforms", "030", true );
+  public static final IEngineMetric METRIC_OUTPUT = new EngineMetric( METRIC_NAME_OUTPUT, "Output", "The number of rows written to physical I/O", "040", true );
   public static final IEngineMetric METRIC_UPDATED = new EngineMetric( METRIC_NAME_UPDATED, "Updated", "The number of rows updated", "050", true );
   public static final IEngineMetric METRIC_REJECTED = new EngineMetric( METRIC_NAME_REJECTED, "Rejected", "The number of rows rejected by a transform", "060", true );
   public static final IEngineMetric METRIC_ERROR = new EngineMetric( METRIC_NAME_ERROR, "Errors", "The number of errors", "070", true );
   public static final IEngineMetric METRIC_BUFFER_IN = new EngineMetric( METRIC_NAME_BUFFER_IN, "Buffers Input", "The number of rows in the transforms input buffers", "080", true );
   public static final IEngineMetric METRIC_BUFFER_OUT = new EngineMetric( METRIC_NAME_BUFFER_OUT, "Buffers Output", "The number of rows in the transforms output buffers", "090", true );
+
+  public static final IEngineMetric METRIC_INIT = new EngineMetric( METRIC_NAME_INIT, "Inits", "The number of times the transform was initialised", "000", true );
+  public static final IEngineMetric METRIC_FLUSH_BUFFER = new EngineMetric( METRIC_NAME_FLUSH_BUFFER, "Flushes", "The number of times a buffer flush occurred on a ", "100", true );
 
   public EngineMetrics getEngineMetrics() {
     return getEngineMetrics( null, -1 );
@@ -3502,12 +3423,12 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
     return new EmptyPipelineRunConfiguration();
   }
 
-  public void retrieveComponentOutput( String componentName, int copyNr, int nrRows, IPipelineComponentRowsReceived rowsReceived ) throws HopException {
+  public void retrieveComponentOutput( IVariables variables, String componentName, int copyNr, int nrRows, IPipelineComponentRowsReceived rowsReceived ) throws HopException {
     ITransform iTransform = findTransformInterface( componentName, copyNr );
     if ( iTransform == null ) {
       throw new HopException( "Unable to find transform '" + componentName + "', copy " + copyNr + " to retrieve output rows from" );
     }
-    RowBuffer rowBuffer = new RowBuffer( pipelineMeta.getTransformFields( componentName ) );
+    RowBuffer rowBuffer = new RowBuffer( pipelineMeta.getTransformFields( variables, componentName ) );
     iTransform.addRowListener( new RowAdapter() {
       @Override public void rowWrittenEvent( IRowMeta rowMeta, Object[] row ) throws HopTransformException {
         if ( rowBuffer.getBuffer().size() < nrRows ) {
@@ -3626,5 +3547,44 @@ public abstract class Pipeline implements IVariables, INamedParams, IHasLogChann
    */
   @Override public void setPipelineRunConfiguration( PipelineRunConfiguration pipelineRunConfiguration ) {
     this.pipelineRunConfiguration = pipelineRunConfiguration;
+  }
+
+  /**
+   * Gets activeSubPipelines
+   *
+   * @return value of activeSubPipelines
+   */
+  public Map<String, IPipelineEngine> getActiveSubPipelines() {
+    return activeSubPipelines;
+  }
+
+  /**
+   * @param activeSubPipelines The activeSubPipelines to set
+   */
+  public void setActiveSubPipelines( Map<String, IPipelineEngine> activeSubPipelines ) {
+    this.activeSubPipelines = activeSubPipelines;
+  }
+
+  /**
+   * @param activeSubWorkflows The activeSubWorkflows to set
+   */
+  public void setActiveSubWorkflows( Map<String, IWorkflowEngine<WorkflowMeta>> activeSubWorkflows ) {
+    this.activeSubWorkflows = activeSubWorkflows;
+  }
+
+  /**
+   * Gets variables
+   *
+   * @return value of variables
+   */
+  public IVariables getVariables() {
+    return variables;
+  }
+
+  /**
+   * @param variables The variables to set
+   */
+  public void setVariables( IVariables variables ) {
+    this.variables = variables;
   }
 }

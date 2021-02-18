@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core;
 
@@ -46,7 +41,7 @@ abstract class BaseRowSet implements Comparable<IRowSet>, IRowSet {
   protected volatile String destinationTransformName;
   protected AtomicInteger destinationTransformCopy;
 
-  protected volatile String remoteSlaveServerName;
+  protected volatile String remoteHopServerName;
   private ReadWriteLock lock;
 
   public BaseRowSet() {
@@ -68,13 +63,13 @@ abstract class BaseRowSet implements Comparable<IRowSet>, IRowSet {
     String target;
 
     try {
-      target = remoteSlaveServerName + "." + destinationTransformName + "." + destinationTransformCopy.intValue();
+      target = remoteHopServerName + "." + destinationTransformName + "." + destinationTransformCopy.intValue();
     } finally {
       lock.readLock().unlock();
     }
 
     String comp =
-      rowSet.getRemoteSlaveServerName()
+      rowSet.getRemoteHopServerName()
         + "." + rowSet.getDestinationTransformName() + "." + rowSet.getDestinationTransformCopy();
 
     return target.compareTo( comp );
@@ -211,15 +206,15 @@ abstract class BaseRowSet implements Comparable<IRowSet>, IRowSet {
    * @see org.apache.hop.core.RowSetInterface#setThreadNameFromToCopy(java.lang.String, int, java.lang.String, int)
    */
   @Override
-  public void setThreadNameFromToCopy( String from, int from_copy, String to, int to_copy ) {
+  public void setThreadNameFromToCopy( String from, int fromCopy, String to, int toCopy ) {
 
     lock.writeLock().lock();
     try {
       originTransformName = from;
-      originTransformCopy.set( from_copy );
+      originTransformCopy.set( fromCopy );
 
       destinationTransformName = to;
-      destinationTransformCopy.set( to_copy );
+      destinationTransformCopy.set( toCopy );
     } finally {
       lock.writeLock().unlock();
     }
@@ -231,17 +226,17 @@ abstract class BaseRowSet implements Comparable<IRowSet>, IRowSet {
 
     lock.readLock().lock();
     try {
-      str = new StringBuilder( originTransformName )
+      str = new StringBuilder( Const.NVL(originTransformName, "?") )
         .append( "." )
         .append( originTransformCopy )
         .append( " - " )
-        .append( destinationTransformName )
+        .append( Const.NVL(destinationTransformName, "?") )
         .append( "." )
         .append( destinationTransformCopy );
 
-      if ( !Utils.isEmpty( remoteSlaveServerName ) ) {
+      if ( !Utils.isEmpty( remoteHopServerName ) ) {
         str.append( " (" )
-          .append( remoteSlaveServerName )
+          .append( remoteHopServerName )
           .append( ")" );
       }
     } finally {
@@ -274,21 +269,21 @@ abstract class BaseRowSet implements Comparable<IRowSet>, IRowSet {
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.hop.core.RowSetInterface#getRemoteSlaveServerName()
+   * @see org.apache.hop.core.RowSetInterface#getRemoteHopServerName()
    */
   @Override
-  public String getRemoteSlaveServerName() {
-    return remoteSlaveServerName;
+  public String getRemoteHopServerName() {
+    return remoteHopServerName;
   }
 
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.hop.core.RowSetInterface#setRemoteSlaveServerName(java.lang.String)
+   * @see org.apache.hop.core.RowSetInterface#setRemoteHopServerName(java.lang.String)
    */
   @Override
-  public void setRemoteSlaveServerName( String remoteSlaveServerName ) {
-    this.remoteSlaveServerName = remoteSlaveServerName;
+  public void setRemoteHopServerName( String remoteHopServerName ) {
+    this.remoteHopServerName = remoteHopServerName;
   }
 
   /**

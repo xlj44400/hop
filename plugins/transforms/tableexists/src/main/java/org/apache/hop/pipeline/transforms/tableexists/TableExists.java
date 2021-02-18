@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.tableexists;
 
@@ -31,10 +26,8 @@ import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransform;
-import org.apache.hop.pipeline.transform.ITransformData;
 import org.apache.hop.pipeline.transform.ITransform;
 import org.apache.hop.pipeline.transform.TransformMeta;
-import org.apache.hop.pipeline.transform.ITransform;
 
 /**
  * Check if a table exists in a Database *
@@ -44,7 +37,7 @@ import org.apache.hop.pipeline.transform.ITransform;
  */
 
 public class TableExists extends BaseTransform<TableExistsMeta, TableExistsData> implements ITransform<TableExistsMeta, TableExistsData> {
-  private static Class<?> PKG = TableExistsMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = TableExistsMeta.class; // For Translator
 
   public TableExists( TransformMeta transformMeta, TableExistsMeta meta, TableExistsData data, int copyNr, PipelineMeta pipelineMeta,
                       Pipeline pipeline ) {
@@ -68,7 +61,7 @@ public class TableExists extends BaseTransform<TableExistsMeta, TableExistsData>
       if ( first ) {
         first = false;
         data.outputRowMeta = getInputRowMeta().clone();
-        meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+        meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
         // Check is tablename field is provided
         if ( Utils.isEmpty( meta.getDynamicTablenameField() ) ) {
@@ -90,10 +83,10 @@ public class TableExists extends BaseTransform<TableExistsMeta, TableExistsData>
       } // End If first
 
       // get tablename
-      String tablename = getInputRowMeta().getString( r, data.indexOfTablename );
+      String tableName = getInputRowMeta().getString( r, data.indexOfTablename );
 
       // Check if table exists on the specified connection
-      tablexists = data.db.checkTableExists( data.realSchemaname, tablename );
+      tablexists = data.db.checkTableExists( data.realSchemaname, tableName );
 
       Object[] outputRowData = RowDataUtil.addValueData( r, getInputRowMeta().size(), tablexists );
 
@@ -129,10 +122,9 @@ public class TableExists extends BaseTransform<TableExistsMeta, TableExistsData>
         return false;
       }
 
-      data.db = new Database( this, meta.getDatabase() );
-      data.db.shareVariablesWith( this );
+      data.db = new Database( this, this, meta.getDatabase() );
       if ( !Utils.isEmpty( meta.getSchemaname() ) ) {
-        data.realSchemaname = environmentSubstitute( meta.getSchemaname() );
+        data.realSchemaname = resolve( meta.getSchemaname() );
       }
 
       try {

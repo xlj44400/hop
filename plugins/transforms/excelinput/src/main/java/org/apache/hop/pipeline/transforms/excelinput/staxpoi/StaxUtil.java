@@ -1,27 +1,23 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.excelinput.staxpoi;
 
+import javax.xml.stream.XMLInputFactory;
 import org.apache.poi.ss.SpreadsheetVersion;
 
 public class StaxUtil {
@@ -29,6 +25,10 @@ public class StaxUtil {
   public static final int MAX_ROWS = DEFAULT_SPREADSHEET_VERSION.getMaxRows();
   public static final int MAX_COLUMNS = DEFAULT_SPREADSHEET_VERSION.getMaxColumns();
 
+  private StaxUtil() {
+    throw new IllegalStateException("Utility class");
+  }
+  
   public static int extractRowNumber( String position ) {
     int startIndex = 0;
     while ( !Character.isDigit( position.charAt( startIndex ) ) && startIndex < position.length() ) {
@@ -58,10 +58,18 @@ public class StaxUtil {
     for ( int i = columnIndicator.length() - 1; i >= 0; i-- ) {
       char c = columnIndicator.charAt( i );
       int offset = 1 + Character.getNumericValue( c ) - Character.getNumericValue( 'A' );
-      col += Math.pow( 26, columnIndicator.length() - i - 1 ) * offset;
+      col += Math.pow( 26, columnIndicator.length() - i - 1.0D ) * offset;
     }
 
     return col;
+  }
+  
+  public static final XMLInputFactory safeXMLInputFactory() {
+    XMLInputFactory factory = XMLInputFactory.newInstance();
+    // To prevent from XXE attacks   
+    factory.setProperty(XMLInputFactory.SUPPORT_DTD, Boolean.FALSE);
+    factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.FALSE);    
+    return factory;
   }
 
 }

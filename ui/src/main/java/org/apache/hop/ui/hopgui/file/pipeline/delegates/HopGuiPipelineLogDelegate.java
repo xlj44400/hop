@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.file.pipeline.delegates;
 
@@ -40,22 +35,20 @@ import org.apache.hop.ui.hopgui.file.pipeline.HopGuiLogBrowser;
 import org.apache.hop.ui.hopgui.file.pipeline.HopGuiPipelineGraph;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabItem;
-import org.eclipse.swt.custom.StyledText;
-import org.eclipse.swt.events.DisposeEvent;
-import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 
 import java.util.ArrayList;
 import java.util.Map;
 
-@GuiPlugin
+@GuiPlugin(description = "Pipeline Graph Log Delegate")
 public class HopGuiPipelineLogDelegate {
-  private static Class<?> PKG = HopGui.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = HopGui.class; // For Translator
 
   private static final String GUI_PLUGIN_TOOLBAR_PARENT_ID = "HopGuiPipelineLogDelegate-ToolBar";
   public static final String TOOLBAR_ICON_CLEAR_LOG_VIEW = "ToolbarIcon-10000-ClearLog";
@@ -68,7 +61,7 @@ public class HopGuiPipelineLogDelegate {
   private HopGui hopGui;
   private CTabItem pipelineLogTab;
 
-  private StyledText pipelineLogText;
+  private Text pipelineLogText;
 
   private ToolBar toolbar;
   private GuiToolbarWidgets toolBarWidgets;
@@ -116,7 +109,7 @@ public class HopGuiPipelineLogDelegate {
     fd.right = new FormAttachment( 100, 0 );
     toolbar.setLayoutData( fd );
 
-    pipelineLogText = new StyledText( pipelineLogComposite, SWT.READ_ONLY | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL );
+    pipelineLogText = new Text( pipelineLogComposite, SWT.READ_ONLY | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL );
     hopGui.getProps().setLook( pipelineLogText );
     FormData fdText = new FormData();
     fdText.left = new FormAttachment( 0, 0 );
@@ -131,11 +124,9 @@ public class HopGuiPipelineLogDelegate {
     // If the pipeline is closed, we should dispose of all the logging information in the buffer and registry for
     // this pipeline
     //
-    pipelineGraph.addDisposeListener( new DisposeListener() {
-      public void widgetDisposed( DisposeEvent event ) {
-        if ( pipelineGraph.pipeline != null ) {
-          HopLogStore.discardLines( pipelineGraph.pipeline.getLogChannelId(), true );
-        }
+    pipelineGraph.addDisposeListener( event -> {
+      if ( pipelineGraph.pipeline != null ) {
+        HopLogStore.discardLines( pipelineGraph.pipeline.getLogChannelId(), true );
       }
     } );
 
@@ -151,7 +142,7 @@ public class HopGuiPipelineLogDelegate {
    */
   public static HopGuiPipelineLogDelegate getInstance() {
     IHopFileTypeHandler fileTypeHandler = HopGui.getInstance().getActiveFileTypeHandler();
-    if (fileTypeHandler instanceof HopGuiPipelineGraph ) {
+    if ( fileTypeHandler instanceof HopGuiPipelineGraph ) {
       HopGuiPipelineGraph graph = (HopGuiPipelineGraph) fileTypeHandler;
       return graph.pipelineLogDelegate;
     }
@@ -168,7 +159,8 @@ public class HopGuiPipelineLogDelegate {
     hopGui.getProps().setLook( toolbar, Props.WIDGET_STYLE_TOOLBAR );
 
     toolBarWidgets = new GuiToolbarWidgets();
-    toolBarWidgets.createToolbarWidgets( toolbar, GUI_PLUGIN_TOOLBAR_PARENT_ID);
+    toolBarWidgets.registerGuiPluginObject( this );
+    toolBarWidgets.createToolbarWidgets( toolbar, GUI_PLUGIN_TOOLBAR_PARENT_ID );
     toolbar.pack();
   }
 
@@ -188,9 +180,8 @@ public class HopGuiPipelineLogDelegate {
     root = GUI_PLUGIN_TOOLBAR_PARENT_ID,
     id = TOOLBAR_ICON_CLEAR_LOG_VIEW,
     // label = "PipelineLog.Button.ClearLog",
-    toolTip = "PipelineLog.Button.ClearLog",
-    i18nPackageClass = HopGui.class,
-    image = "ui/images/trash.svg"
+    toolTip = "i18n:org.apache.hop.ui.hopgui:PipelineLog.Button.ClearLog",
+    image = "ui/images/delete.svg"
   )
   public void clearLog() {
     if ( pipelineLogText != null && !pipelineLogText.isDisposed() ) {
@@ -199,11 +190,7 @@ public class HopGuiPipelineLogDelegate {
     Map<String, String> transformLogMap = pipelineGraph.getTransformLogMap();
     if ( transformLogMap != null ) {
       transformLogMap.clear();
-      pipelineGraph.getDisplay().asyncExec( new Runnable() {
-        public void run() {
-          pipelineGraph.redraw();
-        }
-      } );
+      pipelineGraph.getDisplay().asyncExec( () -> pipelineGraph.redraw() );
     }
   }
 
@@ -211,9 +198,8 @@ public class HopGuiPipelineLogDelegate {
     root = GUI_PLUGIN_TOOLBAR_PARENT_ID,
     id = TOOLBAR_ICON_LOG_SETTINGS,
     // label = "PipelineLog.Button.LogSettings",
-    toolTip = "PipelineLog.Button.LogSettings",
-    i18nPackageClass = HopGui.class,
-    image = "ui/images/log-settings.svg"
+    toolTip = "i18n:org.apache.hop.ui.hopgui:PipelineLog.Button.LogSettings",
+    image = "ui/images/settings.svg"
   )
   public void showLogSettings() {
     // TODO: implement or rethink
@@ -223,9 +209,8 @@ public class HopGuiPipelineLogDelegate {
     root = GUI_PLUGIN_TOOLBAR_PARENT_ID,
     id = TOOLBAR_ICON_SHOW_ERROR_LINES,
     // label = "PipelineLog.Button.ShowErrorLines",
-    toolTip = "PipelineLog.Button.ShowErrorLines",
-    i18nPackageClass = HopGui.class,
-    image = "ui/images/show-error-lines.svg"
+    toolTip = "i18n:org.apache.hop.ui.hopgui:PipelineLog.Button.ShowErrorLines",    
+    image = "ui/images/filter.svg"
   )
   public void showErrors() {
     String all = pipelineLogText.getText();
@@ -304,19 +289,18 @@ public class HopGuiPipelineLogDelegate {
     root = GUI_PLUGIN_TOOLBAR_PARENT_ID,
     id = TOOLBAR_ICON_LOG_PAUSE_RESUME,
     // label = "WorkflowLog.Button.Pause",
-    toolTip = "WorkflowLog.Button.Pause",
-    i18nPackageClass = HopGui.class,
-    image = "ui/images/pause-log.svg",
+    toolTip = "i18n:org.apache.hop.ui.hopgui:WorkflowLog.Button.Pause",    
+    image = "ui/images/pause.svg",
     separator = true
   )
   public void pauseLog() {
     ToolItem item = toolBarWidgets.findToolItem( TOOLBAR_ICON_LOG_PAUSE_RESUME );
     if ( logBrowser.isPaused() ) {
       logBrowser.setPaused( false );
-      item.setImage( GuiResource.getInstance().getImageContinueLog() );
+      item.setImage( GuiResource.getInstance().getImageRun() );
     } else {
       logBrowser.setPaused( true );
-      item.setImage( GuiResource.getInstance().getImagePauseLog() );
+      item.setImage( GuiResource.getInstance().getImagePause() );
     }
   }
 

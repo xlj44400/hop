@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.util;
 
@@ -29,7 +24,7 @@ import org.apache.hop.core.exception.HopXmlException;
 import org.apache.hop.core.util.PluginPropertyHandler.LoadXml;
 import org.apache.hop.core.util.PluginPropertyHandler.ReadFromPreferences;
 import org.apache.hop.core.util.PluginPropertyHandler.SaveToPreferences;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
 import org.apache.hop.pipeline.transform.ITransformData;
 import org.apache.hop.pipeline.transform.ITransform;
@@ -91,7 +86,7 @@ public abstract class AbstractTransformMeta extends BaseTransformMeta implements
     this.getProperties().walk( new ReadFromPreferences( node ) );
   }
 
-  public void loadXml( final Node node, final List<DatabaseMeta> databaseMeta, final IMetaStore metaStore ) throws HopXmlException {
+  public void loadXml( final Node node, final List<DatabaseMeta> databaseMeta, final IHopMetadataProvider metadataProvider ) throws HopXmlException {
     this.getProperties().walk( new LoadXml( node ) );
     initDbMeta( databaseMeta );
   }

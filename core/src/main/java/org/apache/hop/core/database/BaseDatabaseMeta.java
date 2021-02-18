@@ -1,25 +1,20 @@
 // CHECKSTYLE:FileLength:OFF
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.database;
 
@@ -32,7 +27,7 @@ import org.apache.hop.core.gui.plugin.GuiWidgetElement;
 import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.variables.IVariables;
-import org.apache.hop.metastore.persist.MetaStoreAttribute;
+import org.apache.hop.metadata.api.HopMetadataProperty;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -40,11 +35,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 /**
  * This class contains the basic information on a database connection. It is not intended to be used other than the
@@ -136,78 +130,72 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
 
   private static final String FIELDNAME_PROTECTOR = "_";
 
-  @MetaStoreAttribute
-  protected int accessType; // Database.TYPE_ODBC / NATIVE / OCI
+  @HopMetadataProperty
+  protected int accessType; // NATIVE / OCI
 
-  @MetaStoreAttribute
+  @HopMetadataProperty
   @GuiWidgetElement(
     id = "hostname",
     order = "01",
-    i18nPackage = "org.apache.hop.ui.core.database",
-    label = "DatabaseDialog.label.ServerHostname",
+    label = "i18n:org.apache.hop.ui.core.database:DatabaseDialog.label.ServerHostname",
     type = GuiElementType.TEXT,
     variables = true,
     parentId = DatabaseMeta.GUI_PLUGIN_ELEMENT_PARENT_ID )
   protected String hostname;
 
-  @MetaStoreAttribute
+  @HopMetadataProperty
   @GuiWidgetElement(
     id = "port",
     order = "02",
-    i18nPackage = "org.apache.hop.ui.core.database",
-    label = "DatabaseDialog.label.PortNumber",
+    label = "i18n:org.apache.hop.ui.core.database:DatabaseDialog.label.PortNumber",
     type = GuiElementType.TEXT,
     variables = true,
     parentId = DatabaseMeta.GUI_PLUGIN_ELEMENT_PARENT_ID )
   protected String port;
 
-  @MetaStoreAttribute
+  @HopMetadataProperty
   @GuiWidgetElement(
     id = "databaseName",
     order = "03",
-    i18nPackage = "org.apache.hop.ui.core.database",
-    label = "DatabaseDialog.label.DatabaseName",
+    label = "i18n:org.apache.hop.ui.core.database:DatabaseDialog.label.DatabaseName",
     type = GuiElementType.TEXT,
     variables = true,
     parentId = DatabaseMeta.GUI_PLUGIN_ELEMENT_PARENT_ID )
   protected String databaseName;
 
-  @MetaStoreAttribute
+  @HopMetadataProperty
   protected String username;
 
-  @MetaStoreAttribute
+  @HopMetadataProperty(password = true)
   protected String password;
 
   /**
    * Available for ALL database types
    */
-  @MetaStoreAttribute
+  @HopMetadataProperty
   protected String manualUrl;
 
-  @MetaStoreAttribute
-  protected String odbcDsn;
-
-  @MetaStoreAttribute
+  @HopMetadataProperty
   protected String servername; // Informix only!
 
-  @MetaStoreAttribute
+  @HopMetadataProperty
   protected String dataTablespace; // data storage location, For Oracle & perhaps others
-  @MetaStoreAttribute
+  @HopMetadataProperty
   protected String indexTablespace; // index storage location, For Oracle & perhaps others
 
   private boolean changed;
 
-  @MetaStoreAttribute
-  protected Properties attributes;
+  @HopMetadataProperty
+  protected Map<String,String> attributes;
 
-  @MetaStoreAttribute
+  @HopMetadataProperty
   protected String pluginId;
-  @MetaStoreAttribute
+  @HopMetadataProperty
   protected String pluginName;
 
 
   public BaseDatabaseMeta() {
-    attributes = new Properties();
+    attributes = Collections.synchronizedMap( new HashMap<>() );
     changed = false;
     if ( getAccessTypeList() != null && getAccessTypeList().length > 0 ) {
       accessType = getAccessTypeList()[ 0 ];
@@ -345,21 +333,6 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
     this.password = password;
   }
 
-  /**
-   * Gets odbcDsn
-   *
-   * @return value of odbcDsn
-   */
-  public String getOdbcDsn() {
-    return odbcDsn;
-  }
-
-  /**
-   * @param odbcDsn The odbcDsn to set
-   */
-  public void setOdbcDsn( String odbcDsn ) {
-    this.odbcDsn = odbcDsn;
-  }
 
   /**
    * @return Returns the servername.
@@ -429,7 +402,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    * @return The extra attributes for this database connection
    */
   @Override
-  public Properties getAttributes() {
+  public Map<String, String> getAttributes() {
     return attributes;
   }
 
@@ -439,7 +412,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    * @param attributes The extra attributes to set on this database connection.
    */
   @Override
-  public void setAttributes( Properties attributes ) {
+  public void setAttributes( Map<String,String> attributes ) {
     this.attributes = attributes;
   }
 
@@ -469,7 +442,10 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
       retval = (BaseDatabaseMeta) super.clone();
 
       // CLone the attributes as well...
-      retval.attributes = (Properties) attributes.clone();
+      retval.attributes = Collections.synchronizedMap( new HashMap<>() );
+      for (String key : attributes.keySet()) {
+        retval.attributes.put(key, attributes.get(key));
+      }
     } catch ( CloneNotSupportedException e ) {
       throw new RuntimeException( e );
     }
@@ -517,7 +493,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
   }
 
   @Override
-  public int getNotFoundTK( boolean use_autoinc ) {
+  public int getNotFoundTK( boolean useAutoIncrement ) {
     return 0;
   }
 
@@ -643,13 +619,13 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    * Get the schema-table combination to query the right table. Usually that is SCHEMA.TABLENAME, however there are
    * exceptions to this rule...
    *
-   * @param schema_name The schema name
-   * @param table_part  The tablename
+   * @param schemaName The schema name
+   * @param tablePart  The table name
    * @return the schema-table combination to query the right table.
    */
   @Override
-  public String getSchemaTableCombination( String schema_name, String table_part ) {
-    return schema_name + "." + table_part;
+  public String getSchemaTableCombination( String schemaName, String tablePart ) {
+    return schemaName + "." + tablePart;
   }
 
   /**
@@ -752,18 +728,18 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
   /**
    * Generates the SQL statement to drop a column from the specified table
    *
-   * @param tablename   The table to add
+   * @param tableName   The table to add
    * @param v           The column defined as a value
    * @param tk          the name of the technical key field
-   * @param use_autoinc whether or not this field uses auto increment
+   * @param useAutoIncrement whether or not this field uses auto increment
    * @param pk          the name of the primary key field
    * @param semicolon   whether or not to add a semi-colon behind the statement.
    * @return the SQL statement to drop a column from the specified table
    */
   @Override
-  public String getDropColumnStatement( String tablename, IValueMeta v, String tk, boolean use_autoinc,
+  public String getDropColumnStatement( String tableName, IValueMeta v, String tk, boolean useAutoIncrement,
                                         String pk, boolean semicolon ) {
-    return "ALTER TABLE " + tablename + " DROP " + v.getName() + Const.CR;
+    return "ALTER TABLE " + tableName + " DROP " + v.getName() + Const.CR;
   }
 
   /**
@@ -928,13 +904,25 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
     return true;
   }
 
+  public String getAttributeProperty(String key, String defaultValue) {
+    String value = attributes.get(key);
+    if (value==null) {
+      return defaultValue;
+    }
+    return value;
+  }
+
+  public String getAttributeProperty(String key) {
+    return attributes.get(key);
+  }
+
   /**
    * @return true if the database supports a boolean, bit, logical, ... datatype The default is false: map to a string.
    */
   @Override
   public boolean supportsBooleanDataType() {
-    String usePool = attributes.getProperty( ATTRIBUTE_SUPPORTS_BOOLEAN_DATA_TYPE, "N" );
-    return "Y".equalsIgnoreCase( usePool );
+    String supportsBooleanString = getAttributeProperty( ATTRIBUTE_SUPPORTS_BOOLEAN_DATA_TYPE, "N" );
+    return "Y".equalsIgnoreCase( supportsBooleanString );
   }
 
   /**
@@ -942,7 +930,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public void setSupportsBooleanDataType( boolean b ) {
-    attributes.setProperty( ATTRIBUTE_SUPPORTS_BOOLEAN_DATA_TYPE, b ? "Y" : "N" );
+    attributes.put( ATTRIBUTE_SUPPORTS_BOOLEAN_DATA_TYPE, b ? "Y" : "N" );
   }
 
   /**
@@ -950,7 +938,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public boolean supportsTimestampDataType() {
-    String supportsTimestamp = attributes.getProperty( ATTRIBUTE_SUPPORTS_TIMESTAMP_DATA_TYPE, "N" );
+    String supportsTimestamp = getAttributeProperty( ATTRIBUTE_SUPPORTS_TIMESTAMP_DATA_TYPE, "N" );
     return "Y".equalsIgnoreCase( supportsTimestamp );
   }
 
@@ -959,7 +947,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public void setSupportsTimestampDataType( boolean b ) {
-    attributes.setProperty( ATTRIBUTE_SUPPORTS_TIMESTAMP_DATA_TYPE, b ? "Y" : "N" );
+    attributes.put( ATTRIBUTE_SUPPORTS_TIMESTAMP_DATA_TYPE, b ? "Y" : "N" );
   }
 
   /**
@@ -967,7 +955,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public boolean preserveReservedCase() {
-    String usePool = attributes.getProperty( ATTRIBUTE_PRESERVE_RESERVED_WORD_CASE, "Y" );
+    String usePool = getAttributeProperty( ATTRIBUTE_PRESERVE_RESERVED_WORD_CASE, "Y" );
     return "Y".equalsIgnoreCase( usePool );
   }
 
@@ -976,7 +964,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public void setPreserveReservedCase( boolean b ) {
-    attributes.setProperty( ATTRIBUTE_PRESERVE_RESERVED_WORD_CASE, b ? "Y" : "N" );
+    attributes.put( ATTRIBUTE_PRESERVE_RESERVED_WORD_CASE, b ? "Y" : "N" );
   }
 
   /**
@@ -993,12 +981,11 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public Map<String, String> getExtraOptions() {
-    Map<String, String> map = new Hashtable<String, String>();
+    Map<String, String> map = new Hashtable<>();
 
-    for ( Enumeration<Object> keys = attributes.keys(); keys.hasMoreElements(); ) {
-      String attribute = (String) keys.nextElement();
+    for ( String attribute : attributes.keySet() ) {
       if ( attribute.startsWith( ATTRIBUTE_PREFIX_EXTRA_OPTION ) ) {
-        String value = attributes.getProperty( attribute, "" );
+        String value = getAttributeProperty( attribute, "" );
 
         // Add to the map...
         map.put( attribute.substring( ATTRIBUTE_PREFIX_EXTRA_OPTION.length() ), value );
@@ -1074,7 +1061,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public String getConnectSql() {
-    return attributes.getProperty( ATTRIBUTE_SQL_CONNECT );
+    return getAttributeProperty( ATTRIBUTE_SQL_CONNECT );
   }
 
   /**
@@ -1082,7 +1069,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public void setConnectSql(String sql ) {
-    attributes.setProperty( ATTRIBUTE_SQL_CONNECT, sql );
+    attributes.put( ATTRIBUTE_SQL_CONNECT, sql );
   }
 
   /**
@@ -1094,13 +1081,13 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
   }
 
   @Override
-  public String getSqlTableExists( String tablename ) {
-    return "SELECT 1 FROM " + tablename;
+  public String getSqlTableExists( String tableName ) {
+    return "SELECT 1 FROM " + tableName;
   }
 
   @Override
-  public String getSqlColumnExists( String columnname, String tablename ) {
-    return "SELECT " + columnname + " FROM " + tablename;
+  public String getSqlColumnExists( String columnname, String tableName ) {
+    return "SELECT " + columnname + " FROM " + tableName;
   }
 
   /**
@@ -1108,7 +1095,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public boolean isStreamingResults() {
-    String usePool = attributes.getProperty( ATTRIBUTE_USE_RESULT_STREAMING, "Y" ); // DEFAULT TO YES!!
+    String usePool = getAttributeProperty( ATTRIBUTE_USE_RESULT_STREAMING, "Y" ); // DEFAULT TO YES!!
     return "Y".equalsIgnoreCase( usePool );
   }
 
@@ -1117,7 +1104,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public void setStreamingResults( boolean useStreaming ) {
-    attributes.setProperty( ATTRIBUTE_USE_RESULT_STREAMING, useStreaming ? "Y" : "N" );
+    attributes.put( ATTRIBUTE_USE_RESULT_STREAMING, useStreaming ? "Y" : "N" );
   }
 
   /**
@@ -1125,7 +1112,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public boolean isQuoteAllFields() {
-    String quoteAllFields = attributes.getProperty( ATTRIBUTE_QUOTE_ALL_FIELDS, "N" ); // DEFAULT TO NO!!
+    String quoteAllFields = getAttributeProperty( ATTRIBUTE_QUOTE_ALL_FIELDS, "N" ); // DEFAULT TO NO!!
     return "Y".equalsIgnoreCase( quoteAllFields );
   }
 
@@ -1134,7 +1121,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public void setQuoteAllFields( boolean quoteAllFields ) {
-    attributes.setProperty( ATTRIBUTE_QUOTE_ALL_FIELDS, quoteAllFields ? "Y" : "N" );
+    attributes.put( ATTRIBUTE_QUOTE_ALL_FIELDS, quoteAllFields ? "Y" : "N" );
   }
 
   /**
@@ -1142,7 +1129,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public boolean isForcingIdentifiersToLowerCase() {
-    String forceLowerCase = attributes.getProperty( ATTRIBUTE_FORCE_IDENTIFIERS_TO_LOWERCASE, "N" ); // DEFAULT TO NO!!
+    String forceLowerCase = getAttributeProperty( ATTRIBUTE_FORCE_IDENTIFIERS_TO_LOWERCASE, "N" ); // DEFAULT TO NO!!
     return "Y".equalsIgnoreCase( forceLowerCase );
   }
 
@@ -1151,7 +1138,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public void setForcingIdentifiersToLowerCase( boolean forceLowerCase ) {
-    attributes.setProperty( ATTRIBUTE_FORCE_IDENTIFIERS_TO_LOWERCASE, forceLowerCase ? "Y" : "N" );
+    attributes.put( ATTRIBUTE_FORCE_IDENTIFIERS_TO_LOWERCASE, forceLowerCase ? "Y" : "N" );
   }
 
   /**
@@ -1159,7 +1146,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public boolean isForcingIdentifiersToUpperCase() {
-    String forceUpperCase = attributes.getProperty( ATTRIBUTE_FORCE_IDENTIFIERS_TO_UPPERCASE, "N" ); // DEFAULT TO NO!!
+    String forceUpperCase = getAttributeProperty( ATTRIBUTE_FORCE_IDENTIFIERS_TO_UPPERCASE, "N" ); // DEFAULT TO NO!!
     return "Y".equalsIgnoreCase( forceUpperCase );
   }
 
@@ -1168,7 +1155,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public void setForcingIdentifiersToUpperCase( boolean forceUpperCase ) {
-    attributes.setProperty( ATTRIBUTE_FORCE_IDENTIFIERS_TO_UPPERCASE, forceUpperCase ? "Y" : "N" );
+    attributes.put( ATTRIBUTE_FORCE_IDENTIFIERS_TO_UPPERCASE, forceUpperCase ? "Y" : "N" );
   }
 
   /**
@@ -1176,7 +1163,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public boolean isUsingDoubleDecimalAsSchemaTableSeparator() {
-    String usePool = attributes.getProperty( ATTRIBUTE_MSSQL_DOUBLE_DECIMAL_SEPARATOR, "N" ); // DEFAULT TO YES!!
+    String usePool = getAttributeProperty( ATTRIBUTE_MSSQL_DOUBLE_DECIMAL_SEPARATOR, "N" ); // DEFAULT TO YES!!
     return "Y".equalsIgnoreCase( usePool );
   }
 
@@ -1185,7 +1172,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public void setUsingDoubleDecimalAsSchemaTableSeparator( boolean useDoubleDecimalSeparator ) {
-    attributes.setProperty( ATTRIBUTE_MSSQL_DOUBLE_DECIMAL_SEPARATOR, useDoubleDecimalSeparator ? "Y" : "N" );
+    attributes.put( ATTRIBUTE_MSSQL_DOUBLE_DECIMAL_SEPARATOR, useDoubleDecimalSeparator ? "Y" : "N" );
   }
 
   /**
@@ -1217,7 +1204,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public String getPreferredSchemaName() {
-    return attributes.getProperty( ATTRIBUTE_PREFERRED_SCHEMA_NAME );
+    return getAttributeProperty( ATTRIBUTE_PREFERRED_SCHEMA_NAME );
   }
 
   /**
@@ -1225,7 +1212,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public void setPreferredSchemaName( String preferredSchemaName ) {
-    attributes.setProperty( ATTRIBUTE_PREFERRED_SCHEMA_NAME, preferredSchemaName );
+    attributes.put( ATTRIBUTE_PREFERRED_SCHEMA_NAME, preferredSchemaName );
   }
 
   /**
@@ -1234,16 +1221,16 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    * @param database   a connected database
    * @param schemaName
    * @param tableName
-   * @param idx_fields
+   * @param idxFields
    * @return true if the index exists, false if it doesn't.
    * @throws HopDatabaseException
    */
   @Override
-  public boolean checkIndexExists( Database database, String schemaName, String tableName, String[] idx_fields ) throws HopDatabaseException {
+  public boolean checkIndexExists( Database database, String schemaName, String tableName, String[] idxFields ) throws HopDatabaseException {
 
-    String tablename = database.getDatabaseMeta().getQuotedSchemaTableCombination( schemaName, tableName );
+    String schemaTable = database.getDatabaseMeta().getQuotedSchemaTableCombination( database, schemaName, tableName );
 
-    boolean[] exists = new boolean[ idx_fields.length ];
+    boolean[] exists = new boolean[ idxFields.length ];
     for ( int i = 0; i < exists.length; i++ ) {
       exists[ i ] = false;
     }
@@ -1252,7 +1239,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
       // Get a list of all the indexes for this table
       ResultSet indexList = null;
       try {
-        indexList = database.getDatabaseMetaData().getIndexInfo( null, null, tablename, false, true );
+        indexList = database.getDatabaseMetaData().getIndexInfo( null, null, schemaTable, false, true );
         while ( indexList.next() ) {
           // String tablen = indexList.getString("TABLE_NAME");
           // String indexn = indexList.getString("INDEX_NAME");
@@ -1260,7 +1247,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
           // int pos = indexList.getShort("ORDINAL_POSITION");
           // int type = indexList.getShort("TYPE");
 
-          int idx = Const.indexOfString( column, idx_fields );
+          int idx = Const.indexOfString( column, idxFields );
           if ( idx >= 0 ) {
             exists[ idx ] = true;
           }
@@ -1281,7 +1268,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
 
       return all;
     } catch ( Exception e ) {
-      throw new HopDatabaseException( "Unable to determine if indexes exists on table [" + tablename + "]", e );
+      throw new HopDatabaseException( "Unable to determine if indexes exists on table [" + schemaTable + "]", e );
     }
 
   }
@@ -1457,7 +1444,7 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
    */
   @Override
   public List<SqlScriptStatement> getSqlScriptStatements( String sqlScript ) {
-    List<SqlScriptStatement> statements = new ArrayList<SqlScriptStatement>();
+    List<SqlScriptStatement> statements = new ArrayList<>();
     String all = sqlScript;
     int from = 0;
     int to = 0;
@@ -1699,86 +1686,6 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
   @Override
   public boolean releaseSavepoint() {
     return releaseSavepoint;
-  }
-
-  public Long getNextBatchIdUsingSequence( String sequenceName, String schemaName, DatabaseMeta dbm, Database ldb ) throws HopDatabaseException {
-    return ldb.getNextSequenceValue( schemaName, sequenceName, null );
-  }
-
-  public Long getNextBatchIdUsingAutoIncSql(String autoIncSql, DatabaseMeta dbm, Database ldb ) throws HopDatabaseException {
-    Long rtn = null;
-    PreparedStatement stmt = ldb.prepareSql( autoIncSql, true );
-    try {
-      stmt.executeUpdate();
-      RowMetaAndData rmad = ldb.getGeneratedKeys( stmt );
-      if ( rmad.getRowMeta().size() > 0 ) {
-        rtn = rmad.getRowMeta().getInteger( rmad.getData(), 0 );
-      } else {
-        throw new HopDatabaseException( "Unable to retrieve value of auto-generated technical key : "
-          + "no value found!" );
-      }
-    } catch ( HopValueException kve ) {
-      throw new HopDatabaseException( kve );
-    } catch ( SQLException sqlex ) {
-      throw new HopDatabaseException( sqlex );
-    } finally {
-      try {
-        stmt.close();
-      } catch ( SQLException ignored ) {
-        // Ignored
-      }
-    }
-    return rtn;
-  }
-
-  public Long getNextBatchIdUsingLockTables( DatabaseMeta dbm, Database ldb, String schemaName, String tableName,
-                                             String fieldName ) throws HopDatabaseException {
-    // The old way of doing things...
-    Long rtn = null;
-    // Make sure we lock that table to avoid concurrency issues
-    String schemaAndTable = dbm.getQuotedSchemaTableCombination( schemaName, tableName );
-    ldb.lockTables( new String[] { schemaAndTable, } );
-    try {
-
-      // Now insert value -1 to create a real write lock blocking the other
-      // requests.. FCFS
-      String sql = "INSERT INTO " + schemaAndTable + " (" + dbm.quoteField( fieldName ) + ") values (-1)";
-      ldb.execStatement( sql );
-
-      // Now this next lookup will stall on the other connections
-      //
-      rtn = ldb.getNextValue( null, schemaName, tableName, fieldName );
-    } finally {
-      // Remove the -1 record again...
-      String sql = "DELETE FROM " + schemaAndTable + " WHERE " + dbm.quoteField( fieldName ) + "= -1";
-      ldb.execStatement( sql );
-      ldb.unlockTables( new String[] { schemaAndTable, } );
-    }
-    return rtn;
-  }
-
-  @Override
-  public Long getNextBatchId( DatabaseMeta dbm, Database ldb,
-                              String schemaName, String tableName, String fieldName ) throws HopDatabaseException {
-    // Always take off autocommit.
-    ldb.setCommit( 10 );
-
-    //
-    // Temporary work-around to handle batch-id from extended options
-    // Eventually want this promoted to proper dialogs and such
-    //
-
-    Map<String, String> connectionExtraOptions = this.getExtraOptions();
-    String sequenceProp = this.getPluginId() + "." + SEQUENCE_FOR_BATCH_ID;
-    String autoIncSqlProp = this.getPluginId() + "." + AUTOINCREMENT_SQL_FOR_BATCH_ID;
-    if ( connectionExtraOptions != null ) {
-      if ( this.supportsSequences() && connectionExtraOptions.containsKey( sequenceProp ) ) {
-        return getNextBatchIdUsingSequence( connectionExtraOptions.get( sequenceProp ), schemaName, dbm, ldb );
-      } else if ( this.supportsAutoInc() && connectionExtraOptions.containsKey( autoIncSqlProp ) ) {
-        return getNextBatchIdUsingAutoIncSql( connectionExtraOptions.get( autoIncSqlProp ), dbm, ldb );
-      }
-    }
-    return getNextBatchIdUsingLockTables( dbm, ldb, schemaName, tableName, fieldName );
   }
 
   /**
@@ -2025,11 +1932,11 @@ public abstract class BaseDatabaseMeta implements Cloneable, IDatabase {
 
   @Override
   public void addAttribute( String attributeId, String value ) {
-    attributes.setProperty( attributeId, value );
+    attributes.put( attributeId, value );
   }
 
   @Override
   public String getAttribute( String attributeId, String defaultValue ) {
-    return attributes.getProperty( attributeId, defaultValue );
+    return getAttributeProperty( attributeId, defaultValue );
   }
 }

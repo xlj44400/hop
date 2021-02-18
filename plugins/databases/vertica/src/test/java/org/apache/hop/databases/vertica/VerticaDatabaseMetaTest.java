@@ -1,24 +1,20 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
+
 package org.apache.hop.databases.vertica;
 
 import org.apache.hop.core.database.DatabaseMeta;
@@ -51,7 +47,7 @@ public class VerticaDatabaseMetaTest {
   @ClassRule
   public static RestoreHopEnvironment env = new RestoreHopEnvironment();
 
-  private VerticaDatabaseMeta nativeMeta, odbcMeta;
+  private VerticaDatabaseMeta nativeMeta;
 
   // Get PKG from class under test
   private Class<?> PKG = ValueMetaBase.PKG;
@@ -87,18 +83,14 @@ public class VerticaDatabaseMetaTest {
   public void setupBefore() {
     nativeMeta = new VerticaDatabaseMeta();
     nativeMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_NATIVE );
-    odbcMeta = new VerticaDatabaseMeta();
-    odbcMeta.setAccessType( DatabaseMeta.TYPE_ACCESS_ODBC );
   }
 
   @Test
   public void testSettings() throws Exception {
-    assertArrayEquals( new int[] { DatabaseMeta.TYPE_ACCESS_NATIVE, DatabaseMeta.TYPE_ACCESS_ODBC },
+    assertArrayEquals( new int[] { DatabaseMeta.TYPE_ACCESS_NATIVE },
       nativeMeta.getAccessTypeList() );
     assertEquals( 5433, nativeMeta.getDefaultDatabasePort() );
-    assertEquals( 5433, odbcMeta.getDefaultDatabasePort() ); // Inconsistent with all other DatabaseMetas
     assertEquals( "com.vertica.Driver", nativeMeta.getDriverClass() );
-    assertEquals( "jdbc:odbc:FOO", odbcMeta.getURL( "IGNORED", "IGNORED", "FOO" ) );
     assertEquals( "jdbc:vertica://FOO:BAR/WIBBLE", nativeMeta.getURL( "FOO", "BAR", "WIBBLE" ) );
     assertEquals( "jdbc:vertica://FOO:/WIBBLE", nativeMeta.getURL( "FOO", "", "WIBBLE" ) ); // Believe this is a bug - must have the port. Inconsistent with others
     assertFalse( nativeMeta.isFetchSizeSupported() );

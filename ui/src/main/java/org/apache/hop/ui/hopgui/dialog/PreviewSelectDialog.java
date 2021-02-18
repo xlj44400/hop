@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.hopgui.dialog;
 
@@ -31,6 +26,7 @@ import org.apache.hop.ui.core.gui.GuiResource;
 import org.apache.hop.ui.core.gui.WindowProperty;
 import org.apache.hop.ui.core.widget.ColumnInfo;
 import org.apache.hop.ui.core.widget.TableView;
+import org.apache.hop.ui.hopgui.HopGui;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ShellAdapter;
@@ -50,7 +46,7 @@ import org.eclipse.swt.widgets.TableItem;
 import java.util.List;
 
 public class PreviewSelectDialog extends Dialog {
-  private static Class<?> PKG = PreviewSelectDialog.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = PreviewSelectDialog.class; // For Translator
 
   private Label wlFields;
 
@@ -94,7 +90,7 @@ public class PreviewSelectDialog extends Dialog {
     shell.setText( BaseMessages.getString( PKG, "PreviewSelectDialog.Dialog.PreviewSelection.Title" ) ); // Preview
     // selection
     // screen
-    shell.setImage( GuiResource.getInstance().getImageLogoSmall() );
+    shell.setImage( GuiResource.getInstance().getImageHopUi() );
 
     int margin = props.getMargin();
 
@@ -120,9 +116,15 @@ public class PreviewSelectDialog extends Dialog {
       };
 
     wFields =
-      new TableView( pipelineMeta, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows,
-        true, // read-only
-        null, props );
+        new TableView(
+            HopGui.getInstance().getVariables(),
+            shell,
+            SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI,
+            colinf,
+            FieldsRows,
+            true, // read-only
+            null,
+            props);
 
     fdFields = new FormData();
     fdFields.left = new FormAttachment( 0, 0 );
@@ -139,16 +141,8 @@ public class PreviewSelectDialog extends Dialog {
     BaseTransformDialog.positionBottomButtons( shell, new Button[] { wPreview, wCancel }, margin, null );
 
     // Add listeners
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
-    lsPreview = new Listener() {
-      public void handleEvent( Event e ) {
-        preview();
-      }
-    };
+    lsCancel = e -> cancel();
+    lsPreview = e -> preview();
 
     wCancel.addListener( SWT.Selection, lsCancel );
     wPreview.addListener( SWT.Selection, lsPreview );

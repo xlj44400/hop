@@ -1,35 +1,28 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.row.value;
 
-import org.apache.hop.core.Const;
 import org.apache.hop.core.plugins.BasePluginType;
 import org.apache.hop.core.plugins.IPluginType;
 import org.apache.hop.core.plugins.PluginAnnotationType;
 import org.apache.hop.core.plugins.PluginMainClassType;
 import org.apache.hop.core.row.IValueMeta;
 
-import java.lang.annotation.Annotation;
 import java.util.Map;
 
 /**
@@ -40,13 +33,12 @@ import java.util.Map;
 
 @PluginMainClassType( IValueMeta.class )
 @PluginAnnotationType( ValueMetaPlugin.class )
-public class ValueMetaPluginType extends BasePluginType implements IPluginType {
+public class ValueMetaPluginType extends BasePluginType<ValueMetaPlugin> {
 
   private static ValueMetaPluginType valueMetaPluginType;
 
   private ValueMetaPluginType() {
     super( ValueMetaPlugin.class, "VALUEMETA", "ValueMeta" );
-    populateFolders( "valuemeta" );
   }
 
   public static ValueMetaPluginType getInstance() {
@@ -57,86 +49,66 @@ public class ValueMetaPluginType extends BasePluginType implements IPluginType {
   }
 
   @Override
-  protected String getXmlPluginFile() {
-    return Const.XML_FILE_HOP_VALUEMETA_PLUGINS;
-  }
-
-  @Override
-  protected String getAlternativePluginFile() {
-    return Const.HOP_VALUEMETA_PLUGINS_FILE;
-  }
-
-  @Override
-  protected String getMainTag() {
-    return "valuemeta-plugins";
-  }
-
-  @Override
-  protected String getSubTag() {
-    return "valuemeta-plugin";
-  }
-
-  @Override
-  protected String extractCategory( Annotation annotation ) {
+  protected String extractCategory( ValueMetaPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected String extractDesc( Annotation annotation ) {
-    return ( (ValueMetaPlugin) annotation ).description();
+  protected String extractDesc( ValueMetaPlugin annotation ) {
+    return annotation.description();
   }
 
   @Override
-  protected String extractID( Annotation annotation ) {
-    return ( (ValueMetaPlugin) annotation ).id();
+  protected String extractID( ValueMetaPlugin annotation ) {
+    return annotation.id();
   }
 
   @Override
-  protected String extractName( Annotation annotation ) {
-    return ( (ValueMetaPlugin) annotation ).name();
+  protected String extractName( ValueMetaPlugin annotation ) {
+    return annotation.name();
   }
 
   @Override
-  protected String extractImageFile( Annotation annotation ) {
+  protected String extractImageFile( ValueMetaPlugin annotation ) {
+    return annotation.image();
+  }
+
+  @Override
+  protected boolean extractSeparateClassLoader( ValueMetaPlugin annotation ) {
+    return annotation.isSeparateClassLoaderNeeded();
+  }
+
+  @Override
+  protected String extractI18nPackageName( ValueMetaPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected boolean extractSeparateClassLoader( Annotation annotation ) {
-    return ( (ValueMetaPlugin) annotation ).isSeparateClassLoaderNeeded();
+  protected void addExtraClasses( Map<Class<?>, String> classMap, Class<?> clazz, ValueMetaPlugin annotation ) {
   }
 
   @Override
-  protected String extractI18nPackageName( Annotation annotation ) {
+  protected String extractDocumentationUrl( ValueMetaPlugin annotation ) {
+    return annotation.documentationUrl();
+  }
+
+  @Override
+  protected String extractSuggestion( ValueMetaPlugin annotation ) {
     return null;
   }
 
   @Override
-  protected void addExtraClasses( Map<Class<?>, String> classMap, Class<?> clazz, Annotation annotation ) {
+  protected String extractCasesUrl( ValueMetaPlugin annotation ) {
+    return annotation.casesUrl();
   }
 
   @Override
-  protected String extractDocumentationUrl( Annotation annotation ) {
-    return ( (ValueMetaPlugin) annotation ).documentationUrl();
+  protected String extractForumUrl( ValueMetaPlugin annotation ) {
+    return annotation.forumUrl();
   }
 
   @Override
-  protected String extractSuggestion( Annotation annotation ) {
-    return null;
-  }
-
-  @Override
-  protected String extractCasesUrl( Annotation annotation ) {
-    return ( (ValueMetaPlugin) annotation ).casesUrl();
-  }
-
-  @Override
-  protected String extractForumUrl( Annotation annotation ) {
-    return ( (ValueMetaPlugin) annotation ).forumUrl();
-  }
-
-  @Override
-  protected String extractClassLoaderGroup( Annotation annotation ) {
-    return ( (ValueMetaPlugin) annotation ).classLoaderGroup();
+  protected String extractClassLoaderGroup( ValueMetaPlugin annotation ) {
+    return annotation.classLoaderGroup();
   }
 }

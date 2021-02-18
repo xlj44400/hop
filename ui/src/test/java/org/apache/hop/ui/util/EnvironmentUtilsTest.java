@@ -1,30 +1,30 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.ui.util;
 
+import org.eclipse.swt.SWT;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mockito;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,6 +33,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
+@RunWith( PowerMockRunner.class )
+@PrepareForTest( SWT.class )
 public class EnvironmentUtilsTest {
 
   @Test
@@ -77,6 +79,16 @@ public class EnvironmentUtilsTest {
     Assert.assertEquals( mock.getMockedInstance().getBrowserName(), "MSIE" );
     mock = new EnvironmentUtilsMock( Case.WINDOWS_WRONG );
     Assert.assertEquals( mock.getMockedInstance().getBrowserName(), "MSIE" );
+  }
+
+  @Test
+  public void isWeb() {
+    // This should be true as long as the test runs on SWT.
+    assertFalse( EnvironmentUtils.getInstance().isWeb() );
+
+    PowerMockito.mockStatic( SWT.class );
+    when( SWT.getPlatform() ).thenReturn( "rap" );
+    assertTrue( EnvironmentUtils.getInstance().isWeb() );
   }
 
   class EnvironmentUtilsMock extends EnvironmentUtils {

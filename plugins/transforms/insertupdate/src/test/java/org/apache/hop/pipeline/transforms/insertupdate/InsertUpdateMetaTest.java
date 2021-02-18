@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.insertupdate;
 
@@ -30,8 +25,10 @@ import org.apache.hop.core.exception.HopTransformException;
 import org.apache.hop.core.logging.ILoggingObject;
 import org.apache.hop.core.plugins.PluginRegistry;
 import org.apache.hop.core.plugins.TransformPluginType;
-import org.apache.hop.core.row.RowMeta;
 import org.apache.hop.core.row.IRowMeta;
+import org.apache.hop.core.row.RowMeta;
+import org.apache.hop.core.variables.IVariables;
+import org.apache.hop.core.variables.Variables;
 import org.apache.hop.junit.rules.RestoreHopEngineEnvironment;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
@@ -45,7 +42,13 @@ import org.apache.hop.pipeline.transforms.loadsave.validator.IFieldLoadSaveValid
 import org.apache.hop.pipeline.transforms.loadsave.validator.PrimitiveBooleanArrayLoadSaveValidator;
 import org.apache.hop.pipeline.transforms.loadsave.validator.StringLoadSaveValidator;
 import org.apache.hop.pipeline.transforms.mock.TransformMockHelper;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.sql.Connection;
@@ -58,6 +61,7 @@ public class InsertUpdateMetaTest {
   LoadSaveTester loadSaveTester;
   @ClassRule public static RestoreHopEngineEnvironment env = new RestoreHopEngineEnvironment();
 
+  private IVariables variables;
   private TransformMeta transformMeta;
   private InsertUpdate upd;
   private InsertUpdateData ud;
@@ -71,12 +75,9 @@ public class InsertUpdateMetaTest {
 
   @Before
   public void setUp() {
+    variables = new Variables();
     PipelineMeta pipelineMeta = new PipelineMeta();
     pipelineMeta.setName( "delete1" );
-
-    Map<String, String> vars = new HashMap<>();
-    vars.put( "max.sz", "10" );
-    pipelineMeta.injectVariables( vars );
 
     umi = new InsertUpdateMeta();
     ud = new InsertUpdateData();
@@ -86,14 +87,18 @@ public class InsertUpdateMetaTest {
 
     transformMeta = new TransformMeta( deletePid, "delete", umi );
     Pipeline pipeline = new LocalPipelineEngine( pipelineMeta );
+
+    Map<String, String> vars = new HashMap<>();
+    vars.put( "max.sz", "10" );
+    pipeline.setVariables( vars );
+
     pipelineMeta.addTransform( transformMeta );
     upd = new InsertUpdate( transformMeta, umi, ud, 1, pipelineMeta, pipeline );
-    upd.copyVariablesFrom( pipelineMeta );
 
     mockHelper =
       new TransformMockHelper<>( "insertUpdate", InsertUpdateMeta.class, InsertUpdateData.class );
     Mockito.when( mockHelper.logChannelFactory.create( Mockito.any(), Mockito.any( ILoggingObject.class ) ) )
-      .thenReturn( mockHelper.logChannelInterface );
+      .thenReturn( mockHelper.iLogChannel );
     Mockito.when( mockHelper.transformMeta.getTransform() ).thenReturn( new InsertUpdateMeta() );
   }
 
@@ -122,7 +127,7 @@ public class InsertUpdateMetaTest {
 
     InsertUpdateData tableOutputData = new InsertUpdateData();
     tableOutputData.insertRowMeta = Mockito.mock( RowMeta.class );
-    Assert.assertEquals( tableOutputData.insertRowMeta, insertUpdateMeta.getRowMeta( tableOutputData ) );
+    Assert.assertEquals( tableOutputData.insertRowMeta, insertUpdateMeta.getRowMeta( variables, tableOutputData ) );
     Assert.assertEquals( 3, insertUpdateMeta.getDatabaseFields().size() );
     Assert.assertEquals( "f1", insertUpdateMeta.getDatabaseFields().get( 0 ) );
     Assert.assertEquals( "f2", insertUpdateMeta.getDatabaseFields().get( 1 ) );
@@ -183,9 +188,9 @@ public class InsertUpdateMetaTest {
       }
     };
     IFieldLoadSaveValidator<String[]> stringArrayLoadSaveValidator =
-      new ArrayLoadSaveValidator<String>( new StringLoadSaveValidator(), 5 );
+      new ArrayLoadSaveValidator<>( new StringLoadSaveValidator(), 5 );
 
-    Map<String, IFieldLoadSaveValidator<?>> attrValidatorMap = new HashMap<String, IFieldLoadSaveValidator<?>>();
+    Map<String, IFieldLoadSaveValidator<?>> attrValidatorMap = new HashMap<>();
     attrValidatorMap.put( "keyStream", stringArrayLoadSaveValidator );
     attrValidatorMap.put( "keyLookup", stringArrayLoadSaveValidator );
     attrValidatorMap.put( "keyCondition", stringArrayLoadSaveValidator );
@@ -193,9 +198,9 @@ public class InsertUpdateMetaTest {
     attrValidatorMap.put( "updateLookup", stringArrayLoadSaveValidator );
     attrValidatorMap.put( "updateStream", stringArrayLoadSaveValidator );
     attrValidatorMap.put( "databaseMeta", new DatabaseMetaLoadSaveValidator() );
-    attrValidatorMap.put( "update", new ArrayLoadSaveValidator<Boolean>( new BooleanLoadSaveValidator(), 5 ) );
+    attrValidatorMap.put( "update", new ArrayLoadSaveValidator<>( new BooleanLoadSaveValidator(), 5 ) );
 
-    Map<String, IFieldLoadSaveValidator<?>> typeValidatorMap = new HashMap<String, IFieldLoadSaveValidator<?>>();
+    Map<String, IFieldLoadSaveValidator<?>> typeValidatorMap = new HashMap<>();
 
     typeValidatorMap.put( boolean[].class.getCanonicalName(), new PrimitiveBooleanArrayLoadSaveValidator( new BooleanLoadSaveValidator(), 3 ) );
 
@@ -211,7 +216,7 @@ public class InsertUpdateMetaTest {
   public void testErrorProcessRow() throws HopException {
     Mockito.when( mockHelper.logChannelFactory.create( Mockito.any(), Mockito.any( ILoggingObject.class ) ) )
       .thenReturn(
-        mockHelper.logChannelInterface );
+        mockHelper.iLogChannel );
     Mockito.when( mockHelper.transformMeta.getTransform() ).thenReturn( new InsertUpdateMeta() );
 
     InsertUpdate insertUpdateTransform =

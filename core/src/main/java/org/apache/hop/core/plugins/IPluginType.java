@@ -1,29 +1,25 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.plugins;
 
 import org.apache.hop.core.exception.HopPluginException;
 
+import java.lang.annotation.Annotation;
 import java.net.URL;
 import java.util.List;
 
@@ -35,7 +31,7 @@ import java.util.List;
  *
  * @author matt
  */
-public interface IPluginType {
+public interface IPluginType<T extends Annotation> {
 
   /**
    * Register an additional class type to be managed by the plugin system.
@@ -56,11 +52,6 @@ public interface IPluginType {
   String getName();
 
   /**
-   * @return The places where we should look for plugins, both as plugin.xml and as
-   */
-  List<IPluginFolder> getPluginFolders();
-
-  /**
    * @throws HopPluginException
    */
   void searchPlugins() throws HopPluginException;
@@ -75,8 +66,7 @@ public interface IPluginType {
    * @param pluginFolder     The plugin folder to use
    * @throws HopPluginException
    */
-  void handlePluginAnnotation( Class<?> clazz, java.lang.annotation.Annotation annotation,
-                               List<String> libraries, boolean nativePluginType, URL pluginFolder ) throws HopPluginException;
+  void handlePluginAnnotation( Class<?> clazz, T annotation, List<String> libraries, boolean nativePluginType, URL pluginFolder ) throws HopPluginException;
 
   default boolean isFragment() {
     return false;

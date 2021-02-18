@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow;
 
@@ -27,7 +22,7 @@ import org.apache.hop.core.Const;
 import org.apache.hop.core.exception.HopXmlException;
 import org.apache.hop.core.xml.XmlHandler;
 import org.apache.hop.i18n.BaseMessages;
-import org.apache.hop.workflow.action.ActionCopy;
+import org.apache.hop.workflow.action.ActionMeta;
 import org.w3c.dom.Node;
 
 import java.util.List;
@@ -38,8 +33,8 @@ import java.util.List;
  * @author Matt
  * @since 19-06-2003
  */
-public class WorkflowHopMeta extends BaseHopMeta<ActionCopy> implements Cloneable {
-  private static Class<?> PKG = WorkflowHopMeta.class; // for i18n purposes, needed by Translator!!
+public class WorkflowHopMeta extends BaseHopMeta<ActionMeta> implements Cloneable {
+  private static final Class<?> PKG = WorkflowHopMeta.class; // For Translator
 
   public static final String XML_FROM_TAG = "from";
   public static final String XML_TO_TAG = "to";
@@ -57,7 +52,7 @@ public class WorkflowHopMeta extends BaseHopMeta<ActionCopy> implements Cloneabl
     unconditional = hop.unconditional;
   }
 
-  public WorkflowHopMeta( ActionCopy from, ActionCopy to ) {
+  public WorkflowHopMeta( ActionMeta from, ActionMeta to ) {
     this.from = from;
     this.to = to;
     enabled = true;
@@ -70,10 +65,10 @@ public class WorkflowHopMeta extends BaseHopMeta<ActionCopy> implements Cloneabl
     }
   }
 
-  public WorkflowHopMeta( Node hopNode, List<ActionCopy> actions ) throws HopXmlException {
+  public WorkflowHopMeta( Node hopNode, List<ActionMeta> actions ) throws HopXmlException {
     try {
-      this.from = searchEntry( actions, XmlHandler.getTagValue( hopNode, WorkflowHopMeta.XML_FROM_TAG ) );
-      this.to = searchEntry( actions, XmlHandler.getTagValue( hopNode, WorkflowHopMeta.XML_TO_TAG ) );
+      this.from = searchAction( actions, XmlHandler.getTagValue( hopNode, WorkflowHopMeta.XML_FROM_TAG ) );
+      this.to = searchAction( actions, XmlHandler.getTagValue( hopNode, WorkflowHopMeta.XML_TO_TAG ) );
       String en = XmlHandler.getTagValue( hopNode, "enabled" );
 
       if ( en == null ) {
@@ -98,8 +93,8 @@ public class WorkflowHopMeta extends BaseHopMeta<ActionCopy> implements Cloneabl
     return strFrom + " --> " + strTo + " [" + strEnabled + ", " + strEvaluation + ")";
   }
 
-  private ActionCopy searchEntry( List<ActionCopy> actions, String name ) {
-    for ( ActionCopy action : actions ) {
+  private ActionMeta searchAction( List<ActionMeta> actions, String name ) {
+    for ( ActionMeta action : actions ) {
       if ( action.getName().equalsIgnoreCase( name ) ) {
         return action;
       }
@@ -111,17 +106,12 @@ public class WorkflowHopMeta extends BaseHopMeta<ActionCopy> implements Cloneabl
     try {
       String fromName = XmlHandler.getTagValue( hopNode, XML_FROM_TAG );
       String toName = XmlHandler.getTagValue( hopNode, XML_TO_TAG );
-      String sFromNr = XmlHandler.getTagValue( hopNode, "from_nr" );
-      String sToNr = XmlHandler.getTagValue( hopNode, "to_nr" );
       String sEnabled = XmlHandler.getTagValue( hopNode, "enabled" );
       String sEvaluation = XmlHandler.getTagValue( hopNode, "evaluation" );
       String sUnconditional = XmlHandler.getTagValue( hopNode, "unconditional" );
 
-      int fromNr = Const.toInt( sFromNr, 0 );
-      int toNr = Const.toInt( sToNr, 0 );
-
-      this.from = workflow.findAction( fromName, fromNr );
-      this.to = workflow.findAction( toName, toNr );
+      this.from = workflow.findAction( fromName );
+      this.to = workflow.findAction( toName );
 
       if ( sEnabled == null ) {
         enabled = true;
@@ -146,8 +136,6 @@ public class WorkflowHopMeta extends BaseHopMeta<ActionCopy> implements Cloneabl
       retval.append( "    " ).append( XmlHandler.openTag( XML_TAG ) ).append( Const.CR );
       retval.append( "      " ).append( XmlHandler.addTagValue( XML_FROM_TAG, this.from.getName() ) );
       retval.append( "      " ).append( XmlHandler.addTagValue( XML_TO_TAG, this.to.getName() ) );
-      retval.append( "      " ).append( XmlHandler.addTagValue( "from_nr", this.from.getNr() ) );
-      retval.append( "      " ).append( XmlHandler.addTagValue( "to_nr", this.to.getNr() ) );
       retval.append( "      " ).append( XmlHandler.addTagValue( "enabled", enabled ) );
       retval.append( "      " ).append( XmlHandler.addTagValue( "evaluation", evaluation ) );
       retval.append( "      " ).append( XmlHandler.addTagValue( "unconditional", unconditional ) );
@@ -206,20 +194,20 @@ public class WorkflowHopMeta extends BaseHopMeta<ActionCopy> implements Cloneabl
   }
 
 
-  public ActionCopy getFromAction() {
+  public ActionMeta getFromAction() {
     return this.from;
   }
 
-  public void setFromAction( ActionCopy fromAction ) {
+  public void setFromAction( ActionMeta fromAction ) {
     this.from = fromAction;
     changed = true;
   }
 
-  public ActionCopy getToAction() {
+  public ActionMeta getToAction() {
     return this.to;
   }
 
-  public void setToAction( ActionCopy toAction ) {
+  public void setToAction( ActionMeta toAction ) {
     this.to = toAction;
     changed = true;
   }

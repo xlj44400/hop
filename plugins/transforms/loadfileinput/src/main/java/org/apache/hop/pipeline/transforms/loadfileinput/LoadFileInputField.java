@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.loadfileinput;
 
@@ -37,7 +32,7 @@ import org.w3c.dom.Node;
  * @since 20-06-2007
  */
 public class LoadFileInputField implements Cloneable {
-  private static Class<?> PKG = LoadFileInputMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = LoadFileInputMeta.class; // For Translator
 
   public static final int TYPE_TRIM_NONE = 0;
   public static final int TYPE_TRIM_LEFT = 1;
@@ -281,8 +276,8 @@ public class LoadFileInputField implements Cloneable {
     this.trimtype = trimtype;
   }
 
-  public void setElementType( int element_type ) {
-    this.elementtype = element_type;
+  public void setElementType( int elementType ) {
+    this.elementtype = elementType;
   }
 
   public String getGroupSymbol() {

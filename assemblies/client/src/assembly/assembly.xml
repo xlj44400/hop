@@ -1,3 +1,21 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~       http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~
+  -->
+
 <assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
   <id>client</id>
@@ -17,11 +35,10 @@
     <!-- hop components -->
     <dependencySet>
       <includes>
-        <include>org.hop:hop-assemblies-static:zip</include>
-<!--        TODO: Reactivate when we have new samples-->
-<!--        <include>org.hop:hop-assemblies-samples:zip</include>-->
-        <include>org.hop:hop-assemblies-libs:zip</include>
-        <include>org.hop:hop-assemblies-plugins-dist:zip</include>
+        <include>org.apache.hop:hop-assemblies-static:zip</include>
+        <include>org.apache.hop:hop-assemblies-samples:zip</include>
+        <include>org.apache.hop:hop-assemblies-libs:zip</include>
+        <include>org.apache.hop:hop-assemblies-plugins-dist:zip</include>
       </includes>
       <unpack>true</unpack>
       <outputDirectory>.</outputDirectory>
@@ -54,6 +71,17 @@
       <outputDirectory>libswt/osx64</outputDirectory>
       <outputFileNameMapping>swt.jar</outputFileNameMapping>
       <useTransitiveDependencies>false</useTransitiveDependencies>
+      <useProjectArtifact>false</useProjectArtifact>
+    </dependencySet>
+    <dependencySet>
+      <includes>
+        <include>org.eclipse.platform:org.eclipse.jface</include>
+        <include>org.apache.hop:hop-ui-rcp</include>
+        <include>org.eclipse.jetty:*</include>
+        <include>javax.servlet:javax.servlet-api</include>
+      </includes>
+      <outputDirectory>lib</outputDirectory>
+      <useTransitiveDependencies>true</useTransitiveDependencies>
       <useProjectArtifact>false</useProjectArtifact>
     </dependencySet>
 

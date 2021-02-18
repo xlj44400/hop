@@ -1,51 +1,49 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.www;
 
+import org.apache.hop.core.annotations.HopServerServlet;
 import org.apache.hop.core.gui.AreaOwner;
 import org.apache.hop.core.gui.Point;
-import org.apache.hop.core.gui.SwingGc;
+import org.apache.hop.core.gui.SvgGc;
+import org.apache.hop.core.svg.HopSvgGraphics2D;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.workflow.WorkflowMeta;
 import org.apache.hop.workflow.WorkflowPainter;
+import org.apache.hop.workflow.WorkflowSvgPainter;
 import org.apache.hop.workflow.engine.IWorkflowEngine;
 
-import javax.imageio.ImageIO;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 
+@HopServerServlet(id="workflowImage", name = "Generate a PNG image of a workflow")
 public class GetWorkflowImageServlet extends BaseHttpServlet implements IHopServerPlugin {
 
   private static final long serialVersionUID = -4365372274638005929L;
+  public static final float ZOOM_FACTOR = 1.5f;
 
-  private static Class<?> PKG = GetPipelineStatusServlet.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = GetPipelineStatusServlet.class; // For Translator
 
   public static final String CONTEXT_PATH = "/hop/workflowImage";
 
@@ -83,51 +81,41 @@ public class GetWorkflowImageServlet extends BaseHttpServlet implements IHopServ
       workflow = getWorkflowMap().getWorkflow( entry );
     }
 
+    ByteArrayOutputStream svgStream = null;
+
     try {
       if ( workflow != null ) {
 
         response.setStatus( HttpServletResponse.SC_OK );
 
         response.setCharacterEncoding( "UTF-8" );
-        response.setContentType( "image/png" );
+        response.setContentType( "image/svg+xml" );
 
-        // Generate xform image
+        // Generate workflow SVG image
         //
-        BufferedImage image = generateJobImage( workflow.getWorkflowMeta() );
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        String svgXml = WorkflowSvgPainter.generateWorkflowSvg( workflow.getWorkflowMeta(), 1.0f, variables );
+        svgStream = new ByteArrayOutputStream();
         try {
-          ImageIO.write( image, "png", os );
+          svgStream.write( svgXml.getBytes("UTF-8") );
         } finally {
-          os.flush();
+          svgStream.flush();
         }
-        response.setContentLength( os.size() );
+        response.setContentLength( svgStream.size() );
 
         OutputStream out = response.getOutputStream();
-        out.write( os.toByteArray() );
-
+        out.write( svgStream.toByteArray() );
       }
     } catch ( Exception e ) {
       e.printStackTrace();
+    } finally {
+      if (svgStream!=null) {
+        svgStream.close();
+      }
     }
   }
 
-  private BufferedImage generateJobImage( WorkflowMeta workflowMeta ) throws Exception {
-    float magnification = 1.0f;
-    Point maximum = workflowMeta.getMaximum();
-    maximum.multiply( magnification );
-
-    SwingGc gc = new SwingGc( null, maximum, 32, 0, 0 );
-    WorkflowPainter workflowPainter = new WorkflowPainter( gc, workflowMeta, maximum, null, null, null, null, null, new ArrayList<AreaOwner>(), 32, 1, 0, "Arial", 10, 1.0d );
-    workflowPainter.setMagnification( magnification );
-    workflowPainter.drawJob();
-
-    BufferedImage image = (BufferedImage) gc.getImage();
-
-    return image;
-  }
-
   public String toString() {
-    return "Workflow Image IHandler";
+    return "Workflow Image Handler";
   }
 
   public String getService() {

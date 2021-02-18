@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.action;
 
@@ -28,9 +23,10 @@ import org.apache.hop.core.SqlStatement;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.exception.HopXmlException;
 import org.apache.hop.core.file.IHasFilename;
+import org.apache.hop.core.logging.IHasLogChannel;
 import org.apache.hop.core.logging.ILogChannel;
 import org.apache.hop.core.variables.IVariables;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.resource.IResourceNaming;
 import org.apache.hop.resource.ResourceDefinition;
 import org.apache.hop.resource.ResourceReference;
@@ -69,16 +65,16 @@ import java.util.Map;
  * construct the XML string.<br/>
  * <br/>
  * <a href="#loadXml(org.w3c.dom.Node)">
- * <code>void loadXml(...)</code></a></br> This method is called by PDI whenever a action needs to read its
+ * <code>void loadXml(...)</code></a></br> This method is called by Hop whenever a action needs to read its
  * settings from XML. The XML node containing the action's settings is passed in as an argument. Again, the helper
  * class org.apache.hop.core.xml.XmlHandler is typically used to conveniently read the settings from the XML node.<br/>
  * <br/>
  * <br/>
  * <quote>Hint: When developing plugins, make sure the serialization code is in sync with the settings available from
- * the action dialog. When testing a plugin in HopGui, PDI will internally first save and load a copy of the
+ * the action dialog. When testing a plugin in HopGui, Hop will internally first save and load a copy of the
  * workflow.</quote></li><br/>
  * <li><b>Provide access to dialog class</b><br/>
- * PDI needs to know which class will take care of the settings dialog for the action. The interface method
+ * Hop needs to know which class will take care of the settings dialog for the action. The interface method
  * getDialogClassName() must return the name of the class implementing the IActionDialog.</li></br>
  * <li><b>Provide information about possible outcomes</b><br/>
  * A action may support up to three types of outgoing hops: true, false, and unconditional. Sometimes it does not
@@ -89,7 +85,7 @@ import java.util.Map;
  * <br/>
  * The action plugin class must implement two methods to indicate to PDI which outgoing hops it supports:<br/>
  * <br/>
- * <a href="#evaluates()"><code>boolean evaluates()</code></a><br/>
+ * <a href="#isEvaluation()"><code>boolean isEvaluation()</code></a><br/>
  * This method must return true if the action supports the true/false outgoing hops. If the action does not
  * support distinct outcomes, it must return false.<br/>
  * <br/>
@@ -101,23 +97,23 @@ import java.util.Map;
  * <br/>
  * <br/>
  * <a href="#execute(org.apache.hop.core.Result, int)"><code>Result execute(..)</code></a><br/>
- * The execute() method is going to be called by PDI when it is time for the action to execute its logic. The
+ * The execute() method is going to be called by Hop when it is time for the action to execute its logic. The
  * arguments are a result object, which is passed in from the previously executed action and an integer number
  * indicating the distance of the action from the start entry of the workflow.<br/>
  * <br/>
  * The action should execute its configured task, and report back on the outcome. A action does that by calling
  * certain methods on the passed in <a href="../../core/Result.html">Result</a> object:<br/>
  * <br/>
- * <code>prev_result.setNrErrors(..)</code><br/>
+ * <code>prevResult.setNrErrors(..)</code><br/>
  * The action needs to indicate whether it has encountered any errors during execution. If there are errors,
  * setNrErrors must be called with the number of errors encountered (typically this is 1). If there are no errors,
  * setNrErrors must be called with an argument of 0.<br/>
  * <br/>
- * <code>prev_result.setResult(..)</code><br/>
+ * <code>prevResult.setResult(..)</code><br/>
  * The action must indicate the outcome of the task. This value determines which output hops can be followed next. If
- * a action does not support evaluation, it need not call prev_result.setResult().<br/>
+ * a action does not support evaluation, it need not call prevResult.setResult().<br/>
  * <br/>
- * Finally, the passed in prev_result object must be returned.</li>
+ * Finally, the passed in prevResult object must be returned.</li>
  * </ul>
  * </p>
  *
@@ -125,18 +121,18 @@ import java.util.Map;
  * @since 18-06-04
  */
 
-public interface IAction {
+public interface IAction extends IVariables, IHasLogChannel {
 
   /**
    * Execute the action. The previous result and number of rows are provided to the method for the purpose of
    * chaining actions, pipelines, etc.
    *
-   * @param prev_result the previous result
+   * @param prevResult the previous result
    * @param nr          the number of rows
    * @return the Result object from execution of this action
    * @throws HopException if any Hop exceptions occur
    */
-  Result execute( Result prev_result, int nr ) throws HopException;
+  Result execute( Result prevResult, int nr ) throws HopException;
 
   /**
    * Sets the parent workflow.
@@ -162,9 +158,9 @@ public interface IAction {
   /**
    * Sets the MetaStore
    *
-   * @param metaStore The new MetaStore to use
+   * @param metadataProvider The new MetaStore to use
    */
-  void setMetaStore( IMetaStore metaStore );
+  void setMetadataProvider( IHopMetadataProvider metadataProvider );
 
   /**
    * This method should clear out any variables, objects, etc. used by the action.
@@ -238,10 +234,11 @@ public interface IAction {
    * typically used to conveniently read the settings from the XML node.
    *
    * @param entrynode the top-level XML node
-   * @param metaStore The metaStore to optionally load from.
+   * @param metadataProvider The metadataProvider to optionally load from.
+   * @param variables
    * @throws HopXmlException if any errors occur during the loading of the XML
    */
-  void loadXml( Node entrynode, IMetaStore metaStore ) throws HopXmlException;
+  void loadXml( Node entrynode, IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException;
 
   /**
    * This method is called by PDI whenever a action needs to serialize its settings to XML. It is called when saving
@@ -254,18 +251,11 @@ public interface IAction {
   String getXml();
 
   /**
-   * Checks if the action has started
+   * Checks if the action is a starting point
    *
-   * @return true if started, false otherwise
+   * @return true if starting point, false otherwise
    */
   boolean isStart();
-
-  /**
-   * Checks if this action is a dummy entry
-   *
-   * @return true if this action is a dummy entry, false otherwise
-   */
-  boolean isDummy();
 
   /**
    * This method is called when a action is duplicated in HopGui. It needs to return a deep copy of this action
@@ -289,7 +279,7 @@ public interface IAction {
    *
    * @return true if the action supports the true/false outgoing hops, false otherwise
    */
-  boolean evaluates();
+  boolean isEvaluation();
 
   /**
    * This method must return true if the action supports the unconditional outgoing hop. If the action does not
@@ -299,12 +289,6 @@ public interface IAction {
    */
   boolean isUnconditional();
 
-  /**
-   * Checks if the action is an evaluation
-   *
-   * @return true if the action is an evaluation, false otherwise
-   */
-  boolean isEvaluation();
 
   /**
    * Checks if this action executes a pipeline
@@ -318,46 +302,23 @@ public interface IAction {
    *
    * @return true if the action executes a workflow, false otherwise
    */
-  boolean isJob();
-
-  /**
-   * Checks if the action executes a shell program
-   *
-   * @return true if the action executes a shell program, false otherwise
-   */
-  boolean isShell();
-
-  /**
-   * Checks if the action sends email
-   *
-   * @return true if the action sends email, false otherwise
-   */
-  boolean isMail();
-
-  /**
-   * Checks if the action is of a special type (Start, Dummy, etc.)
-   *
-   * @return true if the action is of a special type, false otherwise
-   */
-  boolean isSpecial();
+  boolean isWorkflow();
 
   /**
    * Gets the SQL statements needed by this action to execute successfully, given a set of variables.
    *
-   * @param metaStore the MetaStore to use
-   * @param variables a variable space object containing variable bindings
+   * @param metadataProvider the MetaStore to use
+   * @param variables a variable variables object containing variable bindings
    * @return a list of SQL statements
    * @throws HopException if any errors occur during the generation of SQL statements
    */
-  List<SqlStatement> getSqlStatements( IMetaStore metaStore, IVariables variables ) throws HopException;
+  List<SqlStatement> getSqlStatements( IHopMetadataProvider metadataProvider, IVariables variables ) throws HopException;
 
   /**
-   * Get the name of the class that implements the dialog for the action ActionBase provides a default
+   * Get the name of the class that implements the dialog for the action. ActionBase provides a default
    *
    * @return the name of the class implementing the dialog for the action
-   * @deprecated As of release 8.1, use annotated-based dialog instead {@see org.apache.hop.core.annotations.PluginDialog}
    */
-  @Deprecated
   String getDialogClassName();
 
   /**
@@ -380,32 +341,32 @@ public interface IAction {
    *
    * @param remarks      List of CheckResult objects indicating consistency status
    * @param workflowMeta the metadata object for the action
-   * @param variables    the variable space to resolve string expressions with variables with
-   * @param metaStore    the MetaStore to load common elements from
+   * @param variables    the variable variables to resolve string expressions with variables with
+   * @param metadataProvider    the MetaStore to load common elements from
    */
-  void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables, IMetaStore metaStore );
+  void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables, IHopMetadataProvider metadataProvider );
 
   /**
    * Get a list of all the resource dependencies that the transform is depending on.
    *
    * @return a list of all the resource dependencies that the transform is depending on
    */
-  List<ResourceReference> getResourceDependencies( WorkflowMeta workflowMeta );
+  List<ResourceReference> getResourceDependencies( IVariables variables, WorkflowMeta workflowMeta );
 
   /**
    * Exports the object to a flat-file system, adding content with filename keys to a set of definitions. The supplied
    * resource naming interface allows the object to name appropriately without worrying about those parts of the
    * implementation specific details.
    *
-   * @param variables       The variable space to resolve (environment) variables with.
+   * @param variables       The variable variables to resolve (environment) variables with.
    * @param definitions     The map containing the filenames and content
    * @param namingInterface The resource naming interface allows the object to be named appropriately
-   * @param metaStore       the metaStore to load external metadata from
+   * @param metadataProvider       the metadataProvider to load external metadata from
    * @return The filename for this object. (also contained in the definitions map)
    * @throws HopException in case something goes wrong during the export
    */
   String exportResources( IVariables variables, Map<String, ResourceDefinition> definitions,
-                          IResourceNaming namingInterface, IMetaStore metaStore ) throws HopException;
+                          IResourceNaming namingInterface, IHopMetadataProvider metadataProvider ) throws HopException;
 
   /**
    * @return The objects referenced in the transform, like a a pipeline, a workflow, a mapper, a reducer, a combiner, ...
@@ -421,12 +382,12 @@ public interface IAction {
    * Load the referenced object
    *
    * @param index     the referenced object index to load (in case there are multiple references)
-   * @param metaStore the metaStore
-   * @param variables the variable space to use
+   * @param metadataProvider the metadataProvider
+   * @param variables the variable variables to use
    * @return the referenced object once loaded
    * @throws HopException
    */
-  IHasFilename loadReferencedObject( int index, IMetaStore metaStore, IVariables variables ) throws HopException;
+  IHasFilename loadReferencedObject( int index, IHopMetadataProvider metadataProvider, IVariables variables ) throws HopException;
 
   /**
    * At save and run time, the system will attempt to set the workflowMeta so that it can be accessed by the actions

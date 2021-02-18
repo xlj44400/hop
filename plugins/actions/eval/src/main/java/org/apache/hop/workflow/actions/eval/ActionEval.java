@@ -1,42 +1,36 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.eval;
 
-import org.apache.hop.core.ICheckResult;
 import org.apache.hop.core.Const;
+import org.apache.hop.core.ICheckResult;
 import org.apache.hop.core.Result;
 import org.apache.hop.core.annotations.Action;
 import org.apache.hop.core.exception.HopXmlException;
 import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.core.xml.XmlHandler;
 import org.apache.hop.i18n.BaseMessages;
-import org.apache.hop.workflow.Workflow;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.workflow.WorkflowMeta;
 import org.apache.hop.workflow.action.ActionBase;
 import org.apache.hop.workflow.action.IAction;
-import org.apache.hop.workflow.action.validator.AndValidator;
 import org.apache.hop.workflow.action.validator.ActionValidatorUtils;
-import org.apache.hop.metastore.api.IMetaStore;
+import org.apache.hop.workflow.action.validator.AndValidator;
 import org.apache.hop.workflow.engine.IWorkflowEngine;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextFactory;
@@ -54,14 +48,14 @@ import java.util.List;
 
 @Action(
   id = "EVAL",
-  i18nPackageName = "org.apache.hop.workflow.actions.eval",
-  name = "ActionEval.Name",
-  description = "ActionEval.Description",
-  image = "Eval.svg",
-  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Scripting"
+  name = "i18n::ActionEval.Name",
+  description = "i18n::ActionEval.Description",
+  image = "eval.svg",
+  categoryDescription = "i18n:org.apache.hop.workflow:ActionCategory.Category.Scripting",
+  documentationUrl = "https://hop.apache.org/manual/latest/plugins/actions/eval.html"
 )
 public class ActionEval extends ActionBase implements Cloneable, IAction {
-  private static Class<?> PKG = ActionEval.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ActionEval.class; // For Translator
 
   private String script;
 
@@ -89,7 +83,7 @@ public class ActionEval extends ActionBase implements Cloneable, IAction {
   }
 
   public void loadXml( Node entrynode,
-                       IMetaStore metaStore ) throws HopXmlException {
+                       IHopMetadataProvider metadataProvider, IVariables variables ) throws HopXmlException {
     try {
       super.loadXml( entrynode );
       script = XmlHandler.getTagValue( entrynode, "script" );
@@ -110,11 +104,11 @@ public class ActionEval extends ActionBase implements Cloneable, IAction {
    * Evaluate the result of the execution of previous action.
    *
    * @param result      The result to evaulate.
-   * @param prev_result the previous result
+   * @param prevResult  the previous result
    * @param parentWorkflow   the parent workflow
    * @return The boolean result of the evaluation script.
    */
-  public boolean evaluate( Result result, IWorkflowEngine<WorkflowMeta> parentWorkflow, Result prev_result ) {
+  public boolean evaluate( Result result, IWorkflowEngine<WorkflowMeta> parentWorkflow, Result prevResult ) {
     Context cx;
     Scriptable scope;
 
@@ -124,28 +118,30 @@ public class ActionEval extends ActionBase implements Cloneable, IAction {
       scope = cx.initStandardObjects( null );
 
       Long errors = new Long( result.getNrErrors() );
-      Long lines_input = new Long( result.getNrLinesInput() );
-      Long lines_output = new Long( result.getNrLinesOutput() );
-      Long lines_updated = new Long( result.getNrLinesUpdated() );
-      Long lines_rejected = new Long( result.getNrLinesRejected() );
-      Long lines_read = new Long( result.getNrLinesRead() );
-      Long lines_written = new Long( result.getNrLinesWritten() );
-      Long exit_status = new Long( result.getExitStatus() );
-      Long files_retrieved = new Long( result.getNrFilesRetrieved() );
+      Long linesInput = new Long( result.getNrLinesInput() );
+      Long linesOutput = new Long( result.getNrLinesOutput() );
+      Long linesUpdated = new Long( result.getNrLinesUpdated() );
+      Long linesRejected = new Long( result.getNrLinesRejected() );
+      Long linesRead = new Long( result.getNrLinesRead() );
+      Long linesWritten = new Long( result.getNrLinesWritten() );
+      Long exitStatus = new Long( result.getExitStatus() );
+      Long filesRetrieved = new Long( result.getNrFilesRetrieved() );
       Long nr = new Long( result.getEntryNr() );
 
       scope.put( "errors", scope, errors );
-      scope.put( "lines_input", scope, lines_input );
-      scope.put( "lines_output", scope, lines_output );
-      scope.put( "lines_updated", scope, lines_updated );
-      scope.put( "lines_rejected", scope, lines_rejected );
-      scope.put( "lines_read", scope, lines_read );
-      scope.put( "lines_written", scope, lines_written );
-      scope.put( "files_retrieved", scope, files_retrieved );
-      scope.put( "exit_status", scope, exit_status );
+      scope.put( "lines_input", scope, linesInput );
+      scope.put( "lines_output", scope, linesOutput );
+      scope.put( "lines_updated", scope, linesUpdated );
+      scope.put( "lines_rejected", scope, linesRejected );
+      scope.put( "lines_read", scope, linesRead );
+      scope.put( "lines_written", scope, linesWritten );
+      scope.put( "files_retrieved", scope, filesRetrieved );
+      scope.put( "exit_status", scope, exitStatus );
       scope.put( "nr", scope, nr );
       scope.put( "is_windows", scope, Boolean.valueOf( Const.isWindows() ) );
-      scope.put( "_entry_", scope, this );
+      scope.put( "_entry_", scope, this ); // Compatible
+      scope.put( "_action_", scope, this );
+      scope.put( "action", scope, this ); // doc issue
 
       Object[] array = null;
       if ( result.getRows() != null ) {
@@ -153,8 +149,10 @@ public class ActionEval extends ActionBase implements Cloneable, IAction {
       }
 
       scope.put( "rows", scope, array );
-      scope.put( "parent_job", scope, parentWorkflow );
-      scope.put( "previous_result", scope, prev_result );
+      scope.put( "parent_job", scope, parentWorkflow ); // migration
+      scope.put( "parent_workflow", scope, parentWorkflow );
+      scope.put( "previous_result", scope, prevResult );
+      scope.put( "log", scope, getLogChannel() );
 
       try {
         Object res = cx.evaluateString( scope, this.script, "<cmd>", 1, null );
@@ -180,12 +178,12 @@ public class ActionEval extends ActionBase implements Cloneable, IAction {
    * Execute this action and return the result. In this case it means, just set the result boolean in the Result
    * class.
    *
-   * @param prev_result The result of the previous execution
+   * @param prevResult The result of the previous execution
    * @return The Result of the execution.
    */
-  public Result execute( Result prev_result, int nr ) {
-    prev_result.setResult( evaluate( prev_result, parentWorkflow, prev_result ) );
-    return prev_result;
+  public Result execute( Result prevResult, int nr ) {
+    prevResult.setResult( evaluate( prevResult, parentWorkflow, prevResult ) );
+    return prevResult;
   }
 
   public boolean resetErrorsBeforeExecution() {
@@ -194,7 +192,7 @@ public class ActionEval extends ActionBase implements Cloneable, IAction {
     return false;
   }
 
-  public boolean evaluates() {
+  public boolean isEvaluation() {
     return true;
   }
 
@@ -203,7 +201,7 @@ public class ActionEval extends ActionBase implements Cloneable, IAction {
   }
 
   public void check( List<ICheckResult> remarks, WorkflowMeta workflowMeta, IVariables variables,
-                     IMetaStore metaStore ) {
+                     IHopMetadataProvider metadataProvider ) {
     ActionValidatorUtils.andValidator().validate( this, "script", remarks, AndValidator.putValidators( ActionValidatorUtils.notBlankValidator() ) );
   }
 

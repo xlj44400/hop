@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.execsqlrow;
 
@@ -47,7 +42,7 @@ import org.apache.hop.pipeline.transform.TransformMeta;
  */
 public class ExecSqlRow extends BaseTransform<ExecSqlRowMeta, ExecSqlRowData> implements ITransform<ExecSqlRowMeta, ExecSqlRowData> {
 
-  private static Class<?> PKG = ExecSqlRowMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ExecSqlRowMeta.class; // For Translator
 
   public ExecSqlRow( TransformMeta transformMeta, ExecSqlRowMeta meta, ExecSqlRowData data, int copyNr, PipelineMeta pipelineMeta,
                      Pipeline pipeline ) {
@@ -102,7 +97,7 @@ public class ExecSqlRow extends BaseTransform<ExecSqlRowMeta, ExecSqlRowData> im
       first = false;
 
       data.outputRowMeta = getInputRowMeta().clone();
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
       // Check is SQL field is provided
       if ( Utils.isEmpty( meta.getSqlFieldName() ) ) {
@@ -231,8 +226,7 @@ public class ExecSqlRow extends BaseTransform<ExecSqlRowMeta, ExecSqlRowData> im
         logError( BaseMessages.getString( PKG, "ExecSqlRow.Init.ConnectionMissing", getTransformName() ) );
         return false;
       }
-      data.db = new Database( this, meta.getDatabaseMeta() );
-      data.db.shareVariablesWith( this );
+      data.db = new Database( this, this, meta.getDatabaseMeta() );
 
       // Connect to the database
       try {

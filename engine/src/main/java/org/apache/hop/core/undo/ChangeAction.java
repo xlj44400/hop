@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.core.undo;
 
@@ -26,7 +21,7 @@ import org.apache.hop.core.NotePadMeta;
 import org.apache.hop.core.gui.Point;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.workflow.WorkflowHopMeta;
-import org.apache.hop.workflow.action.ActionCopy;
+import org.apache.hop.workflow.action.ActionMeta;
 import org.apache.hop.pipeline.PipelineHopMeta;
 import org.apache.hop.pipeline.transform.TransformMeta;
 
@@ -57,7 +52,7 @@ import org.apache.hop.pipeline.transform.TransformMeta;
  * @since 19-12-2003
  */
 public class ChangeAction {
-  private static Class<?> PKG = ChangeAction.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ChangeAction.class; // For Translator
 
   public enum ActionType {
 
@@ -115,11 +110,11 @@ public class ChangeAction {
   private ActionType type;
   private Object[] previous;
   private Point[] previous_location;
-  private int[] previous_index;
+  private int[] previousIndex;
 
   private Object[] current;
   private Point[] current_location;
-  private int[] current_index;
+  private int[] currentIndex;
 
   private boolean nextAlso;
 
@@ -129,7 +124,7 @@ public class ChangeAction {
 
   public void setDelete( Object[] prev, int[] idx ) {
     current = prev;
-    current_index = idx;
+    currentIndex = idx;
 
     if ( prev[ 0 ] instanceof TransformMeta ) {
       type = ActionType.DeleteTransform;
@@ -140,7 +135,7 @@ public class ChangeAction {
     if ( prev[ 0 ] instanceof NotePadMeta ) {
       type = ActionType.DeleteNote;
     }
-    if ( prev[ 0 ] instanceof ActionCopy ) {
+    if ( prev[ 0 ] instanceof ActionMeta ) {
       type = ActionType.DeleteAction;
     }
     if ( prev[ 0 ] instanceof WorkflowHopMeta ) {
@@ -154,8 +149,8 @@ public class ChangeAction {
   public void setChanged( Object[] prev, Object[] curr, int[] idx ) {
     previous = prev;
     current = curr;
-    current_index = idx;
-    previous_index = idx;
+    currentIndex = idx;
+    previousIndex = idx;
 
     if ( prev[ 0 ] instanceof TransformMeta ) {
       type = ActionType.ChangeTransform;
@@ -166,7 +161,7 @@ public class ChangeAction {
     if ( prev[ 0 ] instanceof NotePadMeta ) {
       type = ActionType.ChangeNote;
     }
-    if ( prev[ 0 ] instanceof ActionCopy ) {
+    if ( prev[ 0 ] instanceof ActionMeta ) {
       type = ActionType.ChangeAction;
     }
     if ( prev[ 0 ] instanceof WorkflowHopMeta ) {
@@ -183,7 +178,7 @@ public class ChangeAction {
     }
 
     current = prev;
-    current_index = position;
+    currentIndex = position;
     previous = null;
 
     if ( prev[ 0 ] instanceof TransformMeta ) {
@@ -195,7 +190,7 @@ public class ChangeAction {
     if ( prev[ 0 ] instanceof NotePadMeta ) {
       type = ActionType.NewNote;
     }
-    if ( prev[ 0 ] instanceof ActionCopy ) {
+    if ( prev[ 0 ] instanceof ActionMeta ) {
       type = ActionType.NewAction;
     }
     if ( prev[ 0 ] instanceof WorkflowHopMeta ) {
@@ -214,7 +209,7 @@ public class ChangeAction {
     previous_location = new Point[ prev.length ];
     current_location = new Point[ curr.length ];
     current = obj;
-    current_index = idx;
+    currentIndex = idx;
 
     for ( int i = 0; i < prev.length; i++ ) {
       previous_location[ i ] = new Point( prev[ i ].x, prev[ i ].y );
@@ -228,7 +223,7 @@ public class ChangeAction {
     if ( fobj instanceof NotePadMeta ) {
       type = ActionType.PositionNote;
     }
-    if ( fobj instanceof ActionCopy ) {
+    if ( fobj instanceof ActionMeta ) {
       type = ActionType.PositionAction;
     }
   }
@@ -237,9 +232,9 @@ public class ChangeAction {
     previous_location = null;
     current_location = null;
     current = null;
-    current_index = curr;
+    currentIndex = curr;
     previous = null;
-    previous_index = prev;
+    previousIndex = prev;
 
     type = ActionType.PositionTableRow;
   }
@@ -265,11 +260,11 @@ public class ChangeAction {
   }
 
   public int[] getPreviousIndex() {
-    return previous_index;
+    return previousIndex;
   }
 
   public int[] getCurrentIndex() {
-    return current_index;
+    return currentIndex;
   }
 
   /**

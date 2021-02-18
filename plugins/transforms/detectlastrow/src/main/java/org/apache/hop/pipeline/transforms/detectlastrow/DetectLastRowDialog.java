@@ -1,30 +1,25 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.detectlastrow;
 
 import org.apache.hop.core.Const;
-import org.apache.hop.core.annotations.PluginDialog;
 import org.apache.hop.core.util.Utils;
+import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
@@ -38,23 +33,15 @@ import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.*;
 
-@PluginDialog(
-        id = "DetectLastRow",
-        image = "detectlastrow.svg",
-        pluginType = PluginDialog.PluginType.TRANSFORM,
-        documentationUrl = ""
-)
 public class DetectLastRowDialog extends BaseTransformDialog implements ITransformDialog {
-  private static Class<?> PKG = DetectLastRowMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = DetectLastRowMeta.class; // For Translator
 
-  private Label wlResult;
   private TextVar wResult;
-  private FormData fdlResult, fdResult;
 
-  private DetectLastRowMeta input;
+  private final DetectLastRowMeta input;
 
-  public DetectLastRowDialog( Shell parent, Object in, PipelineMeta pipelineMeta, String sname ) {
-    super( parent, (BaseTransformMeta) in, pipelineMeta, sname );
+  public DetectLastRowDialog( Shell parent, IVariables variables, Object in, PipelineMeta pipelineMeta, String sname ) {
+    super( parent, variables, (BaseTransformMeta) in, pipelineMeta, sname );
     input = (DetectLastRowMeta) in;
   }
 
@@ -66,11 +53,7 @@ public class DetectLastRowDialog extends BaseTransformDialog implements ITransfo
     props.setLook( shell );
     setShellImage( shell, input );
 
-    ModifyListener lsMod = new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        input.setChanged();
-      }
-    };
+    ModifyListener lsMod = e -> input.setChanged();
 
     changed = input.hasChanged();
 
@@ -104,24 +87,24 @@ public class DetectLastRowDialog extends BaseTransformDialog implements ITransfo
     wTransformName.setLayoutData( fdTransformName );
 
     // Result fieldname ...
-    wlResult = new Label( shell, SWT.RIGHT );
+    Label wlResult = new Label(shell, SWT.RIGHT);
     wlResult.setText( BaseMessages.getString( PKG, "DetectLastRowDialog.ResultField.Label" ) );
-    props.setLook( wlResult );
-    fdlResult = new FormData();
+    props.setLook(wlResult);
+    FormData fdlResult = new FormData();
     fdlResult.left = new FormAttachment( 0, 0 );
     fdlResult.right = new FormAttachment( middle, -margin );
     fdlResult.top = new FormAttachment( wTransformName, margin * 2 );
-    wlResult.setLayoutData( fdlResult );
+    wlResult.setLayoutData(fdlResult);
 
-    wResult = new TextVar( pipelineMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wResult = new TextVar( variables, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wResult.setToolTipText( BaseMessages.getString( PKG, "DetectLastRowDialog.ResultField.Tooltip" ) );
     props.setLook( wResult );
     wResult.addModifyListener( lsMod );
-    fdResult = new FormData();
+    FormData fdResult = new FormData();
     fdResult.left = new FormAttachment( middle, 0 );
     fdResult.top = new FormAttachment( wTransformName, margin * 2 );
     fdResult.right = new FormAttachment( 100, 0 );
-    wResult.setLayoutData( fdResult );
+    wResult.setLayoutData(fdResult);
 
     // THE BUTTONS
     wOk = new Button( shell, SWT.PUSH );
@@ -132,17 +115,9 @@ public class DetectLastRowDialog extends BaseTransformDialog implements ITransfo
     setButtonPositions( new Button[] { wOk, wCancel }, margin, wResult );
 
     // Add listeners
-    lsOk = new Listener() {
-      public void handleEvent( Event e ) {
-        ok();
-      }
-    };
+    lsOk = e -> ok();
 
-    lsCancel = new Listener() {
-      public void handleEvent( Event e ) {
-        cancel();
-      }
-    };
+    lsCancel = e -> cancel();
 
     wOk.addListener( SWT.Selection, lsOk );
     wCancel.addListener( SWT.Selection, lsCancel );

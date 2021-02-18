@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.fuzzymatch;
 
@@ -31,7 +26,6 @@ import org.apache.hop.core.row.RowMeta;
 import org.apache.hop.core.row.value.ValueMetaString;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
-import org.apache.hop.pipeline.transform.ITransformData;
 import org.apache.hop.pipeline.transform.ITransformIOMeta;
 import org.apache.hop.pipeline.transform.TransformMeta;
 import org.apache.hop.pipeline.transform.errorhandling.IStream;
@@ -66,10 +60,10 @@ public class FuzzyMatchTest {
   private Object[] row2B = new Object[] { "John".getBytes() };
   private Object[] row3 = new Object[] { "Catriny" };
   private Object[] row3B = new Object[] { "Catriny".getBytes() };
-  private List<Object[]> rows = new ArrayList<Object[]>();
-  private List<Object[]> binaryRows = new ArrayList<Object[]>();
-  private List<Object[]> lookupRows = new ArrayList<Object[]>();
-  private List<Object[]> binaryLookupRows = new ArrayList<Object[]>();
+  private List<Object[]> rows = new ArrayList<>();
+  private List<Object[]> binaryRows = new ArrayList<>();
+  private List<Object[]> lookupRows = new ArrayList<>();
+  private List<Object[]> binaryLookupRows = new ArrayList<>();
 
   {
     rows.add( row );
@@ -110,9 +104,9 @@ public class FuzzyMatchTest {
   @Before
   public void setUp() throws Exception {
     mockHelper =
-      new TransformMockHelper<FuzzyMatchMeta, FuzzyMatchData>( "Fuzzy Match", FuzzyMatchMeta.class, FuzzyMatchData.class );
+      new TransformMockHelper<>( "Fuzzy Match", FuzzyMatchMeta.class, FuzzyMatchData.class );
     when( mockHelper.logChannelFactory.create( any(), any( ILoggingObject.class ) ) ).thenReturn(
-      mockHelper.logChannelInterface );
+      mockHelper.iLogChannel );
     when( mockHelper.pipeline.isRunning() ).thenReturn( true );
   }
 
@@ -170,7 +164,7 @@ public class FuzzyMatchTest {
     ITransformIOMeta transformIOMetaInterface = mock( ITransformIOMeta.class );
     when( meta.getTransformIOMeta() ).thenReturn( transformIOMetaInterface );
     IStream streamInterface = mock( IStream.class );
-    List<IStream> streamInterfaceList = new ArrayList<IStream>();
+    List<IStream> streamInterfaceList = new ArrayList<>();
     streamInterfaceList.add( streamInterface );
     when( streamInterface.getTransformMeta() ).thenReturn( mockHelper.transformMeta );
 

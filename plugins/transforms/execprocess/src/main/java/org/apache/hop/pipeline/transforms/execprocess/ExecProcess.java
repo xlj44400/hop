@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.execprocess;
 
@@ -31,8 +26,6 @@ import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.transform.BaseTransform;
 import org.apache.hop.pipeline.transform.ITransform;
-import org.apache.hop.pipeline.transform.ITransformData;
-import org.apache.hop.pipeline.transform.ITransformMeta;
 import org.apache.hop.pipeline.transform.TransformMeta;
 
 import java.io.BufferedReader;
@@ -51,7 +44,7 @@ import java.util.List;
 
 public class ExecProcess extends BaseTransform<ExecProcessMeta, ExecProcessData> implements ITransform<ExecProcessMeta, ExecProcessData> {
 
-  private static Class<?> PKG = ExecProcessMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = ExecProcessMeta.class; // For Translator
 
   public ExecProcess( TransformMeta transformMeta, ExecProcessMeta meta, ExecProcessData data, int copyNr, PipelineMeta pipelineMeta,
                       Pipeline pipeline ) {
@@ -74,7 +67,7 @@ public class ExecProcess extends BaseTransform<ExecProcessMeta, ExecProcessData>
       data.previousRowMeta = getInputRowMeta().clone();
       data.NrPrevFields = data.previousRowMeta.size();
       data.outputRowMeta = data.previousRowMeta;
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
       // Check is process field is provided
       if ( Utils.isEmpty( meta.getProcessField() ) ) {
@@ -248,7 +241,7 @@ public class ExecProcess extends BaseTransform<ExecProcessMeta, ExecProcessData>
     if ( delim == null ) {
       delim = "";
     } else {
-      delim = environmentSubstitute( delim );
+      delim = resolve( delim );
     }
 
     while ( ( line = b.readLine() ) != null ) {

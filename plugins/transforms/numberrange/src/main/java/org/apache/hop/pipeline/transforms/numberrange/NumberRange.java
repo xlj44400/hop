@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.numberrange;
 
@@ -37,7 +32,7 @@ import org.apache.hop.pipeline.transform.TransformMeta;
  *
  */
 public class NumberRange extends BaseTransform<NumberRangeMeta, NumberRangeData> implements ITransform<NumberRangeMeta, NumberRangeData> {
-  private static Class<?> PKG = NumberRangeMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = NumberRangeMeta.class; // For Translator
 
   private NumberRangeSet numberRange;
 
@@ -62,7 +57,7 @@ public class NumberRange extends BaseTransform<NumberRangeMeta, NumberRangeData>
       numberRange = new NumberRangeSet( meta.getRules(), meta.getFallBackValue() );
       data.outputRowMeta = getInputRowMeta().clone();
       // Prepare output fields
-      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metaStore );
+      meta.getFields( data.outputRowMeta, getTransformName(), null, null, this, metadataProvider );
 
       // Find column numbers
       data.inputColumnNr = data.outputRowMeta.indexOfValue( meta.getInputField() );

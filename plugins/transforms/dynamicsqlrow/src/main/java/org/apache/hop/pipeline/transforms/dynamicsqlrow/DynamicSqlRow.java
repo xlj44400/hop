@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.dynamicsqlrow;
 
@@ -46,7 +41,7 @@ import java.sql.ResultSet;
  */
 public class DynamicSqlRow extends BaseTransform<DynamicSqlRowMeta, DynamicSqlRowData> implements ITransform<DynamicSqlRowMeta, DynamicSqlRowData> {
 
-  private static Class<?> PKG = DynamicSqlRowMeta.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = DynamicSqlRowMeta.class; // For Translator
 
   public DynamicSqlRow( TransformMeta transformMeta, DynamicSqlRowMeta meta, DynamicSqlRowData data, int copyNr, PipelineMeta pipelineMeta,
                         Pipeline pipeline ) {
@@ -59,7 +54,7 @@ public class DynamicSqlRow extends BaseTransform<DynamicSqlRowMeta, DynamicSqlRo
       first = false;
       data.outputRowMeta = rowMeta.clone();
       meta.getFields(
-        data.outputRowMeta, getTransformName(), new IRowMeta[] { meta.getTableFields(), }, null, this, metaStore );
+        data.outputRowMeta, getTransformName(), new IRowMeta[] { meta.getTableFields(this), }, null, this, metadataProvider );
 
       loadFromBuffer = false;
     }
@@ -72,7 +67,7 @@ public class DynamicSqlRow extends BaseTransform<DynamicSqlRowMeta, DynamicSqlRo
     String sqlTemp = getInputRowMeta().getString( rowData, data.indexOfSqlField);
     String sql = null;
     if ( meta.isVariableReplace() ) {
-      sql = environmentSubstitute( sqlTemp );
+      sql = resolve( sqlTemp );
     } else {
       sql = sqlTemp;
     }
@@ -290,8 +285,7 @@ public class DynamicSqlRow extends BaseTransform<DynamicSqlRowMeta, DynamicSqlRo
         logError( BaseMessages.getString( PKG, "DynmaicSQLRow.Init.ConnectionMissing", getTransformName() ) );
         return false;
       }
-      data.db = new Database( this, meta.getDatabaseMeta() );
-      data.db.shareVariablesWith( this );
+      data.db = new Database( this, variables, meta.getDatabaseMeta() );
       try {
         data.db.connect( getPartitionId() );
 

@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.workflow.actions.workflow;
 
@@ -31,13 +26,14 @@ import org.apache.hop.i18n.BaseMessages;
 import org.apache.hop.workflow.Workflow;
 import org.apache.hop.workflow.WorkflowMeta;
 import org.apache.hop.workflow.engine.IWorkflowEngine;
+import org.apache.hop.workflow.engines.local.LocalWorkflowEngine;
 
 /**
  * @author Matt
  * @since 6-apr-2005
  */
 public class ActionWorkflowRunner implements Runnable {
-  private static Class<?> PKG = Workflow.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = Workflow.class; // For Translator
 
   private IWorkflowEngine<WorkflowMeta> workflow;
   private Result result;
@@ -65,8 +61,13 @@ public class ActionWorkflowRunner implements Runnable {
       // This JobEntryRunner is a replacement for the Workflow thread.
       // The workflow thread is never started because we simply want to wait for the result.
       //
-      ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.WorkflowStart.id, getWorkflow() );
+      ExtensionPointHandler.callExtensionPoint( log, workflow, HopExtensionPoint.WorkflowStart.id, workflow );
 
+      if (workflow instanceof LocalWorkflowEngine ) {
+        // We don't want to re-initialize the variables because we defined them already
+        //
+        ((LocalWorkflowEngine)workflow).setInitializingVariablesOnStart( false );
+      }
       result = workflow.startExecution();
     } catch ( HopException e ) {
       e.printStackTrace();
@@ -74,10 +75,10 @@ public class ActionWorkflowRunner implements Runnable {
       result.setResult( false );
       result.setNrErrors( 1 );
     } finally {
-      //[PDI-14981] otherwise will get null pointer exception if 'workflow finished' listeners will be using it
+      // Otherwise we will get a null pointer exception if 'workflow finished' listeners will be using it
       workflow.setResult( result );
       try {
-        ExtensionPointHandler.callExtensionPoint( log, HopExtensionPoint.WorkflowFinish.id, getWorkflow() );
+        ExtensionPointHandler.callExtensionPoint( log, workflow, HopExtensionPoint.WorkflowFinish.id, workflow );
         workflow.fireWorkflowFinishListeners();
 
         //catch more general exception to prevent thread hanging

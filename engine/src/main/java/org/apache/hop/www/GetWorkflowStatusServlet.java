@@ -1,30 +1,26 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.www;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.hop.cluster.HttpUtil;
+import org.apache.hop.server.HttpUtil;
 import org.apache.hop.core.Const;
+import org.apache.hop.core.annotations.HopServerServlet;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.gui.Point;
 import org.apache.hop.core.logging.HopLogStore;
@@ -46,9 +42,9 @@ import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 
-
+@HopServerServlet(id="workflowStatus", name = "Get the status of a workflow")
 public class GetWorkflowStatusServlet extends BaseHttpServlet implements IHopServerPlugin {
-  private static Class<?> PKG = GetWorkflowStatusServlet.class; // for i18n purposes, needed by Translator!!
+  private static final Class<?> PKG = GetWorkflowStatusServlet.class; // For Translator
 
   private static final long serialVersionUID = 3634806745372015720L;
 
@@ -67,122 +63,6 @@ public class GetWorkflowStatusServlet extends BaseHttpServlet implements IHopSer
     super( workflowMap );
   }
 
-  /**
-   * <div id="mindtouch">
-   * <h1>/hop/workflowStatus</h1>
-   * <a name="GET"></a>
-   * <h2>GET</h2>
-   * <p>Retrieves status of the specified workflow.
-   * Status is returned as HTML or XML output depending on the input parameters.
-   * Status contains information about last execution of the workflow.</p>
-   *
-   * <p><b>Example Request:</b><br />
-   * <pre function="syntax.xml">
-   * GET /hop/workflowStatus/?name=dummy_job&xml=Y
-   * </pre>
-   *
-   * </p>
-   * <h3>Parameters</h3>
-   * <table class="hop-table">
-   * <tbody>
-   * <tr>
-   * <th>name</th>
-   * <th>description</th>
-   * <th>type</th>
-   * </tr>
-   * <tr>
-   * <td>name</td>
-   * <td>Name of the workflow to be used for status generation.</td>
-   * <td>query</td>
-   * </tr>
-   * <tr>
-   * <td>xml</td>
-   * <td>Boolean flag which defines output format <code>Y</code> forces XML output to be generated.
-   * HTML is returned otherwise.</td>
-   * <td>boolean, optional</td>
-   * </tr>
-   * <tr>
-   * <td>id</td>
-   * <td>HopServer id of the workflow to be used for status generation.</td>
-   * <td>query, optional</td>
-   * </tr>
-   * <tr>
-   * <td>from</td>
-   * <td>Start line number of the execution log to be included into response.</td>
-   * <td>integer, optional</td>
-   * </tr>
-   * </tbody>
-   * </table>
-   *
-   * <h3>Response Body</h3>
-   * <table class="hop-table">
-   * <tbody>
-   * <tr>
-   * <td align="right">element:</td>
-   * <td>(custom)</td>
-   * </tr>
-   * <tr>
-   * <td align="right">media types:</td>
-   * <td>text/xml, text/html</td>
-   * </tr>
-   * </tbody>
-   * </table>
-   * <p>Response XML or HTML response containing details about the workflow specified.
-   * If an error occurs during method invocation <code>result</code> field of the response
-   * will contain <code>ERROR</code> status.</p>
-   *
-   * <p><b>Example Response:</b></p>
-   * <pre function="syntax.xml">
-   * <?xml version="1.0" encoding="UTF-8"?>
-   * <jobstatus>
-   * <workflowname>dummy_job</workflowname>
-   * <id>a4d54106-25db-41c5-b9f8-73afd42766a6</id>
-   * <status_desc>Finished</status_desc>
-   * <error_desc/>
-   * <logging_string>&#x3c;&#x21;&#x5b;CDATA&#x5b;H4sIAAAAAAAAADMyMDTRNzTUNzRXMDC3MjS2MjJQ0FVIKc3NrYzPyk8CsoNLEotKFPLTFEDc1IrU5NKSzPw8Xi4j4nRm5qUrpOaVFFUqRLuE&#x2b;vpGxhKj0y0zL7M4IzUFYieybgWNotTi0pwS2&#x2b;iSotLUWE1iTPNCdrhCGtRsXi4AOMIbLPwAAAA&#x3d;&#x5d;&#x5d;&#x3e;</logging_string>
-   * <first_log_line_nr>0</first_log_line_nr>
-   * <last_log_line_nr>20</last_log_line_nr>
-   * <result>
-   * <lines_input>0</lines_input>
-   * <lines_output>0</lines_output>
-   * <lines_read>0</lines_read>
-   * <lines_written>0</lines_written>
-   * <lines_updated>0</lines_updated>
-   * <lines_rejected>0</lines_rejected>
-   * <lines_deleted>0</lines_deleted>
-   * <nr_errors>0</nr_errors>
-   * <nr_files_retrieved>0</nr_files_retrieved>
-   * <entry_nr>0</entry_nr>
-   * <result>Y</result>
-   * <exit_status>0</exit_status>
-   * <is_stopped>N</is_stopped>
-   * <log_channel_id/>
-   * <log_text>null</log_text>
-   * <result-file></result-file>
-   * <result-rows></result-rows>
-   * </result>
-   * </jobstatus>
-   * </pre>
-   *
-   * <h3>Status Codes</h3>
-   * <table class="hop-table">
-   * <tbody>
-   * <tr>
-   * <th>code</th>
-   * <th>description</th>
-   * </tr>
-   * <tr>
-   * <td>200</td>
-   * <td>Request was processed.</td>
-   * </tr>
-   * <tr>
-   * <td>500</td>
-   * <td>Internal server error occurs during request processing.</td>
-   * </tr>
-   * </tbody>
-   * </table>
-   * </div>
-   */
   public void doGet( HttpServletRequest request, HttpServletResponse response ) throws ServletException,
     IOException {
     if ( isJettyMode() && !request.getContextPath().startsWith( CONTEXT_PATH ) ) {
@@ -261,7 +141,7 @@ public class GetWorkflowStatusServlet extends BaseHttpServlet implements IHopSer
             response.setContentType( "text/xml" );
             response.setCharacterEncoding( Const.XML_ENCODING );
 
-            SlaveServerWorkflowStatus jobStatus = new SlaveServerWorkflowStatus( workflowName, id, workflow.getStatusDescription() );
+            HopServerWorkflowStatus jobStatus = new HopServerWorkflowStatus( workflowName, id, workflow.getStatusDescription() );
             jobStatus.setFirstLoggingLineNr( startLineNr );
             jobStatus.setLastLoggingLineNr( lastLineNr );
             jobStatus.setLogDate( workflow.getExecutionStartDate() );
@@ -308,7 +188,7 @@ public class GetWorkflowStatusServlet extends BaseHttpServlet implements IHopSer
         out
           .println( "<TITLE>"
             + BaseMessages.getString( PKG, "GetWorkflowStatusServlet.HopWorkflowStatus" ) + "</TITLE>" );
-        if ( EnvUtil.getSystemProperty( Const.HOP_CARTE_REFRESH_STATUS, "N" ).equalsIgnoreCase( "Y" ) ) {
+        if ( EnvUtil.getSystemProperty( Const.HOP_SERVER_REFRESH_STATUS, "N" ).equalsIgnoreCase( "Y" ) ) {
           out.println( "<META http-equiv=\"Refresh\" content=\"10;url="
             + convertContextPath( GetWorkflowStatusServlet.CONTEXT_PATH ) + "?name="
             + URLEncoder.encode( Const.NVL( workflowName, "" ), "UTF-8" ) + "&id=" + URLEncoder.encode( id, "UTF-8" )
@@ -358,7 +238,7 @@ public class GetWorkflowStatusServlet extends BaseHttpServlet implements IHopSer
           out.print( "<a target=\"_blank\" href=\""
             + convertContextPath( GetWorkflowStatusServlet.CONTEXT_PATH ) + "?name="
             + URLEncoder.encode( workflowName, "UTF-8" ) + "&id=" + URLEncoder.encode( id, "UTF-8" ) + "&xml=y\">"
-            + "<img src=\"" + prefix + "/images/view-as-xml.svg\" style=\"display: block; margin: auto; width: 22px; height: 22px;\"></a>" );
+            + "<img src=\"" + prefix + "/images/download.svg\" style=\"display: block; margin: auto; width: 22px; height: 22px;\"></a>" );
           out.print( "</div>" );
           out.println( "<div style=\"text-align: center; padding-top: 12px; font-size: 12px;\">" );
           out.print( "<a target=\"_blank\" href=\""
@@ -375,11 +255,10 @@ public class GetWorkflowStatusServlet extends BaseHttpServlet implements IHopSer
           // Show workflow image?
           //
           Point max = workflow.getWorkflowMeta().getMaximum();
-          //max.x += 20;
-          max.y += 20;
-          out
-            .print( "<iframe height=\""
-              + max.y + "\" width=\"" + 875 + "\" seamless src=\""
+          max.x += (int)(max.x*GetWorkflowImageServlet.ZOOM_FACTOR) + 100;
+          max.y += (int)(max.y+GetWorkflowImageServlet.ZOOM_FACTOR) + 50;
+          out.print( "<iframe height=\""
+              + (max.y+100) + "px\" width=\"" + (max.x+100) + "px\" src=\""
               + convertContextPath( GetWorkflowImageServlet.CONTEXT_PATH ) + "?name="
               + URLEncoder.encode( workflowName, "UTF-8" ) + "&id=" + URLEncoder.encode( id, "UTF-8" )
               + "\"></iframe>" );
@@ -389,8 +268,8 @@ public class GetWorkflowStatusServlet extends BaseHttpServlet implements IHopSer
 
           out.print( "<div class=\"row\" style=\"padding: 0px 0px 30px 0px;\">" );
           out.print( "<div class=\"workspaceHeading\">Workflow log</div>" );
-          out.println( "<textarea id=\"joblog\" cols=\"120\" rows=\"20\" wrap=\"off\" "
-            + "name=\"Workflow log\" readonly=\"readonly\" style=\"height: auto;\">"
+          out.println( "<textarea id=\"workflowlog\" cols=\"120\" rows=\"20\" wrap=\"off\" "
+            + "name=\"Workflow log\" readonly=\"readonly\" style=\"height: auto; width: 100%;\">"
             + Encode.forHtml( getLogText( workflow, startLineNr, lastLineNr ) ) + "</textarea>" );
           out.print( "</div>" );
 

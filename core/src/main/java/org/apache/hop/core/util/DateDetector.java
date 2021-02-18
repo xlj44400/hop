@@ -1,28 +1,23 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 package org.apache.hop.core.util;
 
-import org.apache.commons.collections.BidiMap;
-import org.apache.commons.collections.bidimap.DualHashBidiMap;
+import org.apache.commons.collections4.BidiMap;
+import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -33,7 +28,7 @@ public class DateDetector {
   private static final String LOCALE_en_US = "en_US";
 
   @SuppressWarnings( "serial" )
-  static final BidiMap DATE_FORMAT_TO_REGEXPS_US = new DualHashBidiMap() {
+  static final BidiMap<String,String> DATE_FORMAT_TO_REGEXPS_US = new DualHashBidiMap<String, String>() {
     {
       put( "MM-dd-yyyy", "^[0-1]?[0-9]-[0-3]?[0-9]-\\d{4}$" );
       put( "dd/MM/yyyy", "^[0-3]?[0-9]/[0-1]?[0-9]/\\d{4}$" );

@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.transforms.jsoninput;
 
@@ -29,6 +24,7 @@ import junit.framework.ComparisonFailure;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.util.FileObjectUtils;
 import org.apache.hop.core.HopClientEnvironment;
 import org.apache.hop.core.IRowSet;
 import org.apache.hop.core.exception.HopException;
@@ -82,7 +78,7 @@ import static org.mockito.Mockito.when;
 
 public class JsonInputTest {
 
-  protected static final String BASE_RAM_DIR = "ram:/jsonInputTest/";
+  protected static final String BASE_RAM_DIR = "ram:///jsonInputTest/";
   protected TransformMockHelper<JsonInputMeta, JsonInputData> helper;
 
   protected static final String getBasicTestJson() {
@@ -161,9 +157,9 @@ public class JsonInputTest {
   @Before
   public void setUp() {
     helper =
-      new TransformMockHelper<JsonInputMeta, JsonInputData>( "json input test", JsonInputMeta.class, JsonInputData.class );
+      new TransformMockHelper<>( "json input test", JsonInputMeta.class, JsonInputData.class );
     when( helper.logChannelFactory.create( any(), any( ILoggingObject.class ) ) ).thenReturn(
-      helper.logChannelInterface );
+      helper.iLogChannel );
     when( helper.pipeline.isRunning() ).thenReturn( true );
   }
 
@@ -563,15 +559,15 @@ public class JsonInputTest {
 
     JsonInputMeta meta = createSimpleMeta( inCol, aField, bField );
     meta.setIgnoreMissingPath( true );
-    JsonInput step = createJsonInput( inCol, meta, new Object[] { input } );
-    step.addRowListener(
+    JsonInput transform = createJsonInput( inCol, meta, new Object[] { input } );
+    transform.addRowListener(
       new RowComparatorListener(
         new Object[] { input, 1L, null },
         new Object[] { input, null, 2L },
         new Object[] { input, 3L, 2L },
         new Object[] { input, 4L, 4L } ) );
-    processRows( step, 4 );
-    Assert.assertEquals( 4, step.getLinesWritten() );
+    processRows( transform, 4 );
+    Assert.assertEquals( 4, transform.getLinesWritten() );
   }
 
   @Test
@@ -596,16 +592,16 @@ public class JsonInputTest {
 
     JsonInputMeta meta = createSimpleMeta( inCol, aField, bField, cField );
     meta.setIgnoreMissingPath( true );
-    JsonInput step = createJsonInput( inCol, meta, new Object[] { input } );
-    step.addRowListener(
+    JsonInput transform = createJsonInput( inCol, meta, new Object[] { input } );
+    transform.addRowListener(
       new RowComparatorListener(
         new Object[] { input, "1", "2", null } ) );
-    processRows( step, 1 );
-    Assert.assertEquals( 1, step.getLinesWritten() );
+    processRows( transform, 1 );
+    Assert.assertEquals( 1, transform.getLinesWritten() );
   }
 
   /**
-   * PDI-10384 Huge numbers causing exception in JSON input step<br>
+   * PDI-10384 Huge numbers causing exception in JSON input transform<br>
    */
   @Test
   public void testLargeDoubles() throws Exception {
@@ -883,11 +879,14 @@ public class JsonInputTest {
         try ( ZipOutputStream zipOut = new ZipOutputStream( out ) ) {
           ZipEntry jsonFile = new ZipEntry( "test.json" );
           zipOut.putNextEntry( jsonFile );
-          zipOut.write( input.getBytes() );
+          zipOut.write( input.getBytes("UTF-8") );
           zipOut.closeEntry();
           zipOut.flush();
         }
       }
+
+      String json = FileObjectUtils.getContentAsString( HopVfs.getFileObject( "zip:" + BASE_RAM_DIR + "test.zip!/test.json" ), "UTF-8" );
+
       JsonInputField price = new JsonInputField();
       price.setName( "price" );
       price.setType( IValueMeta.TYPE_NUMBER );
@@ -954,19 +953,11 @@ public class JsonInputTest {
           "json", "ram:///jsonInputTest", -1L, false, new Date( 0 ), "ram:///jsonInputTest/test1.json", "ram:///" },
         new Object[] { "blue",
           "js", "ram:///jsonInputTest", -1L, false, new Date( 0 ), "ram:///jsonInputTest/test2.js", "ram:///" } );
-      rowComparator.setComparator( 3, new RowComparatorListener.Comparison<Object>() {
-        @Override
-        public boolean equals( Object expected, Object actual ) throws Exception {
-          // just want a valid size
-          return ( (long) actual ) > 0L;
-        }
+      rowComparator.setComparator( 3, ( expected, actual ) -> {
+        // just want a valid size
+        return ( (long) actual ) > 0L;
       } );
-      rowComparator.setComparator( 5, new RowComparatorListener.Comparison<Object>() {
-        @Override
-        public boolean equals( Object expected, Object actual ) throws Exception {
-          return ( (Date) actual ).after( new Date( 0 ) );
-        }
-      } );
+      rowComparator.setComparator( 5, ( expected, actual ) -> ( (Date) actual ).after( new Date( 0 ) ) );
       JsonInput jsonInput = createJsonInput( "in file", meta, new Object[][] {
         new Object[] { path1 },
         new Object[] { path2 }
@@ -1052,7 +1043,7 @@ public class JsonInputTest {
     meta.setRemoveSourceField( true );
     when( helper.transformMeta.isDoingErrorHandling() ).thenReturn( true );
     JsonInput jsonInput = createJsonInput( "json", meta, new Object[] { input1 }, new Object[] { input2 } );
-    TransformErrorMeta errMeta = new TransformErrorMeta( jsonInput, helper.transformMeta );
+    TransformErrorMeta errMeta = new TransformErrorMeta( helper.transformMeta );
     errMeta.setEnabled( true );
     errMeta.setErrorFieldsValuename( "err field" );
     when( helper.transformMeta.getTransformErrorMeta() ).thenReturn( errMeta );
@@ -1144,7 +1135,7 @@ public class JsonInputTest {
   protected JsonInputMeta createFileListMeta( final List<FileObject> files ) {
     JsonInputMeta meta = new JsonInputMeta() {
       @Override
-      public FileInputList getFileInputList( IVariables space ) {
+      public FileInputList getFileInputList( IVariables variables ) {
         return new FileInputList() {
           @Override
           public List<FileObject> getFiles() {
@@ -1212,7 +1203,7 @@ public class JsonInputTest {
 
     jsonInput.addRowSetToInputRowSets( input );
     jsonInput.setInputRowMeta( rowMeta );
-    jsonInput.initializeVariablesFrom( variables );
+    jsonInput.initializeFrom( variables );
 
     jsonInput.init();
     return jsonInput;
@@ -1228,9 +1219,9 @@ public class JsonInputTest {
       this.data = data;
     }
 
-    public RowComparatorListener( ITransform step, Object[]... data ) {
+    public RowComparatorListener( ITransform transform, Object[]... data ) {
       this.data = data;
-      step.addRowListener( this );
+      transform.addRowListener( this );
     }
 
     /**

@@ -1,24 +1,19 @@
-/*! ******************************************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Hop : The Hop Orchestration Platform
- *
- * http://www.project-hop.org
- *
- *******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- ******************************************************************************/
+ */
 
 package org.apache.hop.pipeline.engines.local;
 
@@ -26,12 +21,17 @@ import org.apache.hop.core.Const;
 import org.apache.hop.core.gui.plugin.GuiElementType;
 import org.apache.hop.core.gui.plugin.GuiPlugin;
 import org.apache.hop.core.gui.plugin.GuiWidgetElement;
-import org.apache.hop.metastore.persist.MetaStoreAttribute;
+import org.apache.hop.core.logging.ILogChannel;
+import org.apache.hop.metadata.api.HopMetadataProperty;
+import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.pipeline.config.IPipelineEngineRunConfiguration;
 import org.apache.hop.pipeline.config.PipelineRunConfiguration;
 import org.apache.hop.pipeline.engines.EmptyPipelineRunConfiguration;
 
-@GuiPlugin
+import java.util.ArrayList;
+import java.util.List;
+
+@GuiPlugin(description = "Local pipeline run configuration widgets")
 public class LocalPipelineRunConfiguration extends EmptyPipelineRunConfiguration implements IPipelineEngineRunConfiguration {
 
   @GuiWidgetElement(
@@ -39,10 +39,9 @@ public class LocalPipelineRunConfiguration extends EmptyPipelineRunConfiguration
     order = "10",
     parentId = PipelineRunConfiguration.GUI_PLUGIN_ELEMENT_PARENT_ID,
     type = GuiElementType.TEXT,
-    i18nPackage = "org.apache.hop.ui.pipeline.config",
-    label = "PipelineRunConfigurationDialog.RowSetSize.Label"
+    label = "i18n:org.apache.hop.ui.pipeline.config:PipelineRunConfigurationDialog.RowSetSize.Label"
   )
-  @MetaStoreAttribute(key="rowset_size")
+  @HopMetadataProperty(key="rowset_size")
   protected String rowSetSize;
 
   @GuiWidgetElement(
@@ -50,10 +49,9 @@ public class LocalPipelineRunConfiguration extends EmptyPipelineRunConfiguration
     order = "20",
     parentId = PipelineRunConfiguration.GUI_PLUGIN_ELEMENT_PARENT_ID,
     type = GuiElementType.CHECKBOX,
-    i18nPackage = "org.apache.hop.ui.pipeline.config",
-    label = "PipelineRunConfigurationDialog.SafeModeEnabled.Label"
+    label = "i18n:org.apache.hop.ui.pipeline.config:PipelineRunConfigurationDialog.SafeModeEnabled.Label"
   )
-  @MetaStoreAttribute(key="safe_mode")
+  @HopMetadataProperty(key="safe_mode")
   protected boolean safeModeEnabled;
 
   @GuiWidgetElement(
@@ -61,10 +59,9 @@ public class LocalPipelineRunConfiguration extends EmptyPipelineRunConfiguration
     order = "30",
     parentId = PipelineRunConfiguration.GUI_PLUGIN_ELEMENT_PARENT_ID,
     type = GuiElementType.CHECKBOX,
-    i18nPackage = "org.apache.hop.ui.pipeline.config",
-    label = "PipelineRunConfigurationDialog.GatheringMetrics.Label"
+    label = "i18n:org.apache.hop.ui.pipeline.config:PipelineRunConfigurationDialog.GatheringMetrics.Label"
   )
-  @MetaStoreAttribute(key="gather_metrics")
+  @HopMetadataProperty(key="gather_metrics")
   protected boolean gatheringMetrics;
 
   @GuiWidgetElement(
@@ -72,10 +69,9 @@ public class LocalPipelineRunConfiguration extends EmptyPipelineRunConfiguration
     order = "40",
     parentId = PipelineRunConfiguration.GUI_PLUGIN_ELEMENT_PARENT_ID,
     type = GuiElementType.CHECKBOX,
-    i18nPackage = "org.apache.hop.ui.pipeline.config",
-    label = "PipelineRunConfigurationDialog.SortTransformsTopologically.Label"
+    label = "i18n:org.apache.hop.ui.pipeline.config:PipelineRunConfigurationDialog.SortTransformsTopologically.Label"
   )
-  @MetaStoreAttribute(key="topo_sort")
+  @HopMetadataProperty(key="topo_sort")
   protected boolean sortingTransformsTopologically;
 
   /**
@@ -86,10 +82,9 @@ public class LocalPipelineRunConfiguration extends EmptyPipelineRunConfiguration
     order = "50",
     parentId = PipelineRunConfiguration.GUI_PLUGIN_ELEMENT_PARENT_ID,
     type = GuiElementType.CHECKBOX,
-    i18nPackage = "org.apache.hop.ui.pipeline.config",
-    label = "PipelineRunConfigurationDialog.FeedbackShown.Label"
+    label = "i18n:org.apache.hop.ui.pipeline.config:PipelineRunConfigurationDialog.FeedbackShown.Label"
   )
-  @MetaStoreAttribute(key="show_feedback")
+  @HopMetadataProperty(key="show_feedback")
   protected boolean feedbackShown;
 
   /**
@@ -100,18 +95,49 @@ public class LocalPipelineRunConfiguration extends EmptyPipelineRunConfiguration
     order = "60",
     parentId = PipelineRunConfiguration.GUI_PLUGIN_ELEMENT_PARENT_ID,
     type = GuiElementType.TEXT,
-    i18nPackage = "org.apache.hop.ui.pipeline.config",
-    label = "PipelineRunConfigurationDialog.FeedbackSize.Label"
+    label = "i18n:org.apache.hop.ui.pipeline.config:PipelineRunConfigurationDialog.FeedbackSize.Label"
   )
-  @MetaStoreAttribute(key="feedback_size")
+  @HopMetadataProperty(key="feedback_size")
   protected String feedbackSize;
 
+  /**
+   * The feedback size.
+   */
+  @GuiWidgetElement(
+    id = "sampleTypeInGui",
+    order = "70",
+    parentId = PipelineRunConfiguration.GUI_PLUGIN_ELEMENT_PARENT_ID,
+    type = GuiElementType.COMBO,
+    label = "i18n:org.apache.hop.ui.pipeline.config:PipelineRunConfigurationDialog.SampleTypeInGui.Label",
+    comboValuesMethod = "getSampleTypes"
+  )
+  @HopMetadataProperty(key="sample_type_in_gui")
+  protected String sampleTypeInGui;
+
+  /**
+   * The feedback size.
+   */
+  @GuiWidgetElement(
+    id = "sampleSize",
+    order = "80",
+    parentId = PipelineRunConfiguration.GUI_PLUGIN_ELEMENT_PARENT_ID,
+    type = GuiElementType.TEXT,
+    label = "i18n:org.apache.hop.ui.pipeline.config:PipelineRunConfigurationDialog.SampleSize.Label"
+  )
+  @HopMetadataProperty(key="sample_size")
+  protected String sampleSize;
+
+  public enum SampleType {
+    None, First, Last, Random;
+  }
 
   public LocalPipelineRunConfiguration() {
     super();
     this.rowSetSize = Integer.toString( Const.ROWS_IN_ROWSET );
     this.feedbackShown = false;
     this.feedbackSize = Integer.toString( Const.ROWS_UPDATE );
+    this.sampleTypeInGui = SampleType.Last.name();
+    this.sampleSize = "100";
   }
 
   public LocalPipelineRunConfiguration( LocalPipelineRunConfiguration config ) {
@@ -122,12 +148,21 @@ public class LocalPipelineRunConfiguration extends EmptyPipelineRunConfiguration
     this.safeModeEnabled = config.safeModeEnabled;
     this.gatheringMetrics = config.gatheringMetrics;
     this.sortingTransformsTopologically = config.sortingTransformsTopologically;
+    this.sampleTypeInGui = config.sampleTypeInGui;
+    this.sampleSize = config.sampleSize;
   }
 
   public LocalPipelineRunConfiguration clone() {
     return new LocalPipelineRunConfiguration( this );
   }
 
+  public List<String> getSampleTypes( ILogChannel log, IHopMetadataProvider metadataProvider ) {
+    List<String> list = new ArrayList<>();
+    for (SampleType type : SampleType.values()) {
+      list.add(type.name());
+    }
+    return list;
+  }
   /**
    * Gets rowSetSize
    *
@@ -222,5 +257,37 @@ public class LocalPipelineRunConfiguration extends EmptyPipelineRunConfiguration
    */
   public void setFeedbackSize( String feedbackSize ) {
     this.feedbackSize = feedbackSize;
+  }
+
+  /**
+   * Gets sampleTypeInGui
+   *
+   * @return value of sampleTypeInGui
+   */
+  public String getSampleTypeInGui() {
+    return sampleTypeInGui;
+  }
+
+  /**
+   * @param sampleTypeInGui The sampleTypeInGui to set
+   */
+  public void setSampleTypeInGui( String sampleTypeInGui ) {
+    this.sampleTypeInGui = sampleTypeInGui;
+  }
+
+  /**
+   * Gets sampleSize
+   *
+   * @return value of sampleSize
+   */
+  public String getSampleSize() {
+    return sampleSize;
+  }
+
+  /**
+   * @param sampleSize The sampleSize to set
+   */
+  public void setSampleSize( String sampleSize ) {
+    this.sampleSize = sampleSize;
   }
 }
